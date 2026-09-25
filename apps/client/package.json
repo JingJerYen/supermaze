@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@colyseus/sdk": "^0.18.4",
     "@supermaze/protocol": "*",
     "@supermaze/sim": "*",
     "three": "^0.186.1"

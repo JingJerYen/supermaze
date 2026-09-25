@@ -1,18 +1,15 @@
 {
-  "name": "@supermaze/server",
+  "name": "@supermaze/net-spike",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@colyseus/core": "^0.18.16",
-    "@colyseus/ws-transport": "^0.18.3",
+    "@colyseus/sdk": "^0.18.4",
     "@supermaze/protocol": "*",
-    "@supermaze/sim": "*",
-    "express": "^5.2.1"
+    "@supermaze/sim": "*"
   }
 }

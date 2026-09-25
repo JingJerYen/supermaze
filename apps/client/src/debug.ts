@@ -11,6 +11,7 @@ export interface DebugStats {
 
 export class DebugOverlay {
   private readonly el: HTMLDivElement;
+  private readonly bannerEl: HTMLDivElement;
   private frames = 0;
   private lastFpsSample = performance.now();
   private fps = 0;
@@ -30,6 +31,37 @@ export class DebugOverlay {
       zIndex: "10",
     } satisfies Partial<CSSStyleDeclaration>);
     parent.appendChild(this.el);
+
+    this.bannerEl = document.createElement("div");
+    Object.assign(this.bannerEl.style, {
+      position: "fixed",
+      left: "50%",
+      top: "40%",
+      transform: "translate(-50%, -50%)",
+      maxWidth: "80vw",
+      padding: "14px 18px",
+      font: "15px/1.5 system-ui, sans-serif",
+      color: "#fff",
+      background: "rgba(20,24,32,0.85)",
+      border: "1px solid rgba(255,255,255,0.25)",
+      borderRadius: "8px",
+      whiteSpace: "pre-wrap",
+      textAlign: "center",
+      pointerEvents: "none",
+      display: "none",
+      zIndex: "20",
+    } satisfies Partial<CSSStyleDeclaration>);
+    parent.appendChild(this.bannerEl);
+  }
+
+  /** Show a centre-screen message, or hide it with null. */
+  banner(text: string | null): void {
+    if (text === null) {
+      this.bannerEl.style.display = "none";
+      return;
+    }
+    if (this.bannerEl.textContent !== text) this.bannerEl.textContent = text;
+    this.bannerEl.style.display = "block";
   }
 
   /** Call once per rendered frame. */

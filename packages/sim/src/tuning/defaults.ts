@@ -17,6 +17,10 @@ export const DEFAULT_TUNING: Tuning = {
     speedTilesPerSec: 4,
   },
 
+  connection: {
+    reconnectWindowSec: 30,
+  },
+
   keys: {
     perParticipant: 1,
   },

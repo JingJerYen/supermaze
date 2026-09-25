@@ -19,6 +19,11 @@ export interface Tuning {
     speedTilesPerSec: number;
   };
 
+  connection: {
+    /** How long a dropped player may reconnect before staying CPU-controlled for the round, seconds. */
+    reconnectWindowSec: number;
+  };
+
   keys: {
     /** Keys generated per participant. Spec fixes this at exactly 1. */
     perParticipant: number;

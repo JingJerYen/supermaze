@@ -1,17 +1,46 @@
-import type { PlayerInput, SimulationState } from "@supermaze/sim";
+import type { PlayerInput, PlayerState, Tick } from "@supermaze/sim";
 
 /**
- * Wire messages between client and server. Phase-0 sketch.
- * Encoding (JSON vs binary) and the transport framework (Colyseus vs raw ws)
- * are decided at the end of phase 0; only the shapes live here.
+ * Wire messages between client and server, carried as Colyseus room messages.
+ * Message *names* are the constants below; payload shapes are the interfaces.
+ * Only the shapes matter to the simulation; the transport can change.
  */
 export const PROTOCOL_VERSION = 1;
 
-export type ClientToServer =
-  | { type: "hello"; protocolVersion: number; playerName: string }
-  | { type: "input"; tick: number; input: PlayerInput };
+export const ROOM_NAME = "maze";
 
-export type ServerToClient =
-  | { type: "welcome"; playerId: string; seed: number; tickRate: number }
-  | { type: "snapshot"; state: SimulationState }
-  | { type: "error"; message: string };
+/** Client -> server message names. */
+export const C2S = {
+  input: "input",
+  ping: "ping",
+} as const;
+
+/** Server -> client message names. */
+export const S2C = {
+  welcome: "welcome",
+  snapshot: "snapshot",
+  pong: "pong",
+} as const;
+
+export type InputMessage = PlayerInput;
+
+export interface PingMessage {
+  /** Client clock at send time, ms. Echoed back untouched. */
+  t: number;
+}
+
+export interface WelcomeMessage {
+  protocolVersion: number;
+  playerId: string;
+  mapId: string;
+  tickRate: number;
+}
+
+export interface SnapshotMessage {
+  tick: Tick;
+  /** Server clock when the snapshot was produced, ms since epoch. */
+  serverTime: number;
+  players: Record<string, PlayerState>;
+}
+
+export type PongMessage = PingMessage;

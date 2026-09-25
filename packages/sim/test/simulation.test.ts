@@ -36,4 +36,20 @@ describe("Simulation", () => {
     expect(after.from.y).toBeLessThan(start.y);
     expect(sim.getState().players["p2"]!.mover.target).toBeNull();
   });
+
+  it("adds players mid-round and switches controllers without moving them", () => {
+    const sim = new Simulation({ seed: 1, map: TINY_MAP, participants: [] });
+    sim.addPlayer({ id: "a", teamId: "t1", controller: "human" });
+    sim.addPlayer({ id: "b", teamId: "t2", controller: "human" });
+    expect(Object.keys(sim.getState().players)).toEqual(["a", "b"]);
+    expect(sim.getState().players["a"]!.mover.from).not.toEqual(sim.getState().players["b"]!.mover.from);
+
+    const before = sim.getState().players["a"]!.mover;
+    sim.setController("a", "cpu");
+    expect(sim.getState().players["a"]!.controller).toBe("cpu");
+    expect(sim.getState().players["a"]!.mover).toEqual(before);
+
+    sim.removePlayer("b");
+    expect(sim.getState().players["b"]).toBeUndefined();
+  });
 });
