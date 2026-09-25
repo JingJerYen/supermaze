@@ -76,7 +76,7 @@ export class Bot {
   /** Ticks seen since the last call; >0 means snapshots are still arriving. */
   private lastSeenTick = 0;
   snapshotsAdvanced(): boolean {
-    const t = this.latest?.tick ?? 0;
+    const t = this.latest?.state.tick ?? 0;
     const advanced = t > this.lastSeenTick;
     this.lastSeenTick = t;
     return advanced;

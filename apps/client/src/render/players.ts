@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { MapGrid, MoverState, PlayerState } from "@supermaze/sim";
+import { towerGeometry } from "./mapMesh.js";
 import { PlayerView } from "./playerView.js";
 
 const TEAM_COLORS = [0xffb347, 0x5ec8ff, 0x8bff7a, 0xff7ad9, 0xfff17a, 0xc79aff, 0xff8a5c, 0x7affd6];
@@ -9,12 +10,20 @@ export class PlayerViews {
   private readonly views = new Map<string, PlayerView>();
   private readonly teamIndex = new Map<string, number>();
 
-  constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {}
+  private readonly tower: ReturnType<typeof towerGeometry>;
+
+  constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {
+    this.tower = towerGeometry(grid);
+  }
 
   /** Draw every player in `to`, blending from its state in `from` when present. */
   update(from: Record<string, PlayerState>, to: Record<string, PlayerState>, alpha: number): void {
     for (const [id, p] of Object.entries(to)) {
       const view = this.views.get(id) ?? this.create(id, p.teamId);
+      if (p.phase === "tower") {
+        view.placeOnTower(this.tower.center, this.tower.platformTopY, p.towerArrival ?? 0);
+        continue;
+      }
       const prev: MoverState = from[id]?.mover ?? p.mover;
       view.update(this.grid, prev, p.mover, alpha);
     }

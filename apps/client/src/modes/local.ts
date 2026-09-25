@@ -1,11 +1,12 @@
-import { DEFAULT_TUNING, Simulation, type MapData, type PlayerState } from "@supermaze/sim";
+import { DEFAULT_TUNING, Simulation, type MapData, type SimulationState } from "@supermaze/sim";
 import type { GameMode } from "./mode.js";
 
 /** Single-player: the simulation runs inside the page. Same code the server runs. */
 export function createLocalMode(map: MapData): GameMode {
   const id = "local";
   const sim = new Simulation({ seed: 1, map, participants: [{ id, teamId: "t1", controller: "human" }] });
-  let prev: Record<string, PlayerState> = sim.getState().players;
+  sim.start();
+  let prev: SimulationState = sim.getState();
 
   return {
     label: "local",
@@ -13,15 +14,21 @@ export function createLocalMode(map: MapData): GameMode {
     tickRate: DEFAULT_TUNING.tickRate,
     localPlayerId: () => id,
     tick(input) {
-      prev = sim.getState().players;
+      prev = sim.getState();
       sim.step(new Map([[id, input]]));
     },
     sample(_now, alpha) {
-      return { from: prev, to: sim.getState().players, alpha };
+      return { from: prev, to: sim.getState(), alpha };
     },
-    hud: () => ({
-      tick: sim.getState().tick,
-      layer: sim.getState().players[id]?.mover.from.layer ?? "-",
-    }),
+    hud: () => {
+      const me = sim.getState().players[id];
+      return {
+        tick: sim.getState().tick,
+        layer: me?.mover.from.layer ?? "-",
+        key: me?.keyId ? "yes" : "no",
+        score: me?.score ?? 0,
+        climb: me && sim.canClimb(me) ? "ready (E)" : "-",
+      };
+    },
   };
 }

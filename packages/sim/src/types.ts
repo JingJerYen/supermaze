@@ -16,3 +16,6 @@ export interface Participant {
   teamId: TeamId;
   controller: Controller;
 }
+
+/** Where a player is in the round. `tower` is permanent for the rest of the round. */
+export type PlayerPhase = "maze" | "tower";

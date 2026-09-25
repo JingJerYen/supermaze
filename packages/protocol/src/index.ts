@@ -1,4 +1,4 @@
-import type { PlayerInput, PlayerState, Tick } from "@supermaze/sim";
+import type { PlayerInput, SimulationState } from "@supermaze/sim";
 
 /**
  * Wire messages between client and server, carried as Colyseus room messages.
@@ -37,10 +37,10 @@ export interface WelcomeMessage {
 }
 
 export interface SnapshotMessage {
-  tick: Tick;
   /** Server clock when the snapshot was produced, ms since epoch. */
   serverTime: number;
-  players: Record<string, PlayerState>;
+  /** Full authoritative state. Delta encoding is a phase-2 optimisation. */
+  state: SimulationState;
 }
 
 export type PongMessage = PingMessage;

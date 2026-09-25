@@ -47,14 +47,31 @@ export function validateMap(data: MapData): string[] {
   const spawns = grid.spawnTiles();
   if (spawns.length === 0) {
     errors.push("no road cell touches the tower; players cannot spawn");
-  } else {
-    const reach = grid.reachableFrom(spawns[0] as (typeof spawns)[number]);
-    for (const { x, y } of grid.findCells("road")) {
-      if (!reach.has(tileKey(x, y, "road"))) errors.push(`road cell (${x},${y}) is unreachable from the tower`);
-    }
-    for (const { x, y } of grid.findCells("stairs")) {
-      if (!reach.has(tileKey(x, y, "road"))) errors.push(`stairs (${x},${y}) is unreachable from the tower`);
-    }
+    return errors;
+  }
+
+  const reach = grid.reachableFrom(spawns[0] as (typeof spawns)[number]);
+  for (const { x, y } of grid.findCells("road")) {
+    if (!reach.has(tileKey(x, y, "road"))) errors.push(`road cell (${x},${y}) is unreachable from the tower`);
+  }
+  for (const { x, y } of grid.findCells("stairs")) {
+    if (!reach.has(tileKey(x, y, "road"))) errors.push(`stairs (${x},${y}) is unreachable from the tower`);
+  }
+
+  // Key spawns: one key per participant must be placeable, every candidate walkable and reachable.
+  const keySpawns = data.spawns?.keys ?? [];
+  const maxParticipants = Math.max(0, ...data.supportedParticipants);
+  if (keySpawns.length < maxParticipants) {
+    errors.push(`only ${keySpawns.length} key spawns for up to ${maxParticipants} participants`);
+  }
+  const seen = new Set<string>();
+  for (const t of keySpawns) {
+    const key = tileKey(t.x, t.y, t.layer);
+    if (seen.has(key)) errors.push(`duplicate key spawn at ${key}`);
+    seen.add(key);
+    if (!grid.isWalkable(t.x, t.y, t.layer)) errors.push(`key spawn ${key} is not walkable on its layer`);
+    else if (!reach.has(key)) errors.push(`key spawn ${key} is unreachable from the tower`);
+    if (grid.isTowerEntry(t.x, t.y)) errors.push(`key spawn ${key} sits on a tower entry tile`);
   }
 
   return errors;

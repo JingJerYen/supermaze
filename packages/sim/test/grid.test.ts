@@ -53,6 +53,13 @@ describe("validateMap", () => {
     expect(validateMap({ ...TINY_MAP, rows: ["XXX", "XX"] })[0]).toMatch(/row 1/);
   });
 
+  it("rejects key spawns that are unreachable or too few", () => {
+    const tooFew = { ...TINY_MAP, supportedParticipants: [4] };
+    expect(validateMap(tooFew).join("\n")).toMatch(/only 3 key spawns/);
+    const onWall = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 3, y: 2, layer: "road" as const }] } };
+    expect(validateMap(onWall).join("\n")).toMatch(/not walkable/);
+  });
+
   it("rejects stairs without a wall", () => {
     const rows = [...TINY_MAP.rows];
     rows[2] = "X.S.....X";

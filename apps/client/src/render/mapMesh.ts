@@ -73,20 +73,31 @@ export function buildMapMesh(grid: MapGrid): THREE.Group {
   return group;
 }
 
-/** One slender shaft rising from a low base, topped by a platform wider than the footprint. */
-function buildTower(grid: MapGrid): THREE.Group {
-  const tower = new THREE.Group();
+/** Footprint centre and size of the tower, and the world height of its platform top. */
+export function towerGeometry(grid: MapGrid): { center: THREE.Vector3; footW: number; footD: number; platformTopY: number } {
+  const t = CLIENT_TUNING.tower;
   const cells = grid.findCells("tower");
-  if (cells.length === 0) return tower;
-
+  const platformTopY = t.baseHeight + t.shaftHeight + t.platformThickness;
+  if (cells.length === 0) return { center: new THREE.Vector3(), footW: 0, footD: 0, platformTopY };
   const minX = Math.min(...cells.map((c) => c.x));
   const maxX = Math.max(...cells.map((c) => c.x));
   const minY = Math.min(...cells.map((c) => c.y));
   const maxY = Math.max(...cells.map((c) => c.y));
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  const footW = maxX - minX + 1;
-  const footD = maxY - minY + 1;
+  return {
+    center: new THREE.Vector3((minX + maxX) / 2, 0, (minY + maxY) / 2),
+    footW: maxX - minX + 1,
+    footD: maxY - minY + 1,
+    platformTopY,
+  };
+}
+
+/** One slender shaft rising from a low base, topped by a platform wider than the footprint. */
+function buildTower(grid: MapGrid): THREE.Group {
+  const tower = new THREE.Group();
+  const { center, footW, footD } = towerGeometry(grid);
+  if (footW === 0) return tower;
+  const cx = center.x;
+  const cy = center.z;
 
   const t = CLIENT_TUNING.tower;
   const baseMat = new THREE.MeshLambertMaterial({ color: COLORS.tower });

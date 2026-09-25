@@ -41,7 +41,7 @@ async function main(): Promise<void> {
   console.log(`snapshot gap   ${fmt(gaps)}  (target ${(1000 / tickRate).toFixed(1)}ms)`);
   console.log(`snapshot size  ${fmt(bytes, "B")}  (JSON-equivalent)`);
   console.log(`ping rtt       ${fmt(rtt)}`);
-  const playersSeen = Object.keys(bots[0]?.latest?.players ?? {}).length;
+  const playersSeen = Object.keys(bots[0]?.latest?.state.players ?? {}).length;
   check(playersSeen === BOTS, `snapshots contain all ${BOTS} players (saw ${playersSeen})`);
   check(gaps.p95 < (1000 / tickRate) * 2, "p95 snapshot gap under two tick intervals");
   check(rtt.p95 < 50, "p95 ping RTT under 50 ms on localhost");
@@ -51,12 +51,12 @@ async function main(): Promise<void> {
   const victim = bots[0] as Bot;
   const victimId = victim.room?.sessionId as string;
   const token = victim.room?.reconnectionToken as string;
-  const before = observer.latest?.players[victimId];
+  const before = observer.latest?.state.players[victimId];
 
   console.log(`[A] dropping ${victim.name} (${victimId}) without auto-reconnect ...`);
   await victim.dropConnection(false);
   await sleep(600);
-  const dropped = observer.latest?.players[victimId];
+  const dropped = observer.latest?.state.players[victimId];
   check(!!dropped, "[A] dropped player still exists in the room");
   check(dropped?.controller === "cpu", "[A] dropped player switched to cpu control");
   check(!!dropped && !!before && dropped.teamId === before.teamId, "[A] team preserved while dropped");
@@ -64,7 +64,7 @@ async function main(): Promise<void> {
   console.log(`[A] reconnecting ${victim.name} with its token ...`);
   await victim.reconnect(token);
   await sleep(600);
-  const back = observer.latest?.players[victimId];
+  const back = observer.latest?.state.players[victimId];
   check(back?.controller === "human", "[A] reconnected player is human again");
   check(victim.room?.sessionId === victimId, "[A] reconnected client kept its session id");
   victim.snapshotsAdvanced();
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   console.log(`[B] dropping ${auto.name} (${autoId}) with auto-reconnect ...`);
   await auto.dropConnection(true);
   await sleep(2500);
-  const autoBack = observer.latest?.players[autoId];
+  const autoBack = observer.latest?.state.players[autoId];
   check(autoBack?.controller === "human", "[B] auto-reconnected player is human again");
   auto.snapshotsAdvanced();
   await sleep(300);
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
   const leaverId = leaver.room?.sessionId as string;
   await leaver.leave();
   await sleep(600);
-  check(!observer.latest?.players[leaverId], "consented leave removes the player");
+  check(!observer.latest?.state.players[leaverId], "consented leave removes the player");
 
   // Best-effort cleanup; a leave() that never resolves must not hide the verdict.
   await Promise.race([Promise.all(bots.map((b) => b.leave().catch(() => undefined))), sleep(2000)]);

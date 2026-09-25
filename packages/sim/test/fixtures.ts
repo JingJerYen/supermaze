@@ -25,5 +25,13 @@ export const TINY_MAP: MapData = {
     "X.......X",
     "XXXXXXXXX",
   ],
-  spawns: { keys: [], itemBoxes: [], lightSwitches: [] },
+  spawns: {
+    keys: [
+      { x: 7, y: 1, layer: "road" },
+      { x: 1, y: 6, layer: "road" },
+      { x: 4, y: 2, layer: "wallTop" },
+    ],
+    itemBoxes: [],
+    lightSwitches: [],
+  },
 };

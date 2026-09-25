@@ -93,7 +93,17 @@ export class MapGrid {
     return out;
   }
 
-  /** Road cells touching the tower footprint, in scan order. Players start here. */
+  private entryKeys: Set<string> | null = null;
+
+  /** Whether a road tile touches the tower footprint. Players climb from these tiles. */
+  isTowerEntry(x: number, y: number): boolean {
+    if (!this.entryKeys) {
+      this.entryKeys = new Set(this.spawnTiles().map((t) => `${t.x},${t.y}`));
+    }
+    return this.entryKeys.has(`${x},${y}`);
+  }
+
+  /** Road cells touching the tower footprint, in scan order. Players start here and climb from here. */
   spawnTiles(): TilePos[] {
     const seen = new Set<string>();
     const out: TilePos[] = [];

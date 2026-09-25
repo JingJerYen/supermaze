@@ -1,5 +1,5 @@
 import type { SnapshotMessage, WelcomeMessage } from "@supermaze/protocol";
-import { MapGrid, type MapData } from "@supermaze/sim";
+import { MapGrid, type MapData, type PlayerState } from "@supermaze/sim";
 import { Connection } from "../net/connection.js";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import type { GameMode } from "./mode.js";
@@ -54,14 +54,34 @@ export function createOnlineMode(map: MapData, endpoint: string): GameMode {
     },
     sample(now) {
       const s = buffer.sample(now);
-      return s ? { from: s.from.players, to: s.to.players, alpha: s.alpha } : null;
+      return s ? { from: s.from.state, to: s.to.state, alpha: s.alpha } : null;
     },
-    hud: () => ({
-      status,
-      tick: buffer.latest()?.tick ?? 0,
-      players: Object.keys(buffer.latest()?.players ?? {}).length,
-      rtt: `${rttMs.toFixed(0)}ms`,
-    }),
+    hud: () => {
+      const st = buffer.latest()?.state;
+      const meId = welcome?.playerId ?? conn.sessionId;
+      const me = meId ? st?.players[meId] : undefined;
+      return {
+        status,
+        tick: st?.tick ?? 0,
+        players: Object.keys(st?.players ?? {}).length,
+        rtt: `${rttMs.toFixed(0)}ms`,
+        key: me?.keyId ? "yes" : "no",
+        score: me?.score ?? 0,
+        tower: st?.towerArrivals.length ?? 0,
+        climb: me && canClimbClient(grid, me) ? "ready (E)" : "-",
+      };
+    },
     banner: () => banner,
   };
+}
+
+/** Mirror of Simulation.canClimb for HUD hints; the server remains the authority. */
+export function canClimbClient(grid: MapGrid, p: PlayerState): boolean {
+  return (
+    p.phase === "maze" &&
+    p.keyId !== null &&
+    p.mover.target === null &&
+    p.mover.from.layer === "road" &&
+    grid.isTowerEntry(p.mover.from.x, p.mover.from.y)
+  );
 }

@@ -1,7 +1,13 @@
 {
   "id": "test-01",
   "name": "Phase 0 test map",
-  "supportedParticipants": [1, 2],
+  "supportedParticipants": [
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
   "rows": [
     "XXXXXXXXXXXXXXXXXXX",
     "X.................X",
@@ -18,7 +24,48 @@
     "XXXXXXXXXXXXXXXXXXX"
   ],
   "spawns": {
-    "keys": [],
+    "keys": [
+      {
+        "x": 1,
+        "y": 1,
+        "layer": "road"
+      },
+      {
+        "x": 17,
+        "y": 1,
+        "layer": "road"
+      },
+      {
+        "x": 1,
+        "y": 11,
+        "layer": "road"
+      },
+      {
+        "x": 17,
+        "y": 11,
+        "layer": "road"
+      },
+      {
+        "x": 8,
+        "y": 10,
+        "layer": "road"
+      },
+      {
+        "x": 9,
+        "y": 2,
+        "layer": "wallTop"
+      },
+      {
+        "x": 4,
+        "y": 10,
+        "layer": "wallTop"
+      },
+      {
+        "x": 14,
+        "y": 10,
+        "layer": "wallTop"
+      }
+    ],
     "itemBoxes": [],
     "lightSwitches": []
   }

@@ -39,8 +39,11 @@ export class MazeRoom extends Room {
   }
 
   override onJoin(client: Client): void {
-    // Phase 0: every player is its own team. Real team assignment is a lobby concern.
-    this.sim.addPlayer({ id: client.sessionId, teamId: `t${this.nextTeam++}`, controller: "human" });
+    // Dev behaviour until the lobby exists: alternate players between the two teams
+    // and start the round as soon as the first player is in. Late joiners get a key
+    // spawned for them so keys == participants still holds.
+    this.sim.addPlayer({ id: client.sessionId, teamId: `t${this.nextTeam++ % 2}`, controller: "human" });
+    if (this.sim.getState().status === "lobby") this.sim.start();
     const welcome: WelcomeMessage = {
       protocolVersion: PROTOCOL_VERSION,
       playerId: client.sessionId,
@@ -73,8 +76,7 @@ export class MazeRoom extends Room {
     }
     this.sim.step(frame);
 
-    const state = this.sim.getState();
-    const snapshot: SnapshotMessage = { tick: state.tick, serverTime: Date.now(), players: state.players };
+    const snapshot: SnapshotMessage = { serverTime: Date.now(), state: this.sim.getState() };
     this.broadcast(S2C.snapshot, snapshot);
   }
 }
@@ -83,5 +85,7 @@ export class MazeRoom extends Room {
 function sanitizeInput(msg: unknown): PlayerInput {
   const m = (msg ?? {}) as Partial<InputMessage>;
   const clamp = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
-  return { moveX: clamp(m.moveX), moveY: clamp(m.moveY) };
+  const input: PlayerInput = { moveX: clamp(m.moveX), moveY: clamp(m.moveY) };
+  if (m.climb === true) input.climb = true;
+  return input;
 }

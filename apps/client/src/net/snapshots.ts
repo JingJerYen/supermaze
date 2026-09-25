@@ -13,7 +13,7 @@ export class SnapshotBuffer {
   constructor(private readonly intervalMs: number) {}
 
   push(snap: SnapshotMessage, receivedAt: number): void {
-    if (this.curr && snap.tick <= this.curr.snap.tick) return; // late or duplicate
+    if (this.curr && snap.state.tick <= this.curr.snap.state.tick) return; // late or duplicate
     this.prev = this.curr;
     this.curr = { snap, at: receivedAt };
   }

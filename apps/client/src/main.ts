@@ -5,8 +5,9 @@ import { DebugOverlay } from "./debug.js";
 import { InputSource } from "./input/index.js";
 import { startLoop } from "./loop.js";
 import { createLocalMode } from "./modes/local.js";
-import { createOnlineMode } from "./modes/online.js";
+import { canClimbClient, createOnlineMode } from "./modes/online.js";
 import { FollowCamera } from "./render/camera.js";
+import { KeyViews } from "./render/keys.js";
 import { buildMapMesh } from "./render/mapMesh.js";
 import { PlayerViews } from "./render/players.js";
 import { createScene } from "./render/scene.js";
@@ -30,6 +31,7 @@ root.appendChild(renderer.domElement);
 const scene = createScene();
 scene.add(buildMapMesh(mode.grid));
 const players = new PlayerViews(scene, mode.grid);
+const keys = new KeyViews(scene, mode.grid);
 const follow = new FollowCamera(window.innerWidth / window.innerHeight);
 const input = new InputSource(root);
 const debug = new DebugOverlay(root);
@@ -51,8 +53,13 @@ startLoop(
     lastFrame = now;
 
     const s = mode.sample(now, alpha);
-    if (s) players.update(s.from, s.to, s.alpha);
     const meId = mode.localPlayerId();
+    if (s) {
+      players.update(s.from.players, s.to.players, s.alpha);
+      keys.update(s.to.keys, now / 1000);
+      const me = meId ? s.to.players[meId] : undefined;
+      input.climbButton.setVisible(!!me && canClimbClient(mode.grid, me));
+    }
     const mePos = meId ? players.position(meId) : null;
     if (mePos) follow.update(mePos, dt);
 
