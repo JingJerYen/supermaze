@@ -13,6 +13,11 @@ export interface Tuning {
     /** Counts every participant, human or CPU. Solo play is 1 human + 1 CPU = 2. */
     minParticipants: number;
     maxParticipants: number;
+    /**
+     * On timeout with no complete team, compare climbed members as an absolute
+     * count or as a fraction of team size. Undecided for uneven teams (CLAUDE.md 16).
+     */
+    timeoutClimbMetric: "count" | "ratio";
   };
 
   teams: {

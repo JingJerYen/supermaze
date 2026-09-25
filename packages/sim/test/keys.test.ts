@@ -119,7 +119,9 @@ describe("tower climb", () => {
     const sim = simWithKeyInHand();
     walk(sim, "a", [{ moveX: 0, moveY: 1 }]); // back to entry (2,3)
     const events = sim.step(new Map([["a", { ...still, climb: true }]]));
-    expect(events).toEqual([{ type: "towerClimbed", tick: expect.any(Number), playerId: "a", arrival: 0 }]);
+    expect(events).toContainEqual({ type: "towerClimbed", tick: expect.any(Number), playerId: "a", arrival: 0 });
+    // A one-player team completes on the spot, which also ends a one-player round.
+    expect(events.map((e) => e.type)).toEqual(["towerClimbed", "teamCompleted", "roundEnded"]);
     const a = sim.getState().players["a"]!;
     expect(a.phase).toBe("tower");
     expect(a.towerArrival).toBe(0);

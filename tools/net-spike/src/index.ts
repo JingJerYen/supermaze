@@ -24,7 +24,10 @@ const check = (ok: boolean, label: string) => {
 async function main(): Promise<void> {
   console.log(`connecting ${BOTS} bots to ${ENDPOINT}`);
   const bots = Array.from({ length: BOTS }, (_, i) => new Bot(`bot${i}`, new Client(ENDPOINT)));
-  await Promise.all(bots.map((b) => b.join()));
+  // A private room for this run: real players on the same server must not eat our seats.
+  const roomId = await (bots[0] as Bot).create();
+  const startedAt = Date.now();
+  await Promise.all(bots.slice(1).map((b) => b.join(roomId)));
   await sleep(300);
 
   const tickRate = bots[0]?.welcome?.tickRate ?? 20;
@@ -72,9 +75,14 @@ async function main(): Promise<void> {
   check(victim.snapshotsAdvanced(), "[A] reconnected client receives snapshots again");
 
   // --- scenario B: transport drop with the SDK's auto-reconnect left on ---
+  // The SDK refuses to auto-reconnect a room that has been joined for less than
+  // `reconnection.minUptime` (5 s by default), so make sure we are past it.
   const auto = bots[2] as Bot;
   const autoId = auto.room?.sessionId as string;
-  console.log(`[B] dropping ${auto.name} (${autoId}) with auto-reconnect ...`);
+  const minUptime = auto.room?.reconnection.minUptime ?? 5000;
+  const joinedAgo = Date.now() - startedAt;
+  if (joinedAgo < minUptime + 500) await sleep(minUptime + 500 - joinedAgo);
+  console.log(`[B] dropping ${auto.name} (${autoId}) with auto-reconnect (room uptime ${(Date.now() - startedAt) / 1000}s, minUptime ${minUptime}ms) ...`);
   await auto.dropConnection(true);
   await sleep(2500);
   const autoBack = observer.latest?.state.players[autoId];

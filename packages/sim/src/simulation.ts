@@ -4,8 +4,9 @@ import { MapGrid } from "./map/grid.js";
 import type { MapData, TilePos } from "./map/types.js";
 import { createMover, stepMover, type MoveIntent, type MoverState } from "./movement.js";
 import { SeededRandom } from "./random/seeded.js";
+import { decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
 import { DEFAULT_TUNING, type Tuning } from "./tuning/index.js";
-import type { Controller, Participant, PlayerId, PlayerPhase, Tick } from "./types.js";
+import type { Controller, Participant, PlayerId, PlayerPhase, TeamId, Tick } from "./types.js";
 
 /**
  * Player intent for one tick. The client and the CPU controller both produce this;
@@ -23,6 +24,8 @@ export interface SimulationOptions {
   map: MapData;
   participants: Participant[];
   tuning?: Tuning;
+  /** Developer override of the round length, seconds. Defaults to tuning.round.timeLimitSec. */
+  timeLimitSec?: number;
 }
 
 export interface PlayerState extends Participant {
@@ -35,15 +38,24 @@ export interface PlayerState extends Participant {
   score: number;
 }
 
-export type RoundStatus = "lobby" | "running";
+export type RoundStatus = "lobby" | "running" | "finished";
 
 export interface SimulationState {
   tick: Tick;
   status: RoundStatus;
+  /** Tick the round started and the tick at which time runs out (exclusive). */
+  startTick: Tick;
+  endsAtTick: Tick;
   players: Record<PlayerId, PlayerState>;
   keys: Record<string, KeyState>;
   /** Player ids in the order they reached the tower top. */
   towerArrivals: PlayerId[];
+  /** Per team: tick at which its 1st, 2nd, ... member climbed. */
+  teamClimbTicks: Record<TeamId, Tick[]>;
+  /** Set the moment the first team has every member on the tower. */
+  winnerTeamId: TeamId | null;
+  /** Present once status is "finished". */
+  result: RoundResult | null;
 }
 
 /**
@@ -58,6 +70,7 @@ export class Simulation {
   private state: SimulationState;
   private readonly spawns: TilePos[];
   private spawnCursor = 0;
+  private readonly timeLimitTicks: number;
 
   constructor(options: SimulationOptions) {
     this.tuning = options.tuning ?? DEFAULT_TUNING;
@@ -72,8 +85,28 @@ export class Simulation {
       this.spawns = [{ ...road, layer: "road" }];
     }
 
-    this.state = { tick: 0, status: "lobby", players: {}, keys: {}, towerArrivals: [] };
+    const limitSec = options.timeLimitSec ?? this.tuning.round.timeLimitSec;
+    this.timeLimitTicks = Math.max(1, Math.round(limitSec * this.tuning.tickRate));
+
+    this.state = {
+      tick: 0,
+      status: "lobby",
+      startTick: 0,
+      endsAtTick: 0,
+      players: {},
+      keys: {},
+      towerArrivals: [],
+      teamClimbTicks: {},
+      winnerTeamId: null,
+      result: null,
+    };
     for (const p of options.participants) this.addPlayer(p);
+  }
+
+  /** Seconds left in the round, clamped at 0. */
+  remainingSec(): number {
+    if (this.state.status !== "running") return this.state.status === "lobby" ? this.timeLimitTicks / this.tuning.tickRate : 0;
+    return Math.max(0, this.state.endsAtTick - this.state.tick) / this.tuning.tickRate;
   }
 
   /** Add a participant at the next spawn tile. Idempotent for an existing id. */
@@ -109,9 +142,14 @@ export class Simulation {
 
   /** Begin the round: spawn exactly one key per participant (CLAUDE.md section 5). */
   start(): SimEvent[] {
-    if (this.state.status === "running") return [];
+    if (this.state.status !== "lobby") return [];
     const count = Object.keys(this.state.players).length * this.tuning.keys.perParticipant;
-    this.state = { ...this.state, status: "running" };
+    this.state = {
+      ...this.state,
+      status: "running",
+      startTick: this.state.tick,
+      endsAtTick: this.state.tick + this.timeLimitTicks,
+    };
     this.spawnKeys(count);
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];
   }
@@ -127,12 +165,15 @@ export class Simulation {
 
   /** Advance exactly one tick using the given inputs. Missing players get NO_INPUT. */
   step(inputs: ReadonlyMap<PlayerId, PlayerInput>): SimEvent[] {
+    if (this.state.status === "finished") return [];
     const events: SimEvent[] = [];
     const tick = this.state.tick + 1;
     const speed = this.tuning.movement.speedTilesPerSec / this.tuning.tickRate;
     const players: Record<PlayerId, PlayerState> = {};
     let keys = this.state.keys;
     const towerArrivals = [...this.state.towerArrivals];
+    const teamClimbTicks: Record<TeamId, Tick[]> = { ...this.state.teamClimbTicks };
+    let winnerTeamId = this.state.winnerTeamId;
 
     // Sorted ids make simultaneous pickups resolve identically on every replay.
     for (const id of Object.keys(this.state.players).sort()) {
@@ -161,6 +202,7 @@ export class Simulation {
           const table = this.tuning.scoring.towerPlacement;
           const placementScore = table[Math.min(arrival, table.length - 1)] ?? 0;
           p = { ...p, phase: "tower", towerArrival: arrival, score: p.score + placementScore };
+          teamClimbTicks[p.teamId] = [...(teamClimbTicks[p.teamId] ?? []), tick];
           events.push({ type: "towerClimbed", tick, playerId: id, arrival });
         }
       }
@@ -168,7 +210,39 @@ export class Simulation {
       players[id] = p;
     }
 
-    this.state = { ...this.state, tick, players, keys, towerArrivals };
+    // Team completion: every member on the tower. The first complete team wins (CLAUDE.md section 3).
+    if (this.state.status === "running") {
+      for (const team of teamProgress(players, teamClimbTicks)) {
+        const wasComplete = teamProgress(this.state.players, this.state.teamClimbTicks).find((t) => t.teamId === team.teamId)?.climbed === team.size;
+        if (team.climbed === team.size && !wasComplete) {
+          const isWinner = winnerTeamId === null;
+          if (isWinner) winnerTeamId = team.teamId;
+          events.push({ type: "teamCompleted", tick, teamId: team.teamId, isWinner });
+        }
+      }
+    }
+
+    let next: SimulationState = { ...this.state, tick, players, keys, towerArrivals, teamClimbTicks, winnerTeamId };
+
+    if (next.status === "running") {
+      const everyoneClimbed = Object.values(players).length > 0 && Object.values(players).every((p) => p.phase === "tower");
+      const timeUp = tick >= next.endsAtTick;
+      if (everyoneClimbed || timeUp) {
+        let reason: RoundResult["reason"] = "allClimbed";
+        if (winnerTeamId === null) {
+          const decided = decideTimeoutWinner(teamProgress(players, teamClimbTicks), this.tuning);
+          winnerTeamId = decided.winnerTeamId;
+          reason = decided.reason;
+        } else if (timeUp && !everyoneClimbed) {
+          reason = "allClimbed"; // a team already won; timeout merely closes the round
+        }
+        const result: RoundResult = { winnerTeamId, reason, finalScores: finalScores(players, winnerTeamId, this.tuning) };
+        next = { ...next, status: "finished", winnerTeamId, result };
+        events.push({ type: "roundEnded", tick, winnerTeamId, reason });
+      }
+    }
+
+    this.state = next;
     return events;
   }
 

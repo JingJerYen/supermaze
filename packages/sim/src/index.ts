@@ -8,4 +8,5 @@ export * from "./map/validate.js";
 export * from "./movement.js";
 export * from "./events.js";
 export * from "./keys.js";
+export * from "./round.js";
 export * from "./simulation.js";

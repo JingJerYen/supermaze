@@ -2,6 +2,7 @@ import type { SnapshotMessage, WelcomeMessage } from "@supermaze/protocol";
 import { MapGrid, type MapData, type PlayerState } from "@supermaze/sim";
 import { Connection } from "../net/connection.js";
 import { SnapshotBuffer } from "../net/snapshots.js";
+import { formatSeconds, roundBanner } from "./roundHud.js";
 import type { GameMode } from "./mode.js";
 
 /**
@@ -61,8 +62,8 @@ export function createOnlineMode(map: MapData, endpoint: string): GameMode {
       const meId = welcome?.playerId ?? conn.sessionId;
       const me = meId ? st?.players[meId] : undefined;
       return {
-        status,
-        tick: st?.tick ?? 0,
+        status: st ? `${status} / ${st.status}` : status,
+        time: st ? formatSeconds(Math.max(0, st.endsAtTick - st.tick) / (welcome?.tickRate ?? 20)) : "-",
         players: Object.keys(st?.players ?? {}).length,
         rtt: `${rttMs.toFixed(0)}ms`,
         key: me?.keyId ? "yes" : "no",
@@ -71,7 +72,7 @@ export function createOnlineMode(map: MapData, endpoint: string): GameMode {
         climb: me && canClimbClient(grid, me) ? "ready (E)" : "-",
       };
     },
-    banner: () => banner,
+    banner: () => banner ?? (buffer.latest() ? roundBanner(buffer.latest()!.state) : null),
   };
 }
 

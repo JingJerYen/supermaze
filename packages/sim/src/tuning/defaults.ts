@@ -11,6 +11,7 @@ export const DEFAULT_TUNING: Tuning = {
     timeLimitSec: 12 * 60,
     minParticipants: 2,
     maxParticipants: 6,
+    timeoutClimbMetric: "count",
   },
 
   teams: {

@@ -19,8 +19,15 @@ export class Bot {
 
   constructor(readonly name: string, private readonly client: Client) {}
 
-  async join(): Promise<void> {
-    this.room = await this.client.joinOrCreate(ROOM_NAME);
+  /** Create a fresh room (so the test never shares one with real players). */
+  async create(): Promise<string> {
+    this.room = await this.client.create(ROOM_NAME);
+    this.attach(this.room);
+    return this.room.roomId;
+  }
+
+  async join(roomId: string): Promise<void> {
+    this.room = await this.client.joinById(roomId);
     this.attach(this.room);
   }
 
