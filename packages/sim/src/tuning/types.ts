@@ -14,6 +14,11 @@ export interface Tuning {
     maxParticipants: number;
   };
 
+  movement: {
+    /** Normal player speed, tiles per second. */
+    speedTilesPerSec: number;
+  };
+
   keys: {
     /** Keys generated per participant. Spec fixes this at exactly 1. */
     perParticipant: number;

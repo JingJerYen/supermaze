@@ -1,0 +1,25 @@
+{
+  "id": "test-01",
+  "name": "Phase 0 test map",
+  "supportedParticipants": [1, 2],
+  "rows": [
+    "XXXXXXXXXXXXXXXXXXX",
+    "X.................X",
+    "X.###############.X",
+    "X.S......#......S.X",
+    "X...###..#..###...X",
+    "X.#...#.TTT.#...#.X",
+    "X.#.#...TTT...#.#.X",
+    "X.#.#.#.TTT.#.#.#.X",
+    "X...#.........#...X",
+    "X.S.............S.X",
+    "X.######=########.X",
+    "X.................X",
+    "XXXXXXXXXXXXXXXXXXX"
+  ],
+  "spawns": {
+    "keys": [],
+    "itemBoxes": [],
+    "lightSwitches": []
+  }
+}

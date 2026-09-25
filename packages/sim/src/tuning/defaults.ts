@@ -13,6 +13,10 @@ export const DEFAULT_TUNING: Tuning = {
     maxParticipants: 8,
   },
 
+  movement: {
+    speedTilesPerSec: 4,
+  },
+
   keys: {
     perParticipant: 1,
   },

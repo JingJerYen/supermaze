@@ -1,4 +1,7 @@
-import { DEFAULT_TUNING, Simulation } from "@supermaze/sim";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { DEFAULT_TUNING, Simulation, validateMap, type MapData } from "@supermaze/sim";
 
 /**
  * Headless authoritative loop. Phase-0 skeleton: runs the simulation at the
@@ -7,8 +10,19 @@ import { DEFAULT_TUNING, Simulation } from "@supermaze/sim";
  * Transport (Colyseus vs raw WebSocket) is chosen at the end of phase 0 and
  * plugged in here; the simulation itself does not change.
  */
+const here = path.dirname(fileURLToPath(import.meta.url));
+const mapPath = path.resolve(here, "../../../content/maps/test-01.json");
+const map = JSON.parse(await readFile(mapPath, "utf8")) as MapData;
+
+const problems = validateMap(map);
+if (problems.length) {
+  console.error(`[server] map ${map.id} is invalid:\n  ${problems.join("\n  ")}`);
+  process.exit(1);
+}
+
 const sim = new Simulation({
   seed: Date.now() >>> 0,
+  map,
   participants: [],
 });
 
@@ -24,4 +38,4 @@ setInterval(() => {
   }
 }, tickMs);
 
-console.log(`[server] simulation running at ${DEFAULT_TUNING.tickRate} Hz (no transport yet)`);
+console.log(`[server] map ${map.id}, simulation at ${DEFAULT_TUNING.tickRate} Hz (no transport yet)`);

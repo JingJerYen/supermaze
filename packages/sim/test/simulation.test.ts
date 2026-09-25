@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Simulation } from "../src/simulation.js";
+import { TINY_MAP } from "./fixtures.js";
 
 const participants = [
   { id: "p1", teamId: "t1", controller: "human" as const },
@@ -8,15 +9,15 @@ const participants = [
 
 describe("Simulation", () => {
   it("advances one tick per step", () => {
-    const sim = new Simulation({ seed: 1, participants });
+    const sim = new Simulation({ seed: 1, map: TINY_MAP, participants });
     sim.step(new Map());
     sim.step(new Map());
     expect(sim.getState().tick).toBe(2);
   });
 
   it("is deterministic: same seed and inputs give identical state", () => {
-    const a = new Simulation({ seed: 42, participants });
-    const b = new Simulation({ seed: 42, participants });
+    const a = new Simulation({ seed: 42, map: TINY_MAP, participants });
+    const b = new Simulation({ seed: 42, map: TINY_MAP, participants });
     const inputs = new Map([["p1", { moveX: 1, moveY: 0 }]]);
     for (let i = 0; i < 50; i++) {
       a.step(inputs);
@@ -24,5 +25,15 @@ describe("Simulation", () => {
     }
     expect(a.getState()).toEqual(b.getState());
     expect(a.rng.next()).toBe(b.rng.next());
+  });
+
+  it("moves a player according to its input", () => {
+    const sim = new Simulation({ seed: 1, map: TINY_MAP, participants });
+    const start = sim.getState().players["p1"]!.mover.from;
+    const inputs = new Map([["p1", { moveX: 0, moveY: -1 }]]);
+    for (let i = 0; i < 10; i++) sim.step(inputs);
+    const after = sim.getState().players["p1"]!.mover;
+    expect(after.from.y).toBeLessThan(start.y);
+    expect(sim.getState().players["p2"]!.mover.target).toBeNull();
   });
 });

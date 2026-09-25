@@ -1,26 +1,14 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { MapData } from "@supermaze/sim";
+import { validateMap, type MapData } from "@supermaze/sim";
 
 /**
- * Validates every map in content/maps/. Phase-0 skeleton: only checks that files
- * parse and carry the required top-level fields. Reachability, stair/bridge
- * topology and spawn-point checks arrive with the real map format in phase 1.
+ * Validates every map in content/maps/ using the same rules the simulation
+ * relies on. Exit code 1 if any map fails.
  */
 const here = path.dirname(fileURLToPath(import.meta.url));
 const mapsDir = path.resolve(here, "../../../content/maps");
-
-const REQUIRED_FIELDS: (keyof MapData)[] = [
-  "id",
-  "name",
-  "width",
-  "height",
-  "supportedParticipants",
-  "layers",
-  "tower",
-  "spawns",
-];
 
 async function main(): Promise<void> {
   const files = (await readdir(mapsDir)).filter((f) => f.endsWith(".json"));
@@ -32,14 +20,12 @@ async function main(): Promise<void> {
   let failed = 0;
   for (const file of files) {
     const raw = await readFile(path.join(mapsDir, file), "utf8");
-    const errors: string[] = [];
+    let errors: string[];
     try {
-      const data = JSON.parse(raw) as Partial<MapData>;
-      for (const field of REQUIRED_FIELDS) {
-        if (!(field in data)) errors.push(`missing field "${field}"`);
-      }
+      const data = JSON.parse(raw) as MapData;
+      errors = validateMap(data);
     } catch (e) {
-      errors.push(`invalid JSON: ${(e as Error).message}`);
+      errors = [`invalid JSON: ${(e as Error).message}`];
     }
     if (errors.length) {
       failed++;
