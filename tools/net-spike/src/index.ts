@@ -11,7 +11,7 @@ import { fmt, summarize } from "./stats.js";
  * Exit code is non-zero if any check fails.
  */
 const ENDPOINT = process.env["ENDPOINT"] ?? "ws://localhost:2567";
-const BOTS = Number(process.env["BOTS"] ?? 8);
+const BOTS = Number(process.env["BOTS"] ?? 6); // room max is 6 participants
 const RUN_MS = Number(process.env["RUN_MS"] ?? 15000);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

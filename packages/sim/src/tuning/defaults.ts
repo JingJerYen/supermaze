@@ -10,7 +10,12 @@ export const DEFAULT_TUNING: Tuning = {
   round: {
     timeLimitSec: 12 * 60,
     minParticipants: 2,
-    maxParticipants: 8,
+    maxParticipants: 6,
+  },
+
+  teams: {
+    count: 2,
+    maxSizeDifference: 1,
   },
 
   movement: {

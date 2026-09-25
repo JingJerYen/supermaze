@@ -10,8 +10,16 @@ export interface Tuning {
   round: {
     /** Hard upper bound for a round, seconds. Formula-based adjustment is a phase-1 topic. */
     timeLimitSec: number;
+    /** Counts every participant, human or CPU. Solo play is 1 human + 1 CPU = 2. */
     minParticipants: number;
     maxParticipants: number;
+  };
+
+  teams: {
+    /** Fixed at 2 by the rules; kept as data so validation code reads it from one place. */
+    count: number;
+    /** Largest allowed difference in team sizes. */
+    maxSizeDifference: number;
   };
 
   movement: {
