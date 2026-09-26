@@ -40,7 +40,7 @@ Several tabs or devices on the LAN join the same room.
 | Per-map: layout, tower plaza radius, number of light switches, candidate tiles for keys, item boxes and light switches, supported player counts | `content/maps/<id>.json` | Rules in `content/maps/README.md`; run `npm run validate-maps` after editing. |
 | Per-round draw: which candidates become keys, boxes and switches; map orientation | round seed | Deterministic. Server: seed per room. Sandbox: `?seed=N`, `?rot=0..3`. |
 | Feel: camera height/distance/FOV/smoothing, tower proportions, key beam, darkness look, pixel ratio cap, frame delta clamp | `apps/client/src/tuning.ts` | Client only; never affects rules. |
-| Placeholder models for keys and boxes | `apps/client/src/render/assets.ts` | Swap a factory for a GLTFLoader scene to use real art. |
+| Real models | `apps/client/public/models/*.glb` + manifest in `apps/client/src/render/models.ts` | Drop `key.glb` / `box.glb` in; missing files fall back to placeholders in `render/assets.ts`. |
 
 Sandbox URL parameters (`http://localhost:5173/?...`): `players=N` pretends N participants
 (idle CPUs) so keys and boxes are drawn as in a real round; `seed=N` fixes the draw;

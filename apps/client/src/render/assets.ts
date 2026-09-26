@@ -1,14 +1,16 @@
 import * as THREE from "three";
 import { CLIENT_TUNING } from "../tuning.js";
+import { models } from "./models.js";
 
 /**
- * Placeholder models. Each factory returns an Object3D whose origin sits on the
- * ground at the tile centre. To use real art, load a .glb with GLTFLoader
- * (three/examples/jsm/loaders/GLTFLoader.js) and return its scene from the
- * matching factory; nothing else needs to change.
+ * Model factories. Each returns an Object3D whose origin sits on the ground at
+ * the tile centre. A real .glb from public/models/ (see models.ts) is used when
+ * present; otherwise the hand-built placeholder below.
  */
 
 export function createKeyModel(): THREE.Object3D {
+  const real = models.instantiate("key");
+  if (real) return real;
   const group = new THREE.Group();
   const mat = new THREE.MeshLambertMaterial({ color: 0xffd23f });
   const head = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), mat);
@@ -50,6 +52,8 @@ export function createKeyBeam(): THREE.Object3D {
 }
 
 export function createBoxModel(): THREE.Object3D {
+  const real = models.instantiate("box");
+  if (real) return real;
   const group = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.36, 0.42), new THREE.MeshLambertMaterial({ color: 0x8a5a2b }));
   body.position.y = 0.18;

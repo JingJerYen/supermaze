@@ -9,6 +9,7 @@ import { createOnlineMode } from "./modes/online.js";
 import { FollowCamera } from "./render/camera.js";
 import { BoxViews } from "./render/boxes.js";
 import { KeyViews } from "./render/keys.js";
+import { models } from "./render/models.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
 import { PlaceableViews } from "./render/placeables.js";
@@ -34,6 +35,9 @@ const mode = params.has("online")
       players: Number(params.get("players") ?? 1),
       seed: Number(params.get("seed") ?? 1),
     });
+
+// Real models (if any) must be in hand before the first key or box is created.
+await models.load();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));
