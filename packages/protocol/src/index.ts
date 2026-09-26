@@ -19,7 +19,14 @@ export const C2S = {
   switchTeam: "switchTeam",
   /** Host of a private room: start now (min players and team balance still apply). */
   start: "start",
+  /** Developer-only commands; the server ignores them unless debugging is enabled. */
+  debug: "debug",
 } as const;
+
+export type DebugCommand = "ghost";
+export interface DebugMessage {
+  cmd: DebugCommand;
+}
 
 /** Server -> client message names. */
 export const S2C = {

@@ -44,9 +44,13 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
         key: me?.keyId ? "yes" : "no",
         score: me?.score ?? 0,
         lights: st.lightsOn ? "on" : "OFF",
+        ghost: `${st.ghost.phase} ${st.ghost.teamId ?? "-"} ${Math.max(0, st.ghost.phaseEndsAtTick - st.tick)}t`,
         items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
         action: (me && sim.availableAction(me)) ?? "-",
       };
+    },
+    debug: (cmd) => {
+      if (cmd === "ghost") sim.debugForceGhost();
     },
     results: () => ({
       endsAt: null,

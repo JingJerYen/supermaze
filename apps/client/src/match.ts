@@ -44,6 +44,14 @@ export class Match {
   private readonly stopLoop: () => void;
   private readonly onResize: () => void;
   private lastToastState: SimulationState | null = null;
+  /** F4: force the next ghost event. Developer aid; the server may ignore it. */
+  private readonly onDebugKey = (e: KeyboardEvent) => {
+    if (e.code === "F4") {
+      e.preventDefault();
+      this.hud.toast(this.mode.debug ? "除錯：強制鬼抓人" : "除錯：此模式不支援");
+      this.mode.debug?.("ghost");
+    }
+  };
   private lastFrame = performance.now();
 
   constructor(
@@ -72,6 +80,7 @@ export class Match {
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener("resize", this.onResize);
+    window.addEventListener("keydown", this.onDebugKey);
 
     this.stopLoop = startLoop(
       mode.tickRate,
@@ -128,6 +137,7 @@ export class Match {
   dispose(): void {
     this.stopLoop();
     window.removeEventListener("resize", this.onResize);
+    window.removeEventListener("keydown", this.onDebugKey);
     this.hud.dispose();
     this.results.dispose();
     this.minimap.dispose();
