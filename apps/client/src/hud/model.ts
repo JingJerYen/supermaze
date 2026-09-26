@@ -1,5 +1,5 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
-import { availableAction, tileLabel } from "@supermaze/sim";
+import { availableAction, isGhost, tileLabel } from "@supermaze/sim";
 import { teamColorIndex } from "../render/teamColors.js";
 
 /** Everything the HUD draws, derived from authoritative state; no rules live here. */
@@ -19,6 +19,15 @@ export interface HudModel {
   myCoord: string | null;
   /** Whether rosters may show everyone's coordinates (only the tower top sees the whole map). */
   showCoords: boolean;
+  ghost: {
+    phase: "idle" | "warning" | "active";
+    teamLabel: string | null;
+    secondsLeft: number;
+    /** The local player is one of the ghosts right now. */
+    iAmGhost: boolean;
+    /** The local player's team is the announced or active ghost team. */
+    myTeamIsGhost: boolean;
+  };
 }
 
 export interface TeamRow {
@@ -39,6 +48,8 @@ export interface PlayerRow {
   score: number;
   /** Board coordinate while in the maze; null once on the tower. */
   coord: string | null;
+  ghost: boolean;
+  frozen: boolean;
 }
 
 /** "A", "B", ... follow the same first-seen order as the 3D team colours. */
@@ -56,7 +67,7 @@ export function buildHudModel(
   const byTeam = new Map<string, PlayerRow[]>();
   for (const p of Object.values(state.players)) {
     const rows = byTeam.get(p.teamId) ?? [];
-    rows.push(toRow(p, p.id === meId));
+    rows.push(toRow(state, p, p.id === meId));
     byTeam.set(p.teamId, rows);
   }
   const teams: TeamRow[] = [...byTeam.entries()]
@@ -83,10 +94,17 @@ export function buildHudModel(
     onTower: me?.phase === "tower",
     myCoord: me && me.phase === "maze" ? tileLabel(me.mover.from.x, me.mover.from.y) : null,
     showCoords: me?.phase === "tower",
+    ghost: {
+      phase: state.ghost.phase,
+      teamLabel: state.ghost.teamId ? `${LETTERS[teamIndex(state.ghost.teamId) % LETTERS.length]} 隊` : null,
+      secondsLeft: state.status === "running" ? Math.max(0, state.ghost.phaseEndsAtTick - state.tick) / tickRate : 0,
+      iAmGhost: !!me && isGhost(state.ghost, me),
+      myTeamIsGhost: !!me && state.ghost.teamId === me.teamId && state.ghost.phase !== "idle",
+    },
   };
 }
 
-function toRow(p: PlayerState, isMe: boolean): PlayerRow {
+function toRow(state: SimulationState, p: PlayerState, isMe: boolean): PlayerRow {
   return {
     id: p.id,
     name: p.name ?? p.id.slice(0, 6),
@@ -97,5 +115,7 @@ function toRow(p: PlayerState, isMe: boolean): PlayerRow {
     cpu: p.controller === "cpu",
     score: p.score,
     coord: p.phase === "maze" ? tileLabel(p.mover.from.x, p.mover.from.y) : null,
+    ghost: isGhost(state.ghost, p),
+    frozen: p.frozenUntilTick > state.tick,
   };
 }

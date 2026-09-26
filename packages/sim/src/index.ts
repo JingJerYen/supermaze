@@ -16,5 +16,6 @@ export * from "./lighting.js";
 export * from "./boxes.js";
 export * from "./placeables.js";
 export * from "./items.js";
+export * from "./ghost.js";
 export * from "./actions.js";
 export * from "./simulation.js";

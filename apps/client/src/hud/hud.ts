@@ -23,6 +23,11 @@ const CSS = `
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
 @keyframes hud-pulse{50%{transform:scale(1.08)}}
 .hud-sub{font-size:12px;color:#c9d2e3;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.hud-ghost{margin-top:6px;font-size:14px;font-weight:500;padding:4px 12px;border-radius:14px;display:none;text-shadow:none}
+.hud-ghost.warning{display:inline-block;background:rgba(255,210,63,.9);color:#412402}
+.hud-ghost.active{display:inline-block;background:rgba(226,75,74,.92);color:#fff;animation:hud-pulse 1s infinite}
+.hud-ghost.active.me{background:rgba(120,30,160,.95)}
+.hud-badge.frozen{color:#9fd3ff}
 .hud-items{position:absolute;left:var(--pad);bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end}
 .hud-slot{width:clamp(48px,9vh,60px);height:clamp(48px,9vh,60px);border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
 .hud-slot.next{border:2px solid #ffd23f}
@@ -45,6 +50,7 @@ export class Hud {
   private readonly right: HTMLDivElement;
   private readonly time: HTMLDivElement;
   private readonly sub: HTMLDivElement;
+  private readonly ghost: HTMLDivElement;
   private readonly items: HTMLDivElement;
   private readonly toasts: HTMLDivElement;
   private readonly dark: HTMLDivElement;
@@ -62,7 +68,8 @@ export class Hud {
     const clock = el("div", "hud-clock");
     this.time = el("div", "hud-time");
     this.sub = el("div", "hud-sub");
-    clock.append(this.time, this.sub);
+    this.ghost = el("div", "hud-ghost");
+    clock.append(this.time, this.sub, this.ghost);
     this.right = el("div", "hud-team right");
     top.append(this.left, clock, this.right);
     this.items = el("div", "hud-items");
@@ -79,6 +86,12 @@ export class Hud {
     this.time.textContent = m.status === "lobby" ? "--:--" : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);
     this.sub.textContent = m.status === "finished" ? "回合結束" : `已登塔 ${m.climbed} / ${m.total}`;
+
+    const g = m.ghost;
+    const gs = Math.ceil(g.secondsLeft);
+    this.ghost.className = `hud-ghost ${g.phase !== "idle" ? g.phase : ""} ${g.iAmGhost ? "me" : ""}`.trim();
+    if (g.phase === "warning") this.ghost.textContent = `${gs} 秒後 ${g.teamLabel} 變成鬼`;
+    else if (g.phase === "active") this.ghost.textContent = g.iAmGhost ? `你是鬼，去抓人 ${gs} 秒` : g.myTeamIsGhost ? `我方是鬼 ${gs} 秒` : `鬼抓人！躲開 ${g.teamLabel} ${gs} 秒`;
 
 
     // Rosters change rarely (coordinates only shown on the tower); rebuild only when content changes.
@@ -134,11 +147,12 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean, sho
       const dot = el("span", "hud-dot");
       dot.style.background = color;
       const label = el("span", "");
-      label.textContent = p.isMe ? `${p.name}（你）` : p.name;
+      label.textContent = `${p.isMe ? `${p.name}（你）` : p.name}${p.ghost ? " 👻" : ""}`;
       const badges: HTMLElement[] = [];
       if (p.onTower) badges.push(badge("tower", p.arrival === null ? "塔" : `第${p.arrival + 1}名`));
       else if (p.hasKey) badges.push(badge("", "鑰匙"));
       if (p.cpu) badges.push(badge("cpu", "CPU"));
+      if (p.frozen) badges.push(badge("frozen", "定身"));
       if (showCoords && p.coord && !p.isMe) {
         const c = el("span", "hud-coord");
         c.textContent = p.coord;

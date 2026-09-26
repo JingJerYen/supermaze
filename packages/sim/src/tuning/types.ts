@@ -102,6 +102,8 @@ export interface Tuning {
     caughtFreezeSec: number;
     /** Protection window after the freeze ends, seconds. */
     caughtProtectionSec: number;
+    /** A ghost catches a runner when their continuous positions are closer than this, tiles. */
+    catchRadiusTiles: number;
   };
 
   scoring: {

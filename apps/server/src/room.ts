@@ -333,6 +333,7 @@ const SECTIONS: readonly StateSection[] = [
   "boxes",
   "placeables",
   "nodes",
+  "ghost",
   "teamClimbTicks",
   "winnerTeamId",
   "result",

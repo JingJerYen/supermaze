@@ -21,6 +21,10 @@ export type SimEvent =
   | { type: "nodePlaced"; tick: Tick; playerId: PlayerId; nodeId: string; pairedWith: string | null }
   | { type: "nodePickedUp"; tick: Tick; playerId: PlayerId; nodeId: string }
   | { type: "teleported"; tick: Tick; playerId: PlayerId; fromNodeId: string; toNodeId: string }
+  | { type: "ghostWarning"; tick: Tick; teamId: TeamId; startsAtTick: Tick }
+  | { type: "ghostStarted"; tick: Tick; teamId: TeamId; endsAtTick: Tick }
+  | { type: "ghostEnded"; tick: Tick; teamId: TeamId }
+  | { type: "playerCaught"; tick: Tick; ghostId: PlayerId; runnerId: PlayerId; frozenUntilTick: Tick }
   | { type: "teamCompleted"; tick: Tick; teamId: TeamId; isWinner: boolean }
   | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason };
 
