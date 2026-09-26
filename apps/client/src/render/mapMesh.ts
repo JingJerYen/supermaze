@@ -137,6 +137,22 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
     }
   }
 
+  // Stairs and bridges never move: fold their parts into per-material batches as well.
+  const structureBatches = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  for (const child of [...group.children]) {
+    if (!(child as THREE.Group).isGroup) continue;
+    child.updateMatrixWorld(true);
+    child.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+      const g = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);
+      const list = structureBatches.get(mesh.material) ?? [];
+      list.push(g);
+      structureBatches.set(mesh.material, list);
+    });
+    group.remove(child);
+  }
+
   const addMerged = (list: THREE.BufferGeometry[], material: THREE.Material) => {
     if (list.length === 0) return;
     const merged = mergeGeometries(list, false);
@@ -150,6 +166,7 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
   addMerged(batches.outerSide, outerSideMat);
   addMerged(batches.top, topMat);
   addMerged(batches.shadow, shadowMat);
+  for (const [material, list] of structureBatches) addMerged(list, material);
 
   const lineMat = (opacity: number) => new THREE.LineBasicMaterial({ color: theme.line, transparent: true, opacity });
   const topLines = new THREE.LineSegments(lineGeometry(topEdges), lineMat(0.55));

@@ -15,13 +15,15 @@ if (!root) throw new Error("#app not found");
 await Promise.all([models.load(), characters.load()]);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));
+// ?dpr=1 forces a pixel ratio, to check whether fill rate is what limits the frame rate.
+const params = new URLSearchParams(location.search);
+const dprOverride = Number(params.get("dpr"));
+renderer.setPixelRatio(dprOverride > 0 ? dprOverride : Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
 root.appendChild(renderer.domElement);
 
 // URL parameters (see README). `?local` runs the single-player sandbox in the page;
 // otherwise the online flow starts at the home screen.
-const params = new URLSearchParams(location.search);
 const playerName = resolveName(params.get("name"));
 
 if (params.has("local")) {

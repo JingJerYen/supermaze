@@ -12,11 +12,21 @@ const PLANK = 0xb08a5a;
 const PLANK_ALT = 0xa07c4f;
 const RAIL = 0x6d5436;
 
+// One material per colour, shared by every stairs and bridge, so the map builder
+// can merge all of them into a handful of meshes.
+const MATS = {
+  step: new THREE.MeshLambertMaterial({ color: STEP }),
+  stepAlt: new THREE.MeshLambertMaterial({ color: STEP_ALT }),
+  plank: new THREE.MeshLambertMaterial({ color: PLANK }),
+  plankAlt: new THREE.MeshLambertMaterial({ color: PLANK_ALT }),
+  rail: new THREE.MeshLambertMaterial({ color: RAIL }),
+};
+
 /** `rise` points from the stairs tile toward the wall it climbs onto. Open on both sides. */
 export function createStairs(rise: Dir, steps = 5): THREE.Object3D {
   const g = new THREE.Group();
-  const stepMat = new THREE.MeshLambertMaterial({ color: STEP });
-  const stepAltMat = new THREE.MeshLambertMaterial({ color: STEP_ALT });
+  const stepMat = MATS.step;
+  const stepAltMat = MATS.stepAlt;
   const width = 0.9;
   const depth = 1 / steps;
   // Local frame: +Z is the rise direction (toward the wall); the tile spans z in [-0.5, 0.5].
@@ -36,9 +46,9 @@ export function createStairs(rise: Dir, steps = 5): THREE.Object3D {
  */
 export function createBridge(along: Dir, deckTopY = 1.0): THREE.Object3D {
   const g = new THREE.Group();
-  const plankMat = new THREE.MeshLambertMaterial({ color: PLANK });
-  const plankAltMat = new THREE.MeshLambertMaterial({ color: PLANK_ALT });
-  const railMat = new THREE.MeshLambertMaterial({ color: RAIL });
+  const plankMat = MATS.plank;
+  const plankAltMat = MATS.plankAlt;
+  const railMat = MATS.rail;
   const thickness = 0.12;
   const width = 0.9;
   // Local frame: deck runs along +Z.

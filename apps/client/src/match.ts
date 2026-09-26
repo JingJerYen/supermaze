@@ -136,7 +136,13 @@ export class Match {
     this.debug.frame({
       tick: s?.to.tick ?? 0,
       objects: this.scene.children.length,
-      extra: { drawCalls: r.calls, triangles: r.triangles, mode: this.mode.label, ...this.mode.hud() },
+      extra: {
+        drawCalls: r.calls,
+        triangles: r.triangles,
+        pixels: `${this.renderer.domElement.width}x${this.renderer.domElement.height} @${this.renderer.getPixelRatio()}`,
+        mode: this.mode.label,
+        ...this.mode.hud(),
+      },
     });
     this.debug.banner(this.mode.banner?.() ?? null);
   }
