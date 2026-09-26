@@ -51,6 +51,16 @@ export const CLIENT_TUNING = {
     height: 2.2,
     opacity: 0.4,
   },
+  stick: {
+    /** Drag distance before a direction registers, px. */
+    deadZonePx: 10,
+    /** Drag distance for full magnitude, px. */
+    fullRangePx: 60,
+    /** How far the knob may visually leave the centre, px. */
+    knobRangePx: 44,
+    baseSizePx: 110,
+    knobSizePx: 48,
+  },
   keyBeam: {
     /** World units above the key. */
     height: 3.5,

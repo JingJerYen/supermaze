@@ -20,8 +20,9 @@ export class InputSource {
   }
 
   read(): PlayerInput {
+    // While the stick is held it drives movement; otherwise the keyboard does.
     const k = this.keyboard.read();
-    const move = k.moveX !== 0 || k.moveY !== 0 ? k : this.touch.read();
+    const move = this.touch.active ? this.touch.read() : k;
     const input: PlayerInput = { moveX: move.moveX, moveY: move.moveY };
     if (k.action || this.actionButton.consume()) input.action = true;
     return input;
