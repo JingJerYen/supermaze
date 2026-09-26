@@ -1,73 +1,131 @@
 import type { MoveIntent } from "@supermaze/sim";
+import { CLIENT_TUNING } from "../tuning.js";
 
 /**
- * Floating virtual stick: the first touch anywhere becomes the stick origin,
- * dragging away from it produces a direction. Touch is a first-class input
- * (CLAUDE.md 17.1), so this exists from the very first spike.
+ * Floating virtual stick, modelled on game-pedestrian-hell/src/touch.ts:
+ * a finger (or the left mouse button) pressed anywhere on the play area spawns
+ * the stick right there; dragging sets the direction and, past the dead zone,
+ * an analogue magnitude that reaches 1 at `fullRangePx`. Release stops. Only
+ * the first pointer counts; presses on buttons or overlay panels are ignored.
  */
 export class TouchInput {
-  private origin: { x: number; y: number } | null = null;
-  private current: { x: number; y: number } | null = null;
+  private readonly base: HTMLDivElement;
   private readonly knob: HTMLDivElement;
+  private pointerId: number | null = null;
+  private originX = 0;
+  private originY = 0;
+  /** Current stick vector in screen space (x right, y down), length 0..1; zero when not held. */
+  private readonly axis = { x: 0, y: 0 };
+  private readonly onDown: (e: PointerEvent) => void;
+  private readonly onMove: (e: PointerEvent) => void;
+  private readonly onUp: (e: PointerEvent) => void;
+  private readonly onTouchStart: (e: TouchEvent) => void;
 
-  constructor(surface: HTMLElement, private readonly deadZonePx = 18, private readonly maxPx = 60) {
-    this.knob = document.createElement("div");
-    Object.assign(this.knob.style, {
+  constructor(parent: HTMLElement) {
+    const t = CLIENT_TUNING.stick;
+    this.base = document.createElement("div");
+    Object.assign(this.base.style, {
       position: "fixed",
-      width: "56px",
-      height: "56px",
-      marginLeft: "-28px",
-      marginTop: "-28px",
-      borderRadius: "50%",
-      border: "2px solid rgba(255,255,255,0.6)",
-      background: "rgba(255,255,255,0.15)",
-      pointerEvents: "none",
       display: "none",
+      width: `${t.baseSizePx}px`,
+      height: `${t.baseSizePx}px`,
+      borderRadius: "50%",
+      border: "2px solid rgba(255,255,255,0.5)",
+      background: "rgba(255,255,255,0.12)",
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
       zIndex: "5",
     } satisfies Partial<CSSStyleDeclaration>);
-    surface.appendChild(this.knob);
+    this.knob = document.createElement("div");
+    Object.assign(this.knob.style, {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      width: `${t.knobSizePx}px`,
+      height: `${t.knobSizePx}px`,
+      borderRadius: "50%",
+      background: "rgba(255,255,255,0.55)",
+      transform: "translate(-50%, -50%)",
+    } satisfies Partial<CSSStyleDeclaration>);
+    this.base.appendChild(this.knob);
+    parent.appendChild(this.base);
 
-    surface.addEventListener("pointerdown", (e) => {
-      if (e.pointerType === "mouse") return;
-      this.origin = { x: e.clientX, y: e.clientY };
-      this.current = { ...this.origin };
-      this.showKnob();
-    });
-    surface.addEventListener("pointermove", (e) => {
-      if (!this.origin) return;
-      this.current = { x: e.clientX, y: e.clientY };
-      this.showKnob();
-    });
-    const end = () => {
-      this.origin = null;
-      this.current = null;
-      this.knob.style.display = "none";
+    // Mobile browsers: block pull-to-refresh and double-tap zoom on the play area.
+    this.onTouchStart = (e) => {
+      if (!onUiElement(e)) e.preventDefault();
     };
-    surface.addEventListener("pointerup", end);
-    surface.addEventListener("pointercancel", end);
+    window.addEventListener("touchstart", this.onTouchStart, { passive: false });
+
+    this.onDown = (e) => {
+      if (this.pointerId !== null) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (onUiElement(e)) return;
+      this.pointerId = e.pointerId;
+      this.originX = e.clientX;
+      this.originY = e.clientY;
+      this.base.style.left = `${e.clientX}px`;
+      this.base.style.top = `${e.clientY}px`;
+      this.base.style.display = "block";
+      this.moveKnob(0, 0);
+    };
+    this.onMove = (e) => {
+      if (e.pointerId !== this.pointerId) return;
+      const dx = e.clientX - this.originX;
+      const dy = e.clientY - this.originY;
+      this.setAxis(dx, dy);
+      const len = Math.hypot(dx, dy);
+      const scale = len > t.knobRangePx ? t.knobRangePx / len : 1;
+      this.moveKnob(dx * scale, dy * scale);
+    };
+    this.onUp = (e) => {
+      if (e.pointerId !== this.pointerId) return;
+      this.pointerId = null;
+      this.axis.x = this.axis.y = 0;
+      this.base.style.display = "none";
+    };
+    window.addEventListener("pointerdown", this.onDown);
+    window.addEventListener("pointermove", this.onMove);
+    window.addEventListener("pointerup", this.onUp);
+    window.addEventListener("pointercancel", this.onUp);
   }
 
-  dispose(): void {
-    this.knob.remove();
+  get active(): boolean {
+    return this.pointerId !== null;
   }
 
   read(): MoveIntent {
-    if (!this.origin || !this.current) return { moveX: 0, moveY: 0 };
-    const dx = this.current.x - this.origin.x;
-    const dy = this.current.y - this.origin.y;
-    const len = Math.hypot(dx, dy);
-    if (len < this.deadZonePx) return { moveX: 0, moveY: 0 };
-    return { moveX: dx / len, moveY: dy / len };
+    return { moveX: this.axis.x, moveY: this.axis.y };
   }
 
-  private showKnob(): void {
-    if (!this.origin || !this.current) return;
-    const dx = this.current.x - this.origin.x;
-    const dy = this.current.y - this.origin.y;
-    const len = Math.hypot(dx, dy);
-    const k = len > this.maxPx ? this.maxPx / len : 1;
-    this.knob.style.display = "block";
-    this.knob.style.left = `${this.origin.x + dx * k}px`;
-    this.knob.style.top = `${this.origin.y + dy * k}px`;
+  private moveKnob(dx: number, dy: number): void {
+    this.knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   }
+
+  private setAxis(dx: number, dy: number): void {
+    const { deadZonePx, fullRangePx } = CLIENT_TUNING.stick;
+    const len = Math.hypot(dx, dy);
+    if (len < deadZonePx) {
+      this.axis.x = this.axis.y = 0;
+      return;
+    }
+    // Linear from the dead zone to full range; direction is the raw drag direction.
+    const mag = Math.min(1, (len - deadZonePx) / (fullRangePx - deadZonePx));
+    this.axis.x = (dx / len) * mag;
+    this.axis.y = (dy / len) * mag;
+  }
+
+  dispose(): void {
+    window.removeEventListener("touchstart", this.onTouchStart);
+    window.removeEventListener("pointerdown", this.onDown);
+    window.removeEventListener("pointermove", this.onMove);
+    window.removeEventListener("pointerup", this.onUp);
+    window.removeEventListener("pointercancel", this.onUp);
+    this.base.remove();
+  }
+}
+
+/** Presses on buttons, inputs or overlay panels belong to those elements, not to the stick. */
+function onUiElement(e: Event): boolean {
+  const target = e.target as HTMLElement | null;
+  return !!target?.closest?.("button, input, select, a, .rs, .lb");
 }
