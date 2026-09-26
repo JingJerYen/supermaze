@@ -5,6 +5,7 @@ import { platformTopY as platformTopYWorld } from "./elevation.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { collectTorches, tileHash, torchMaterials } from "./decor.js";
 import { createBridge, createStairs } from "./structures.js";
+import { TowerAnimations, type Face } from "./climbSequence.js";
 import { patternTexture, runeTexture, themeFor, type Theme } from "./themes.js";
 
 const COLORS = {
@@ -35,8 +36,10 @@ export interface MapView {
   group: THREE.Group;
   tower: TowerView;
   setDark(dark: boolean): void;
-  /** Per-frame animation of the few moving decorations (the tower crystal). */
-  update(timeSec: number): void;
+  /** Per-frame animation: climbs in progress (per face, seconds since start) and the crystal. */
+  update(timeSec: number, climbs: { face: Face; t: number }[]): void;
+  /** Tower footprint centre, for deciding which face a climber uses. */
+  towerCenter: THREE.Vector3;
 }
 
 /**
@@ -195,7 +198,7 @@ export function buildMapMesh(
   const floorLines = new THREE.LineSegments(lineGeometry(floorEdges), lineMat(0.12));
   group.add(topLines, floorLines);
 
-  const { group: towerGroup, view, crystal } = buildTower(grid, theme);
+  const { group: towerGroup, view, animations, center: towerCenter } = buildTower(grid, theme);
   group.add(towerGroup);
   return {
     group,
@@ -209,12 +212,10 @@ export function buildMapMesh(
       (torchMats.flame as THREE.MeshBasicMaterial).transparent = true;
       (torchMats.glow as THREE.MeshBasicMaterial).opacity = dark ? 0.18 : 0.55;
     },
-    update(timeSec: number) {
-      if (crystal) {
-        crystal.rotation.y = timeSec * 0.6;
-        crystal.position.y = crystal.userData["baseY"] + Math.sin(timeSec * 1.5) * 0.08;
-      }
+    update(timeSec: number, climbs: { face: Face; t: number }[]) {
+      animations?.update(climbs, timeSec);
     },
+    towerCenter,
   };
 }
 
@@ -246,7 +247,12 @@ export function towerGeometry(grid: MapGrid): { center: THREE.Vector3; footW: nu
  * each face, the see-through walkable platform, and a floating crystal above
  * it as a landmark visible from anywhere in the maze.
  */
-function buildTower(grid: MapGrid, theme: Theme): { group: THREE.Group; view: TowerView; crystal: THREE.Mesh | null } {
+function buildTower(grid: MapGrid, theme: Theme): {
+  group: THREE.Group;
+  view: TowerView;
+  animations: TowerAnimations | null;
+  center: THREE.Vector3;
+} {
   const tower = new THREE.Group();
   const { center, footW, footD } = towerGeometry(grid);
   const t = CLIENT_TUNING.tower;
@@ -260,7 +266,7 @@ function buildTower(grid: MapGrid, theme: Theme): { group: THREE.Group; view: To
     depthWrite: false,
   });
   const view = new TowerView(platformMat, shaftMat);
-  if (footW === 0) return { group: tower, view, crystal: null };
+  if (footW === 0) return { group: tower, view, animations: null, center };
   const cx = center.x;
   const cy = center.z;
 
@@ -307,5 +313,17 @@ function buildTower(grid: MapGrid, theme: Theme): { group: THREE.Group; view: To
   crystal.userData["baseY"] = baseY;
 
   tower.add(tier1, tier2, shaft, platform, edges, crystal);
-  return { group: tower, view, crystal };
+  const animations = new TowerAnimations(
+    tower,
+    center,
+    footW,
+    footD,
+    t.shaftWidth,
+    shaftBottom,
+    shaftH,
+    t.baseHeight * 2.6,
+    crystal,
+    theme.towerRune,
+  );
+  return { group: tower, view, animations, center };
 }

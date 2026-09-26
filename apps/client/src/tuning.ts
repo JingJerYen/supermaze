@@ -3,6 +3,13 @@
  * Game-rule numbers live in @supermaze/sim, not here.
  */
 export const CLIENT_TUNING = {
+  climb: {
+    /** Door slides open, then the character walks in, then the light climbs the shaft. Seconds. */
+    doorOpenSec: 0.4,
+    walkInSec: 0.7,
+    doorCloseSec: 0.4,
+    ascentSec: 1.2,
+  },
   overview: {
     /** Extra room around the map when looking straight down from the tower, as a factor. */
     margin: 1.08,

@@ -77,6 +77,17 @@ export class PlayerView {
     this.hammer.update(dtSec);
   }
 
+  /** Place the character at a world x/z on the ground (used while walking into the tower). */
+  setGhostPose(x: number, z: number, walking: boolean, dtSec: number): void {
+    this.mesh.position.set(x, 0, z);
+    this.setWalking(walking);
+    this.rig?.mixer.update(dtSec);
+  }
+
+  setVisible(v: boolean): void {
+    this.mesh.visible = v;
+  }
+
   /** Swing the hammer at the tile ahead: melee clip on the body plus the prop arc. */
   swingHammer(): void {
     this.hammer.start();

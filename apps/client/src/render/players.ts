@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { MapGrid, MoverState, PlayerState } from "@supermaze/sim";
+import { climbPhase, climbTotalSec, faceOf, type Face } from "./climbSequence.js";
 import { PlayerView } from "./playerView.js";
 import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
 
@@ -7,6 +8,23 @@ import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
 export class PlayerViews {
   private readonly views = new Map<string, PlayerView>();
   private lastTick = -1;
+  /** Climbs being animated: where the player stood, which face, and when it began. */
+  private readonly climbs = new Map<string, { face: Face; from: { x: number; y: number }; startTick: number }>();
+  private tickRate = 20;
+  private towerCenter = { x: 0, z: 0 };
+
+  /** Needed to turn ticks into seconds and tiles into faces. */
+  configure(tickRate: number, towerCenter: { x: number; z: number }): void {
+    this.tickRate = tickRate;
+    this.towerCenter = towerCenter;
+  }
+
+  /** Climbs in progress for the tower animation, with seconds elapsed. */
+  activeClimbs(tick: number): { face: Face; t: number }[] {
+    const out: { face: Face; t: number }[] = [];
+    for (const c of this.climbs.values()) out.push({ face: c.face, t: (tick - c.startTick) / this.tickRate });
+    return out;
+  }
 
   constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {}
 
@@ -23,6 +41,28 @@ export class PlayerViews {
     for (const [id, p] of Object.entries(to)) {
       const view = this.views.get(id) ?? this.create(id, p.teamId);
       if (newTick) triggerOneShots(view, from[id], p);
+      const prevState = from[id];
+      if (newTick && prevState && prevState.phase === "maze" && p.phase === "tower") {
+        this.climbs.set(id, { face: faceOf(prevState.mover.from, this.towerCenter), from: prevState.mover.from, startTick: tick });
+      }
+      const climb = this.climbs.get(id);
+      if (climb) {
+        const t = (tick - climb.startTick) / this.tickRate;
+        if (t >= climbTotalSec()) {
+          this.climbs.delete(id);
+        } else {
+          const ph = climbPhase(t);
+          // Walk from the entry tile one tile toward the tower, then vanish inside until the ascent ends.
+          const dir = { x: this.towerCenter.x - climb.from.x, z: this.towerCenter.z - climb.from.y };
+          const len = Math.hypot(dir.x, dir.z) || 1;
+          const step = Math.min(ph.walkIn, 1) * 0.95;
+          view.setGhostPose(climb.from.x + (dir.x / len) * step, climb.from.y + (dir.z / len) * step, ph.walkIn < 1, dtSec);
+          view.setFacing({ dx: Math.sign(Math.round(dir.x)), dy: Math.sign(Math.round(dir.z)) });
+          view.setVisible(ph.walkIn < 1);
+          continue;
+        }
+      }
+      view.setVisible(true);
       let prev: MoverState = from[id]?.mover ?? p.mover;
       // A teleport jumps across the map; do not slide through the walls to get there.
       if (Math.abs(prev.from.x - p.mover.from.x) + Math.abs(prev.from.y - p.mover.from.y) > 1.5) prev = p.mover;

@@ -66,6 +66,7 @@ export class Match {
     this.scene.background = new THREE.Color(theme.sky);
     this.scene.add(this.mapMesh.group);
     this.players = new PlayerViews(this.scene, mode.grid);
+    this.players.configure(mode.tickRate, { x: this.mapMesh.towerCenter.x, z: this.mapMesh.towerCenter.z });
     this.keys = new KeyViews(this.scene, mode.grid);
     this.boxes = new BoxViews(this.scene, mode.grid);
     this.placeables = new PlaceableViews(this.scene, mode.grid);
@@ -110,7 +111,7 @@ export class Match {
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
       this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : themeFor(this.mode.theme).sky);
-      this.mapMesh.update(now / 1000);
+      this.mapMesh.update(now / 1000, this.players.activeClimbs(s.to.tick));
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
