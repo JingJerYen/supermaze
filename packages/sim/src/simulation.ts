@@ -97,8 +97,6 @@ export class Simulation {
   private readonly spawns: TilePos[];
   private spawnCursor = 0;
   private readonly timeLimitTicks: number;
-  /** Every spawn candidate; placeables may never sit on one (section 9). */
-  private readonly candidateTiles: ReadonlySet<string>;
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
   private nextNodeIndex = 0;
@@ -108,9 +106,6 @@ export class Simulation {
     this.rng = new SeededRandom(options.seed);
     this.map = normalizeMap(options.map);
     this.grid = MapGrid.fromMapData(this.map);
-    this.candidateTiles = new Set(
-      [...this.map.spawns.keys, ...this.map.spawns.itemBoxes, ...this.map.spawns.lightSwitches].map(tileId),
-    );
 
     this.spawns = this.grid.spawnTiles();
     if (this.spawns.length === 0) {
@@ -256,7 +251,6 @@ export class Simulation {
       placeables: { ...this.state.placeables },
       nodes: { ...this.state.nodes },
       players: { ...this.state.players },
-      candidateTiles: this.candidateTiles,
       boxTiles: new Set(Object.values(this.state.boxes).map((b) => tileId(b.pos))),
       keyTiles: new Set(Object.values(this.state.keys).filter((k) => k.ownerId === null).map((k) => tileId(k.pos))),
       nextPlaceableId: () => `p${this.nextPlaceableIndex++}`,
@@ -304,7 +298,13 @@ export class Simulation {
         p = this.pickUps(work, p, id, tick);
 
         if (input.action) {
-          const action = availableAction(this.grid, work.switches, work.nodes, p, this.tuning.inventory.capacity);
+          work.players[id] = p; // the action decision must see this player's current tile
+          const action = availableAction(
+            this.grid,
+            { switches: work.switches, nodes: work.nodes, placeables: work.placeables, players: work.players, boxes: work.boxes, keys: work.keys },
+            p,
+            this.tuning.inventory.capacity,
+          );
           if (action === "climb") {
             const arrival = towerArrivals.length;
             towerArrivals.push(id);
@@ -332,7 +332,6 @@ export class Simulation {
           } else if (action === "pickUpNode") {
             p = pickUpNode(work, p);
           } else if (action === "useItem") {
-            work.players[id] = p; // so placement sees this player's current tile
             p = useOldestItem(this.grid, this.tuning, work, p);
           }
         }
@@ -452,7 +451,7 @@ export class Simulation {
 
   /** What the context action would do for `p` right now. */
   availableAction(p: PlayerState) {
-    return availableAction(this.grid, this.state.switches, this.state.nodes, p, this.tuning.inventory.capacity);
+    return availableAction(this.grid, this.state, p, this.tuning.inventory.capacity);
   }
 
   getState(): Readonly<SimulationState> {

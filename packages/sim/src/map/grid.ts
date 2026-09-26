@@ -1,4 +1,5 @@
 import { PLATFORM_RING, cellKindFromCode, isWalkable, otherLayer, type CellKind } from "./cells.js";
+import { normalizeMap } from "./normalize.js";
 import type { Layer, MapData, TilePos } from "./types.js";
 
 export interface Dir {
@@ -29,14 +30,18 @@ export class MapGrid {
   readonly width: number;
   readonly height: number;
   private readonly kinds: CellKind[];
+  /** Every key / box / switch candidate tile; placeables may never sit on one (section 9). */
+  private readonly candidates: ReadonlySet<string>;
 
-  private constructor(width: number, height: number, kinds: CellKind[]) {
+  private constructor(width: number, height: number, kinds: CellKind[], candidates: ReadonlySet<string>) {
     this.width = width;
     this.height = height;
     this.kinds = kinds;
+    this.candidates = candidates;
   }
 
-  static fromMapData(data: MapData): MapGrid {
+  static fromMapData(raw: MapData): MapGrid {
+    const data = normalizeMap(raw);
     const height = data.rows.length;
     const width = data.rows[0]?.length ?? 0;
     if (height === 0 || width === 0) throw new Error("map has no cells");
@@ -45,7 +50,15 @@ export class MapGrid {
       if (row.length !== width) throw new Error(`row ${y} has length ${row.length}, expected ${width}`);
       for (const code of row) kinds.push(cellKindFromCode(code));
     });
-    return new MapGrid(width, height, kinds);
+    const candidates = new Set(
+      [...data.spawns.keys, ...data.spawns.itemBoxes, ...data.spawns.lightSwitches].map((t) => tileKey(t.x, t.y, t.layer)),
+    );
+    return new MapGrid(width, height, kinds, candidates);
+  }
+
+  /** Whether a tile is a spawn candidate for keys, boxes or switches. */
+  isCandidateTile(x: number, y: number, layer: Layer): boolean {
+    return this.candidates.has(tileKey(x, y, layer));
   }
 
   inBounds(x: number, y: number): boolean {

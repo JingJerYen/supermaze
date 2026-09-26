@@ -328,3 +328,18 @@ describe("hammer versus teleport nodes", () => {
     expect(s.getState().players["a"]!.items).toEqual([]);
   });
 });
+
+describe("action availability", () => {
+  it("offers useItem only when the item can really be used", () => {
+    // a holds an obstacle at (2,2) facing north: (2,1) is legal -> useItem offered.
+    const sim = armed("obstacle");
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBe("useItem");
+    // Face south toward the tower (2,3)? (2,3) is a tower entry tile -> refused -> nothing offered.
+    walk(sim, "a", [S]); // now at (2,3) facing south; front (2,4) is the tower itself
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBeNull();
+    // A hammer is always offered.
+    const h = armed("hammer");
+    walk(h, "a", [S]);
+    expect(h.availableAction(h.getState().players["a"]!)).toBe("useItem");
+  });
+});

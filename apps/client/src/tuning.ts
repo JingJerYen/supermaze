@@ -48,6 +48,13 @@ export const CLIENT_TUNING = {
     lampIntensity: 12,
     /** Higher decay = sharper edge to the visible circle. */
     lampDecay: 2,
+    /** Main lamp offset from the player: up and toward the camera (south, +z), so faces are lit, not just heads. */
+    lampOffsetY: 2.2,
+    lampOffsetZ: 1.6,
+    /** Weak fill at face height on the camera side; 0 disables it. */
+    fillIntensity: 3,
+    fillOffsetY: 0.9,
+    fillOffsetZ: 1.2,
     /** Background colour while dark. */
     clearColor: 0x05060a,
   },

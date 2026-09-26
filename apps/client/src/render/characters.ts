@@ -53,7 +53,24 @@ export class CharacterLibrary {
         }
       }),
     );
-    for (const r of results) if (r) this.loaded.push(r);
+    for (const r of results) {
+      if (!r) continue;
+      // Matte look: the toon-style colormap needs no specular highlight, which
+      // otherwise flares on the head under the darkness lamp.
+      r.scene.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const m of mats) {
+          const std = m as THREE.MeshStandardMaterial;
+          if ("roughness" in std) {
+            std.roughness = 1;
+            std.metalness = 0;
+          }
+        }
+      });
+      this.loaded.push(r);
+    }
     console.info(`[characters] loaded ${this.loaded.length}/${NAMES.length}`);
     return this.loaded.length;
   }

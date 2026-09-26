@@ -79,7 +79,7 @@ export function buildHudModel(
     otherTeams: teams.filter((t) => t.teamId !== me?.teamId),
     items: me?.items ?? [],
     capacity,
-    action: me ? availableAction(grid, state.switches, state.nodes, me, capacity) : null,
+    action: me ? availableAction(grid, state, me, capacity) : null,
     onTower: me?.phase === "tower",
     myCoord: me && me.phase === "maze" ? tileLabel(me.mover.from.x, me.mover.from.y) : null,
     showCoords: me?.phase === "tower",

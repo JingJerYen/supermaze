@@ -65,7 +65,7 @@ export class OnlineMatchMode implements GameMode {
       tower: st?.towerArrivals.length ?? 0,
       lights: st ? (st.lightsOn ? "on" : "OFF") : "-",
       items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
-      action: (me && st && availableAction(this.grid, st.switches, st.nodes, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
+      action: (me && st && availableAction(this.grid, st, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
     };
   }
 

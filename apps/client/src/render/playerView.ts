@@ -32,11 +32,13 @@ export class PlayerView {
     this.color = color;
     this.mesh = new THREE.Group();
 
+    // Team marker: a thin translucent ring at the feet, unlit so it reads in the dark too.
     this.disc = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.34, 0.34, 0.04, 20),
-      new THREE.MeshLambertMaterial({ color }),
+      new THREE.RingGeometry(0.26, 0.34, 28),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }),
     );
-    this.disc.position.y = 0.02;
+    this.disc.rotation.x = -Math.PI / 2;
+    this.disc.position.y = 0.015;
     this.mesh.add(this.disc);
 
     this.rig = characters.createRig(playerId, PLAYER_HEIGHT);
@@ -80,6 +82,6 @@ export class PlayerView {
   }
 
   setFrozen(frozen: boolean): void {
-    (this.disc.material as THREE.MeshLambertMaterial).color.setHex(frozen ? FROZEN_COLOR : this.color);
+    (this.disc.material as THREE.MeshBasicMaterial).color.setHex(frozen ? FROZEN_COLOR : this.color);
   }
 }

@@ -8,16 +8,19 @@ import type { PlayerState } from "./simulation.js";
 import type { ItemKind, Tuning } from "./tuning/index.js";
 import type { PlayerId, Tick } from "./types.js";
 
-/** Mutable working copy of the parts of the state that item use touches. */
-export interface ItemWork {
-  tick: Tick;
+/** What placement rules look at. Both the authoritative step and the HUD build one of these. */
+export interface PlacementContext {
   placeables: Record<string, PlaceableState>;
   nodes: Record<string, TeleportNodeState>;
   players: Record<PlayerId, PlayerState>;
-  /** Every spawn-candidate tile; items may not be placed on them (CLAUDE.md section 9). */
-  candidateTiles: ReadonlySet<string>;
+  /** Tiles holding a box or an unowned key. */
   boxTiles: ReadonlySet<string>;
   keyTiles: ReadonlySet<string>;
+}
+
+/** Mutable working copy of the parts of the state that item use touches. */
+export interface ItemWork extends PlacementContext {
+  tick: Tick;
   nextPlaceableId(): string;
   nextNodeOrder(): number;
   events: SimEvent[];
@@ -27,12 +30,12 @@ export interface ItemWork {
  * Why the tile in front of the player cannot take a placeable, or null if it can.
  * Kept as text so the HUD can show it.
  */
-export function placementProblem(grid: MapGrid, work: ItemWork, tile: TilePos): string | null {
+export function placementProblem(grid: MapGrid, work: PlacementContext, tile: TilePos): string | null {
   if (!grid.isWalkable(tile.x, tile.y, tile.layer)) return "前方不可通行";
   if (grid.kindAt(tile.x, tile.y) === "stairs") return "不能放在樓梯上";
   if (tile.layer === "road" && grid.isTowerEntry(tile.x, tile.y)) return "不能放在塔入口";
   const id = tileId(tile);
-  if (work.candidateTiles.has(id)) return "不能放在候選格";
+  if (grid.isCandidateTile(tile.x, tile.y, tile.layer)) return "不能放在候選格";
   if (work.boxTiles.has(id) || work.keyTiles.has(id)) return "該格有物件";
   if (placeableAt(work.placeables, tile) || nodeAt(work.nodes, tile)) return "該格已有放置物";
   for (const other of Object.values(work.players)) {
@@ -138,4 +141,37 @@ export function pickUpNode(work: ItemWork, p: PlayerState): PlayerState {
   work.nodes = nodes;
   work.events.push({ type: "nodePickedUp", tick: work.tick, playerId: p.id, nodeId: node.id });
   return { ...p, items: [...p.items, "teleportNode" as ItemKind], teleportImmunity: null };
+}
+
+/**
+ * Whether pressing the action would actually use the oldest item right now.
+ * Hammers always swing; everything else needs a legal tile ahead. The HUD hides
+ * the button when this is false, so the player is never offered a dead press.
+ */
+export function canUseOldestItem(grid: MapGrid, ctx: PlacementContext, p: PlayerState): boolean {
+  const item = p.items[0];
+  if (!item) return false;
+  if (item === "hammer") return true;
+  return placementProblem(grid, ctx, frontTile(p.mover)) === null;
+}
+
+/** Build a placement context from a full state (client side and tests). */
+export function placementContextOf(state: {
+  placeables: Record<string, PlaceableState>;
+  nodes: Record<string, TeleportNodeState>;
+  players: Record<PlayerId, PlayerState>;
+  boxes: Record<string, { pos: TilePos }>;
+  keys: Record<string, { pos: TilePos; ownerId: PlayerId | null }>;
+}): PlacementContext {
+  return {
+    placeables: state.placeables,
+    nodes: state.nodes,
+    players: state.players,
+    boxTiles: new Set(Object.values(state.boxes).map((b) => tileId(b.pos))),
+    keyTiles: new Set(
+      Object.values(state.keys)
+        .filter((k) => k.ownerId === null)
+        .map((k) => tileId(k.pos)),
+    ),
+  };
 }

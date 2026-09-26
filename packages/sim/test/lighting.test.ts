@@ -69,7 +69,7 @@ describe("lights in the simulation", () => {
     walk(sim, "a", toFirstSwitch);
     const a = sim.getState().players["a"]!;
     expect(a.mover.from).toEqual({ x: 7, y: 3, layer: "road" });
-    expect(availableAction(sim.grid, sim.getState().switches, sim.getState().nodes, a, sim.tuning.inventory.capacity)).toBe("switch");
+    expect(availableAction(sim.grid, sim.getState(), a, sim.tuning.inventory.capacity)).toBe("switch");
 
     let events = sim.step(new Map([["a", press]]));
     expect(events).toContainEqual({ type: "lightsToggled", tick: expect.any(Number), playerId: "a", switchId: expect.any(String), lightsOn: false });
@@ -80,7 +80,7 @@ describe("lights in the simulation", () => {
     events = sim.step(new Map([["a", press]]));
     expect(events.find((e) => e.type === "lightsToggled")).toBeUndefined();
     expect(sim.getState().lightsOn).toBe(false);
-    expect(availableAction(sim.grid, sim.getState().switches, sim.getState().nodes, a, sim.tuning.inventory.capacity)).toBeNull();
+    expect(availableAction(sim.grid, sim.getState(), a, sim.tuning.inventory.capacity)).toBeNull();
   });
 
   it("the last of an even number of switches leaves the map lit", () => {
