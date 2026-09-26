@@ -1,5 +1,5 @@
 import { DEFAULT_TUNING, Simulation, type MapData, type SimulationState } from "@supermaze/sim";
-import { formatSeconds, roundBanner } from "./roundHud.js";
+import { formatSeconds } from "./roundHud.js";
 import type { GameMode } from "./mode.js";
 
 /** Single-player: the simulation runs inside the page. Same code the server runs. */
@@ -48,6 +48,12 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
         action: (me && sim.availableAction(me)) ?? "-",
       };
     },
-    banner: () => roundBanner(sim.getState()),
+    results: () => ({
+      endsAt: null,
+      buttons: [
+        { label: "再玩一次", primary: true, run: () => location.reload() },
+        { label: "回首頁", run: () => (location.href = location.pathname) },
+      ],
+    }),
   };
 }

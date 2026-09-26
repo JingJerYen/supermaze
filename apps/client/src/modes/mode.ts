@@ -1,4 +1,5 @@
 import type { MapGrid, PlayerInput, SimulationState } from "@supermaze/sim";
+import type { ResultsActions } from "../hud/results.js";
 
 /** What main.ts needs from a game mode; local and online implement it identically from the outside. */
 export interface GameMode {
@@ -13,4 +14,6 @@ export interface GameMode {
   hud(): Record<string, string | number>;
   /** Large centre-screen message (connection problems etc.), or null when there is nothing to say. */
   banner?(): string | null;
+  /** What the results screen offers once the round is finished. */
+  results(): ResultsActions;
 }

@@ -1,7 +1,7 @@
 import { applySnapshot, type SnapshotMessage } from "@supermaze/protocol";
 import { DEFAULT_TUNING, MapGrid, availableAction, type MapData, type PlayerInput, type SimulationState } from "@supermaze/sim";
 import { SnapshotBuffer } from "../net/snapshots.js";
-import { formatSeconds, roundBanner } from "./roundHud.js";
+import { formatSeconds } from "./roundHud.js";
 import type { GameMode } from "./mode.js";
 
 /**
@@ -15,6 +15,9 @@ export class OnlineMatchMode implements GameMode {
   private buffer: SnapshotBuffer;
   private current: SimulationState | null = null;
   rttMs = 0;
+  /** Set by the session from the lobby message while the room is in its results phase. */
+  resultsEndAt: number | null = null;
+  onLeaveRoom: (() => void) | null = null;
 
   constructor(
     map: MapData,
@@ -66,8 +69,10 @@ export class OnlineMatchMode implements GameMode {
     };
   }
 
-  banner(): string | null {
-    const st = this.buffer.latest();
-    return st ? roundBanner(st) : null;
+  results() {
+    return {
+      endsAt: this.resultsEndAt,
+      buttons: this.onLeaveRoom ? [{ label: "離開房間", run: this.onLeaveRoom }] : [],
+    };
   }
 }

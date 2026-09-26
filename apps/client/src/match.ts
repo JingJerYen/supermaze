@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { DEFAULT_TUNING, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
 import { Hud } from "./hud/hud.js";
+import { ResultsPanel } from "./hud/results.js";
 import { buildHudModel } from "./hud/model.js";
 import { diffToasts } from "./hud/toasts.js";
 import { InputSource } from "./input/index.js";
@@ -9,7 +10,6 @@ import { startLoop } from "./loop.js";
 import type { GameMode } from "./modes/mode.js";
 import { BoxViews } from "./render/boxes.js";
 import { FollowCamera } from "./render/camera.js";
-import { buildCoordLabels } from "./render/coordLabels.js";
 import { KeyViews } from "./render/keys.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
@@ -29,6 +29,7 @@ export class Match {
   private readonly follow: FollowCamera;
   private readonly input: InputSource;
   private readonly hud: Hud;
+  private readonly results: ResultsPanel;
   private readonly debug: DebugOverlay;
   private readonly players: PlayerViews;
   private readonly keys: KeyViews;
@@ -49,7 +50,7 @@ export class Match {
   ) {
     this.scene = createScene();
     this.mapMesh = buildMapMesh(mode.grid);
-    this.scene.add(this.mapMesh.group, buildCoordLabels(mode.grid));
+    this.scene.add(this.mapMesh.group);
     this.players = new PlayerViews(this.scene, mode.grid);
     this.keys = new KeyViews(this.scene, mode.grid);
     this.boxes = new BoxViews(this.scene, mode.grid);
@@ -60,6 +61,7 @@ export class Match {
     this.input = new InputSource(root);
     this.debug = new DebugOverlay(root);
     this.hud = new Hud(root);
+    this.results = new ResultsPanel(root);
 
     this.onResize = () => {
       this.follow.resize(window.innerWidth / window.innerHeight);
@@ -99,6 +101,7 @@ export class Match {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t);
         this.lastToastState = s.to;
       }
+      this.results.update(s.to, meId, this.mode.results());
     }
 
     const mePos = meId ? this.players.position(meId) : null;
@@ -121,6 +124,7 @@ export class Match {
     this.stopLoop();
     window.removeEventListener("resize", this.onResize);
     this.hud.dispose();
+    this.results.dispose();
     this.debug.dispose();
     this.input.dispose();
     this.renderer.clear();

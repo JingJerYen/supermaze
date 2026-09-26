@@ -87,8 +87,9 @@ export class Session {
       return;
     }
     if (m.phase === "results") {
-      // Keep the round banner visible under a small lobby card countdown.
-      this.ui.showLobby(m);
+      // The match's results panel stays up and shows the return countdown.
+      this.ui.hide();
+      if (this.matchMode) this.matchMode.resultsEndAt = m.resultsEndAt;
       return;
     }
     this.teardownMatch();
@@ -106,6 +107,7 @@ export class Session {
     if (!this.meId) return;
     const map = rotateMap(loadMapById(m.mapId), m.rotation);
     this.matchMode = new OnlineMatchMode(map, m.tickRate, this.meId, (input) => this.conn.sendInput(input));
+    this.matchMode.onLeaveRoom = () => void this.leave();
     this.match = new Match(this.root, this.renderer, this.matchMode);
     this.pendingStart = null;
   }
