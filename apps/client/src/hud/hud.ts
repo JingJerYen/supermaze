@@ -35,6 +35,10 @@ const CSS = `
 .hud-toasts{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 84px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
 @keyframes hud-fade{0%{opacity:0;transform:translateY(-6px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+.hud-go{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-size:clamp(72px,16vw,160px);font-weight:500;line-height:1;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.7);pointer-events:none;display:none}
+.hud-go.show{display:block;animation:hud-go-pop .9s ease-out}
+.hud-go.start{color:#ffd23f}
+@keyframes hud-go-pop{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}
 .hud-dark{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:12px;color:#c9d2e3;display:none}
 .hud-dark.on{display:block}
 `;
@@ -55,6 +59,8 @@ export class Hud {
   private readonly toasts: HTMLDivElement;
   private readonly dark: HTMLDivElement;
   private readonly myCoord: HTMLDivElement;
+  private readonly go: HTMLDivElement;
+  private lastGoText = "";
   private lastRosterKey = "";
 
   constructor(parent: HTMLElement) {
@@ -77,7 +83,8 @@ export class Hud {
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
     this.myCoord = el("div", "hud-mycoord");
-    this.root.append(top, this.items, this.toasts, this.dark);
+    this.go = el("div", "hud-go");
+    this.root.append(top, this.items, this.toasts, this.dark, this.go);
     parent.appendChild(this.root);
   }
 
@@ -85,6 +92,7 @@ export class Hud {
     const s = Math.max(0, Math.ceil(m.remainingSec));
     this.time.textContent = m.status === "lobby" ? "--:--" : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);
+    this.updateGo(m);
     this.sub.textContent = m.status === "finished" ? "回合結束" : `已登塔 ${m.climbed} / ${m.total}`;
 
     const g = m.ghost;
@@ -113,6 +121,29 @@ export class Hud {
       this.items.appendChild(slot);
     }
     this.dark.classList.toggle("on", !m.lightsOn);
+  }
+
+  /** 3, 2, 1 during the start freeze, then "開始" for a moment; each number pops once. */
+  private updateGo(m: HudModel): void {
+    let text = "";
+    if (m.status === "running" && m.freezeSec > 0) text = String(Math.ceil(m.freezeSec));
+    else if (m.status === "running" && this.lastGoText !== "" && this.lastGoText !== "開始") text = "開始";
+    if (text === this.lastGoText) return;
+    this.lastGoText = text;
+    this.go.classList.remove("show", "start");
+    if (!text) return;
+    this.go.textContent = text;
+    void this.go.offsetWidth; // restart the pop animation
+    this.go.classList.add("show");
+    if (text === "開始") {
+      this.go.classList.add("start");
+      setTimeout(() => {
+        if (this.lastGoText === "開始") {
+          this.go.classList.remove("show");
+          this.lastGoText = "";
+        }
+      }, 900);
+    }
   }
 
   /** Label for the single context button, or null to hide it. */

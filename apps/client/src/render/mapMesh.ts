@@ -36,8 +36,8 @@ export interface MapView {
   group: THREE.Group;
   tower: TowerView;
   setDark(dark: boolean): void;
-  /** Per-frame animation: climbs in progress (per face, seconds since start) and the crystal. */
-  update(timeSec: number, climbs: { face: Face; t: number }[]): void;
+  /** Per-frame animation: climbs in progress (per face, seconds since start), start-freeze progress, the crystal. */
+  update(timeSec: number, climbs: { face: Face; t: number }[], freeze?: number | null): void;
   /** Tower footprint centre, for deciding which face a climber uses. */
   towerCenter: THREE.Vector3;
 }
@@ -212,8 +212,8 @@ export function buildMapMesh(
       (torchMats.flame as THREE.MeshBasicMaterial).transparent = true;
       (torchMats.glow as THREE.MeshBasicMaterial).opacity = dark ? 0.18 : 0.55;
     },
-    update(timeSec: number, climbs: { face: Face; t: number }[]) {
-      animations?.update(climbs, timeSec);
+    update(timeSec: number, climbs: { face: Face; t: number }[], freeze: number | null = null) {
+      animations?.update(climbs, timeSec, freeze);
     },
     towerCenter,
   };

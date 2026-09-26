@@ -111,7 +111,12 @@ export class Match {
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
       this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : themeFor(this.mode.theme).sky);
-      this.mapMesh.update(now / 1000, this.players.activeClimbs(s.to.tick));
+      const freezeTicks = s.to.freezeUntilTick - s.to.startTick;
+      const freeze =
+        s.to.status === "running" && freezeTicks > 0 && s.to.tick < s.to.freezeUntilTick + 2
+          ? Math.min(1, (s.to.tick - s.to.startTick) / freezeTicks)
+          : null;
+      this.mapMesh.update(now / 1000, this.players.activeClimbs(s.to.tick), freeze);
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);

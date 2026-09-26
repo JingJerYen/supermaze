@@ -115,10 +115,25 @@ export class TowerAnimations {
     }
   }
 
-  /** Called every frame with every climb in progress. */
-  update(active: { face: Face; t: number }[], timeSec: number): void {
+  private freezeWasOn = false;
+
+  /**
+   * Called every frame with every climb in progress and the start-freeze
+   * progress (0 = just started, 1 = players released, null = no freeze).
+   */
+  update(active: { face: Face; t: number }[], timeSec: number, freeze: number | null = null): void {
     const open = new Map<Face, number>();
     const rise = new Map<Face, number>();
+    if (freeze !== null && freeze < 1) {
+      // Opening ceremony: every door slides open over the first half of the freeze.
+      const o = Math.min(1, freeze * 2);
+      for (const face of this.doors.keys()) open.set(face, o);
+      this.freezeWasOn = true;
+      this.crystalPulse = Math.max(this.crystalPulse, 0.35);
+    } else if (this.freezeWasOn) {
+      this.freezeWasOn = false;
+      this.crystalPulse = 1; // "go": doors shut behind the players, crystal flares
+    }
     for (const a of active) {
       const ph = climbPhase(a.t);
       open.set(a.face, Math.max(open.get(a.face) ?? 0, ph.doorOpen));

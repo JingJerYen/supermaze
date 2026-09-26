@@ -5,6 +5,8 @@ import { teamColorIndex } from "../render/teamColors.js";
 /** Everything the HUD draws, derived from authoritative state; no rules live here. */
 export interface HudModel {
   remainingSec: number;
+  /** Seconds until players may move after the round starts; 0 once the freeze is over. */
+  freezeSec: number;
   status: SimulationState["status"];
   climbed: number;
   total: number;
@@ -82,6 +84,7 @@ export function buildHudModel(
   const remainingTicks = state.status === "running" ? Math.max(0, state.endsAtTick - state.tick) : 0;
   return {
     remainingSec: state.status === "lobby" ? 0 : remainingTicks / tickRate,
+    freezeSec: state.status === "running" ? Math.max(0, state.freezeUntilTick - state.tick) / tickRate : 0,
     status: state.status,
     climbed: state.towerArrivals.length,
     total: Object.keys(state.players).length,
