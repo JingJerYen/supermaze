@@ -270,10 +270,10 @@ function buildTower(grid: MapGrid, theme: Theme): {
   const cx = center.x;
   const cy = center.z;
 
-  // Two stepped tiers instead of a flat base.
-  const tier1 = new THREE.Mesh(new THREE.BoxGeometry(footW + 0.6, t.baseHeight, footD + 0.6), baseMat);
+  // Two stepped tiers that stay inside the footprint, so the entry tiles around it are clear.
+  const tier1 = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight, footD), baseMat);
   tier1.position.set(cx, t.baseHeight / 2, cy);
-  const tier2 = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight * 1.6, footD), baseMat);
+  const tier2 = new THREE.Mesh(new THREE.BoxGeometry(footW - 0.3, t.baseHeight * 1.6, footD - 0.3), baseMat);
   tier2.position.set(cx, t.baseHeight + (t.baseHeight * 1.6) / 2, cy);
 
   const shaftBottom = t.baseHeight * 2.6;

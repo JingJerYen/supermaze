@@ -49,7 +49,7 @@ function clamp01(v: number): number {
 
 /** The tower's animated parts: one door and one ascent light per face, plus the crystal. */
 export class TowerAnimations {
-  private readonly doors = new Map<Face, { mesh: THREE.Mesh; closedY: number; height: number }>();
+  private readonly doors = new Map<Face, { left: THREE.Mesh; right: THREE.Mesh; travel: number }>();
   private readonly ascents = new Map<Face, THREE.Mesh>();
   private readonly ascentMats: THREE.MeshBasicMaterial[] = [];
   private crystalPulse = 0;
@@ -89,11 +89,25 @@ export class TowerAnimations {
       frame.rotation.y = yaw;
       group.add(frame);
 
-      const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 0.06), doorMat);
-      door.position.set(px, doorH / 2, pz);
-      door.rotation.y = yaw;
-      group.add(door);
-      this.doors.set(face, { mesh: door, closedY: doorH / 2, height: doorH });
+      // Double door: two leaves that slide apart sideways into the jambs.
+      const leafGeo = new THREE.BoxGeometry(doorW / 2 - 0.01, doorH, 0.06);
+      const holder = new THREE.Group();
+      holder.position.set(px, doorH / 2, pz);
+      holder.rotation.y = yaw;
+      const left = new THREE.Mesh(leafGeo, doorMat);
+      const right = new THREE.Mesh(leafGeo, doorMat);
+      left.position.x = -doorW / 4;
+      right.position.x = doorW / 4;
+      // A thin handle strip on each leaf so the split reads even when closed.
+      const handleMat = new THREE.MeshLambertMaterial({ color: 0x8a8f9c });
+      for (const [leaf, side] of [[left, 1], [right, -1]] as const) {
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.18, 0.02), handleMat);
+        handle.position.set(side * (doorW / 4 - 0.06), 0, 0.04);
+        leaf.add(handle);
+      }
+      holder.add(left, right);
+      group.add(holder);
+      this.doors.set(face, { left, right, travel: doorW / 2 });
 
       // Ascent light: an additive strip on the shaft face that grows from the bottom.
       const mat = new THREE.MeshBasicMaterial({
@@ -142,7 +156,8 @@ export class TowerAnimations {
     }
     for (const [face, door] of this.doors) {
       const o = open.get(face) ?? 0;
-      door.mesh.position.y = door.closedY + o * door.height * 0.92;
+      door.left.position.x = -door.travel / 2 - o * door.travel;
+      door.right.position.x = door.travel / 2 + o * door.travel;
     }
     for (const [face, strip] of this.ascents) {
       const r = rise.get(face) ?? 0;
