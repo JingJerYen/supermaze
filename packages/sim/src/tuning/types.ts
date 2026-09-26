@@ -75,15 +75,7 @@ export interface Tuning {
   };
 
   placeables: {
-    /**
-     * Development switch. False: every non-teleport item places a passable
-     * placeholder block that lives `placeholderLifetimeSec`; nothing else happens.
-     * True: doors block, obstacles block, hammers break, traps freeze.
-     */
-    effectsEnabled: boolean;
-    /** Lifetime of placeholder blocks while effects are disabled, seconds. */
-    placeholderLifetimeSec: number;
-    /** Lifetime on the field, seconds, per placeable kind (effects enabled). */
+    /** Lifetime on the field, seconds, per placeable kind. */
     lifetimeSec: Record<PlaceableKind, number>;
     /** How long a trapped player stays frozen, seconds. */
     trapFreezeSec: number;

@@ -58,8 +58,6 @@ export const DEFAULT_TUNING: Tuning = {
   },
 
   placeables: {
-    effectsEnabled: true,
-    placeholderLifetimeSec: 30,
     lifetimeSec: {
       oneWayDoor: 10,
       obstacle: 10,

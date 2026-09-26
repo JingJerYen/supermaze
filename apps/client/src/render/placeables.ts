@@ -4,10 +4,7 @@ import { tileElevation } from "./elevation.js";
 import { createObstacle, createOneWayDoor, createTeleportNode, createTrap } from "./itemModels.js";
 import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
 
-/**
- * Doors, obstacles, traps and teleport nodes, all drawn in code (itemModels.ts).
- * With item effects disabled they fall back to a translucent placeholder block.
- */
+/** Doors, obstacles, traps and teleport nodes, all drawn in code (itemModels.ts). */
 export class PlaceableViews {
   private readonly views = new Map<string, THREE.Object3D>();
 
@@ -51,25 +48,7 @@ export class PlaceableViews {
   }
 }
 
-const PLACEHOLDER_COLORS: Record<string, number> = {
-  oneWayDoor: 0x3b82f6,
-  obstacle: 0x6b7280,
-  hammer: 0xf59e0b,
-  trap: 0xb91c1c,
-};
-
 function createPlaceable(p: PlaceableState): THREE.Object3D {
-  if (p.placeholder) {
-    // Effects disabled: one generic, passable, translucent block; colour tells the kind apart.
-    const g = new THREE.Group();
-    const m = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.7, 0.7),
-      new THREE.MeshLambertMaterial({ color: PLACEHOLDER_COLORS[p.kind] ?? 0xffffff, transparent: true, opacity: 0.6 }),
-    );
-    m.position.y = 0.35;
-    g.add(m);
-    return g;
-  }
   switch (p.kind) {
     case "oneWayDoor":
       return createOneWayDoor(p.dir);
@@ -77,13 +56,10 @@ function createPlaceable(p: PlaceableState): THREE.Object3D {
       return createObstacle();
     case "trap":
       return createTrap();
-    case "hammer":
-      return new THREE.Group(); // hammers are never placed with effects enabled
   }
 }
 
 function animatePlaceable(m: THREE.Object3D, p: PlaceableState, timeSec: number): void {
-  if (p.placeholder) return;
   if (p.kind === "trap") {
     const spikes = m.getObjectByName("spikes");
     if (spikes) spikes.rotation.y = timeSec * 0.9;

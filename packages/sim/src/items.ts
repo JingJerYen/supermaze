@@ -66,23 +66,10 @@ export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: 
     return { ...p, items: p.items.slice(1) };
   };
 
-  // Development mode: everything but teleport nodes and hammers becomes a passable placeholder block.
-  if (!tuning.placeables.effectsEnabled && item !== "teleportNode" && item !== "hammer") {
-    if (placementProblem(grid, work, front)) return p;
-    const id = work.nextPlaceableId();
-    const lifetime = Math.round(tuning.placeables.placeholderLifetimeSec * tuning.tickRate);
-    work.placeables = {
-      ...work.placeables,
-      [id]: { id, kind: item, pos: front, dir: p.mover.facing, ownerId: p.id, expiresAtTick: work.tick + lifetime, placeholder: true },
-    };
-    work.events.push({ type: "placeablePlaced", tick: work.tick, playerId: p.id, placeableId: id, kind: item, placeholder: true });
-    return consume();
-  }
-
   switch (item) {
     case "hammer": {
-      // Breaks whatever players put on the tile ahead: any placeable (real or placeholder)
-      // and any team's teleport node. Never map geometry, boxes, keys or switches (10.3).
+      // Breaks whatever players put on the tile ahead: any placeable and any team's
+      // teleport node. Never map geometry, boxes, keys or switches (10.3).
       const target = placeableAt(work.placeables, front);
       if (target) {
         const rest = { ...work.placeables };
@@ -110,9 +97,9 @@ export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: 
       const lifetime = Math.round(tuning.placeables.lifetimeSec[item] * tuning.tickRate);
       work.placeables = {
         ...work.placeables,
-        [id]: { id, kind: item, pos: front, dir: p.mover.facing, ownerId: p.id, expiresAtTick: work.tick + lifetime, placeholder: false },
+        [id]: { id, kind: item, pos: front, dir: p.mover.facing, ownerId: p.id, expiresAtTick: work.tick + lifetime },
       };
-      work.events.push({ type: "placeablePlaced", tick: work.tick, playerId: p.id, placeableId: id, kind: item, placeholder: false });
+      work.events.push({ type: "placeablePlaced", tick: work.tick, playerId: p.id, placeableId: id, kind: item });
       return consume();
     }
     case "teleportNode": {

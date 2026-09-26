@@ -36,6 +36,8 @@ export interface CharacterRig {
   mixer: THREE.AnimationMixer;
   idle: THREE.AnimationAction | null;
   walk: THREE.AnimationAction | null;
+  /** Any other clip by name (attack-melee-right, pick-up, ...), or null if the model lacks it. */
+  clip(name: string): THREE.AnimationAction | null;
 }
 
 export class CharacterLibrary {
@@ -107,7 +109,7 @@ export class CharacterLibrary {
     const idle = clip("idle");
     const walk = clip("walk");
     idle?.play();
-    return { root, mixer, idle, walk };
+    return { root, mixer, idle, walk, clip };
   }
 }
 

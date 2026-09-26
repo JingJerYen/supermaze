@@ -445,7 +445,7 @@ export class Simulation {
   /** Effects of stepping onto a new tile: traps fire, own paired nodes teleport. */
   private onArrive(work: ItemWork, p: PlayerState, tick: Tick): PlayerState {
     const trap = placeableAt(work.placeables, p.mover.from);
-    if (trap?.kind === "trap" && !trap.placeholder) {
+    if (trap?.kind === "trap") {
       delete work.placeables[trap.id];
       const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
       work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick });

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { moverPosition, type Dir, type MapGrid, type MoverState } from "@supermaze/sim";
 import { characters, type CharacterRig } from "./characters.js";
 import { tileElevation } from "./elevation.js";
+import { HammerSwing } from "./hammerSwing.js";
 
 export const PLAYER_HEIGHT = 0.9;
 const FROZEN_COLOR = 0x9fd3ff;
@@ -26,7 +27,9 @@ export class PlayerView {
   private readonly color: number;
   private readonly prevPose = new THREE.Vector3();
   private readonly currPose = new THREE.Vector3();
+  private readonly hammer = new HammerSwing();
   private walking = false;
+  private oneShot: THREE.AnimationAction | null = null;
 
   constructor(playerId: string, color: number) {
     this.color = color;
@@ -41,9 +44,16 @@ export class PlayerView {
     this.disc.position.y = 0.015;
     this.mesh.add(this.disc);
 
+    this.mesh.add(this.hammer.root);
     this.rig = characters.createRig(playerId, PLAYER_HEIGHT);
     if (this.rig) {
       this.mesh.add(this.rig.root);
+      this.rig.mixer.addEventListener("finished", (e) => {
+        if (e.action !== this.oneShot) return;
+        this.oneShot = null;
+        e.action.fadeOut(0.1);
+        this.base()?.reset().fadeIn(0.1).play();
+      });
     } else {
       const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, PLAYER_HEIGHT, 0.6), new THREE.MeshLambertMaterial({ color }));
       body.position.y = PLAYER_HEIGHT / 2;
@@ -64,11 +74,41 @@ export class PlayerView {
     this.mesh.position.lerpVectors(this.prevPose, this.currPose, alpha);
     this.setWalking(curr.target !== null);
     this.rig?.mixer.update(dtSec);
+    this.hammer.update(dtSec);
+  }
+
+  /** Swing the hammer at the tile ahead: melee clip on the body plus the prop arc. */
+  swingHammer(): void {
+    this.hammer.start();
+    this.playOnce("attack-melee-right");
+  }
+
+  /** Bend down briefly, for keys and boxes. */
+  pickUp(): void {
+    this.playOnce("pick-up");
+  }
+
+  private base(): THREE.AnimationAction | null {
+    if (!this.rig) return null;
+    return this.walking ? this.rig.walk : this.rig.idle;
+  }
+
+  private playOnce(name: string): void {
+    const action = this.rig?.clip(name);
+    if (!action) return;
+    this.oneShot?.stop();
+    this.base()?.fadeOut(0.08);
+    action.reset();
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = false;
+    action.fadeIn(0.08).play();
+    this.oneShot = action;
   }
 
   private setWalking(walking: boolean): void {
     if (!this.rig || walking === this.walking) return;
     this.walking = walking;
+    if (this.oneShot) return; // the finished handler resumes the right base clip
     const from = walking ? this.rig.idle : this.rig.walk;
     const to = walking ? this.rig.walk : this.rig.idle;
     if (to) {

@@ -7,14 +7,12 @@ import type { PlayerId, TeamId, Tick } from "./types.js";
 /** A one-way door, obstacle or trap sitting on a tile for a limited time (CLAUDE.md section 10). */
 export interface PlaceableState {
   id: string;
-  kind: PlaceableKind | "hammer";
+  kind: PlaceableKind;
   pos: TilePos;
   /** Passage direction for doors; irrelevant for the others (kept for rendering). */
   dir: Dir;
   ownerId: PlayerId;
   expiresAtTick: Tick;
-  /** True while item effects are disabled: a passable stand-in that only shows placement and lifetime. */
-  placeholder: boolean;
 }
 
 /** A quantum teleport endpoint lying on the floor. Persistent; never blocks passage. */
@@ -42,12 +40,10 @@ export function nodeAt(nodes: Record<string, TeleportNodeState>, tile: TilePos):
 export function placeableMoveFilter(placeables: Record<string, PlaceableState>) {
   return (from: TilePos, to: TilePos, dir: Dir): boolean => {
     const ahead = placeableAt(placeables, to);
-    if (ahead && !ahead.placeholder) {
-      if (ahead.kind === "obstacle") return false;
-      if (ahead.kind === "oneWayDoor" && !sameDir(ahead.dir, dir)) return false;
-    }
+    if (ahead?.kind === "obstacle") return false;
+    if (ahead?.kind === "oneWayDoor" && !sameDir(ahead.dir, dir)) return false;
     const here = placeableAt(placeables, from);
-    if (here && !here.placeholder && here.kind === "oneWayDoor" && !sameDir(here.dir, dir)) return false;
+    if (here?.kind === "oneWayDoor" && !sameDir(here.dir, dir)) return false;
     return true;
   };
 }

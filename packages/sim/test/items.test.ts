@@ -10,8 +10,8 @@ const STEP_TICKS =
   Math.round(BASE_TUNING.movement.turnDelaySec * BASE_TUNING.tickRate) +
   1;
 
-/** These tests exercise the real item rules, so effects are switched on. */
-const DEFAULT_TUNING: Tuning = { ...BASE_TUNING, placeables: { ...BASE_TUNING.placeables, effectsEnabled: true } };
+
+const DEFAULT_TUNING: Tuning = BASE_TUNING;
 import { TINY_MAP } from "./fixtures.js";
 import { walk, push } from "./walk.js";
 
