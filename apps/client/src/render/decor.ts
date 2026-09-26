@@ -25,7 +25,7 @@ export interface TorchParts {
 const bracketProto = new THREE.BoxGeometry(0.08, 0.3, 0.08);
 const cupProto = new THREE.CylinderGeometry(0.07, 0.05, 0.1, 8);
 const flameProto = new THREE.ConeGeometry(0.075, 0.24, 6);
-const glowProto = new THREE.CircleGeometry(0.75, 20).rotateX(-Math.PI / 2);
+const glowProto = new THREE.PlaneGeometry(1.7, 1.7).rotateX(-Math.PI / 2);
 
 /**
  * Wall torches: on inner walls, on faces that look onto a road tile, roughly one
@@ -62,7 +62,8 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
         };
         parts.brackets.push(place(bracketProto, 0.62, 0.04), place(cupProto, 0.8, 0.06));
         parts.flames.push(place(flameProto, 0.96, 0.06));
-        const glow = glowProto.clone().translate(rx, 0.012, ry);
+        // Soft pool of light on the road tile, pulled a little toward the wall the torch hangs on.
+        const glow = glowProto.clone().translate(rx - f.dx * 0.18, 0.012, ry - f.dy * 0.18);
         parts.glows.push(glow);
       });
     }
@@ -77,10 +78,31 @@ export function torchMaterials(theme: Theme): { bracket: THREE.Material; flame: 
     flame: new THREE.MeshBasicMaterial({ color: theme.torchFlame }),
     glow: new THREE.MeshBasicMaterial({
       color: theme.torchFlame,
+      map: radialGlowTexture(),
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.55,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     }),
   };
+}
+
+let glowTex: THREE.CanvasTexture | null = null;
+/** Radial falloff (bright centre, transparent rim) so the pool reads as light, not a painted disc. */
+function radialGlowTexture(): THREE.CanvasTexture {
+  if (glowTex) return glowTex;
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.35, "rgba(255,255,255,0.45)");
+  g.addColorStop(0.7, "rgba(255,255,255,0.12)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  glowTex = new THREE.CanvasTexture(canvas);
+  return glowTex;
 }

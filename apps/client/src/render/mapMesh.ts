@@ -207,7 +207,7 @@ export function buildMapMesh(
       // Torches keep a faint presence in the dark; they are ambience, not a light source.
       (torchMats.flame as THREE.MeshBasicMaterial).opacity = dark ? 0.45 : 1;
       (torchMats.flame as THREE.MeshBasicMaterial).transparent = true;
-      (torchMats.glow as THREE.MeshBasicMaterial).opacity = dark ? 0.05 : 0.16;
+      (torchMats.glow as THREE.MeshBasicMaterial).opacity = dark ? 0.18 : 0.55;
     },
     update(timeSec: number) {
       if (crystal) {
