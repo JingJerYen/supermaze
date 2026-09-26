@@ -3,17 +3,11 @@ import type { MapData } from "../src/map/types.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING } from "../src/tuning/index.js";
 import { TINY_MAP } from "./fixtures.js";
+import { walk } from "./walk.js";
 
 const N: PlayerInput = { moveX: 0, moveY: -1 };
 const press: PlayerInput = { moveX: 0, moveY: 0, action: true };
-const ticksPerTile = Math.ceil(DEFAULT_TUNING.tickRate / DEFAULT_TUNING.movement.speedTilesPerSec);
 
-function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
-  for (const d of dirs) {
-    for (let i = 0; i < ticksPerTile - 1; i++) sim.step(new Map([[id, d]]));
-    for (let i = 0; i < ticksPerTile; i++) sim.step(new Map());
-  }
-}
 
 describe("placeholder items (effects disabled)", () => {
   it("any non-teleport item drops a passable block that expires after placeholderLifetimeSec", () => {

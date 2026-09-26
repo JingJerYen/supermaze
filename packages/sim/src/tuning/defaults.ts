@@ -21,6 +21,7 @@ export const DEFAULT_TUNING: Tuning = {
 
   movement: {
     speedTilesPerSec: 4,
+    turnDelaySec: 0.12,
   },
 
   connection: {

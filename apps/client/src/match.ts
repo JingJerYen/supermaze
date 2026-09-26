@@ -16,6 +16,7 @@ import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
 import { PlaceableViews } from "./render/placeables.js";
 import { PlayerViews } from "./render/players.js";
+import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
 import { SwitchViews } from "./render/switches.js";
 import { CLIENT_TUNING } from "./tuning.js";
@@ -88,7 +89,7 @@ export class Match {
     const s = this.mode.sample(now, alpha);
     const meId = this.mode.localPlayerId();
     if (s) {
-      this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick);
+      this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt);
       this.keys.update(s.to.keys, now / 1000);
       this.boxes.update(s.to.boxes, now / 1000);
       this.placeables.update(s.to.placeables, s.to.nodes, now / 1000);
@@ -115,7 +116,7 @@ export class Match {
     this.mapMesh.tower.setOverview(onTower);
     this.lighting.setRadius(onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
     if (mePos) {
-      this.follow.update(mePos, dt);
+      this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2), dt);
       this.lighting.follow(mePos);
     }
 

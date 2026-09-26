@@ -3,6 +3,7 @@ import { rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
+import { characters } from "./render/characters.js";
 import { models } from "./render/models.js";
 import { Session } from "./session.js";
 import { CLIENT_TUNING } from "./tuning.js";
@@ -10,8 +11,8 @@ import { CLIENT_TUNING } from "./tuning.js";
 const root = document.getElementById("app");
 if (!root) throw new Error("#app not found");
 
-// Real models (if any) must be in hand before the first key or box is created.
-await models.load();
+// Real models (if any) must be in hand before the first key, box or player is created.
+await Promise.all([models.load(), characters.load()]);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));

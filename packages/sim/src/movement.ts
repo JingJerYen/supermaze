@@ -15,6 +15,8 @@ export interface MoverState {
   progress: number;
   /** Last direction the player pushed; items are placed one tile this way. */
   facing: Dir;
+  /** Ticks the current push must still be held before a turn becomes a step. 0 when not turning. */
+  turnHold: number;
 }
 
 export interface MoveIntent {
@@ -26,40 +28,62 @@ export interface MoveIntent {
 export type MoveFilter = (from: TilePos, to: TilePos, dir: Dir) => boolean;
 
 export function createMover(at: TilePos, facing: Dir = DIRS.south): MoverState {
-  return { from: at, target: null, progress: 0, facing };
+  return { from: at, target: null, progress: 0, facing, turnHold: 0 };
 }
 
-/** Advance one tick. `speed` is tiles per tick. */
+/**
+ * Advance one tick. `speed` is tiles per tick; `turnDelayTicks` is how long a
+ * new direction must be held from standstill before the player steps off.
+ * Turning while already walking (at a tile boundary) is immediate.
+ */
 export function stepMover(
   m: MoverState,
   intent: MoveIntent,
   grid: MapGrid,
   speed: number,
   allow?: MoveFilter,
+  turnDelayTicks = 0,
 ): MoverState {
-  let { from, target, progress, facing } = m;
+  let { from, target, progress, facing, turnHold } = m;
   // Distance still available this tick. Carrying the remainder across a tile
   // boundary keeps speed constant instead of pausing for a tick at every tile.
   let budget = speed;
+  let wasWalking = false;
 
   if (target) {
     progress += budget;
-    if (progress < 1) return { from, target, progress, facing };
+    if (progress < 1) return { from, target, progress, facing, turnHold: 0 };
     budget = progress - 1;
     from = target;
     target = null;
     progress = 0;
+    wasWalking = true;
   }
 
   const dirs = intentDirections(intent);
-  if (dirs[0]) facing = dirs[0];
+  const primary = dirs[0];
+  if (!primary) return { from, target: null, progress: 0, facing, turnHold: 0 };
+
+  if (!wasWalking && turnDelayTicks > 0) {
+    if (!sameDirection(primary, facing)) {
+      // Turn on the spot; walking starts only if the push is held.
+      return { from, target: null, progress: 0, facing: primary, turnHold: turnDelayTicks };
+    }
+    if (turnHold > 0) return { from, target: null, progress: 0, facing, turnHold: turnHold - 1 };
+  }
+
+  facing = primary;
   for (const dir of dirs) {
     const dest = grid.tryMove(from, dir);
     if (dest && (!allow || allow(from, dest, dir))) {
-      return { from, target: dest, progress: Math.min(budget, MAX_PROGRESS_PER_TICK), facing: dir };
+      return { from, target: dest, progress: Math.min(budget, MAX_PROGRESS_PER_TICK), facing: dir, turnHold: 0 };
     }
   }
-  return { from, target: null, progress: 0, facing };
+  return { from, target: null, progress: 0, facing, turnHold: 0 };
+}
+
+function sameDirection(a: Dir, b: Dir): boolean {
+  return a.dx === b.dx && a.dy === b.dy;
 }
 
 /** A single tick never completes a whole tile; speeds are expected to stay well below 1 tile/tick. */

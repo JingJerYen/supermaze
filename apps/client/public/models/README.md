@@ -15,3 +15,10 @@
 - 檔案不存在時自動用程式畫的佔位模型，不會報錯。開發伺服器執行中放入檔案後重新整理頁面即可。
 - 這些檔案是靜態資源，由網頁伺服器提供並被瀏覽器快取，不會經過遊戲連線傳輸。
 - 目前不支援 Draco 壓縮的 glb；匯出時請關閉壓縮。
+
+## 人物
+
+`characters/` 內是 Kenney Mini Characters（CC0），12 個 glb 共用 `Textures/colormap.png`，
+內含 `idle`、`walk` 等骨架動畫。玩家依 id 決定性地分到其中一個，所有客戶端看到同一人。
+要換人物：放入同名 glb 覆蓋即可；要增減人物：改 `apps/client/src/render/characters.ts` 的名單。
+輪椅模型刻意不收錄。

@@ -3,17 +3,11 @@ import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import type { MapData } from "../src/map/types.js";
 import { TINY_MAP } from "./fixtures.js";
+import { walk } from "./walk.js";
 
 const one = [{ id: "a", teamId: "t1", controller: "human" as const }];
 
 /** Drive `id` one tile per direction, ending at rest. */
-function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
-  const n = Math.ceil(sim.tuning.tickRate / sim.tuning.movement.speedTilesPerSec);
-  for (const d of dirs) {
-    for (let i = 0; i < n - 1; i++) sim.step(new Map([[id, d]]));
-    for (let i = 0; i < n; i++) sim.step(new Map());
-  }
-}
 
 /**
  * a spawns at (2,3). Row 1 is open road: (1,1)...(7,1). Boxes on (1,1),(3,1),(5,1),(7,1)
@@ -55,8 +49,10 @@ describe("item boxes", () => {
 
     let opened = 0;
     let spawned = 0;
+    // Turn north (1 tick + delay), then up to two tiles of walking.
     const n = Math.ceil(sim.tuning.tickRate / sim.tuning.movement.speedTilesPerSec);
-    for (let i = 0; i < n * 2; i++) {
+    const turn = Math.round(sim.tuning.movement.turnDelaySec * sim.tuning.tickRate) + 1;
+    for (let i = 0; i < turn + n * 2; i++) {
       const ev = sim.step(new Map([["a", { moveX: 0, moveY: -1 }]]));
       opened += ev.filter((e) => e.type === "boxOpened").length;
       spawned += ev.filter((e) => e.type === "boxSpawned").length;

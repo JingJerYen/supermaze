@@ -30,6 +30,12 @@ export interface Tuning {
   movement: {
     /** Normal player speed, tiles per second. */
     speedTilesPerSec: number;
+    /**
+     * Tap-to-turn: from standstill, pushing a new direction turns the player at
+     * once but only starts walking after the push has been held this long.
+     * Releasing earlier leaves the player facing the new way without moving.
+     */
+    turnDelaySec: number;
   };
 
   connection: {

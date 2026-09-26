@@ -3,6 +3,7 @@ import { SeededRandom } from "../src/random/seeded.js";
 import { selectKeySpawns } from "../src/keys.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { TINY_MAP } from "./fixtures.js";
+import { walk } from "./walk.js";
 
 const two = [
   { id: "a", teamId: "t1", controller: "human" as const },
@@ -10,18 +11,6 @@ const two = [
 ];
 const still: PlayerInput = { moveX: 0, moveY: 0 };
 
-/**
- * Drive `id` along `dirs`, exactly one tile each, ending at rest. The intent is
- * released one tick before arrival because holding it through the arrival tick
- * would immediately start the next tile (continuous movement).
- */
-function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
-  const n = Math.ceil(sim.tuning.tickRate / sim.tuning.movement.speedTilesPerSec);
-  for (const d of dirs) {
-    for (let i = 0; i < n - 1; i++) sim.step(new Map([[id, d]]));
-    for (let i = 0; i < n; i++) sim.step(new Map());
-  }
-}
 
 describe("selectKeySpawns", () => {
   it("is reproducible for the same seed and picks distinct tiles", () => {

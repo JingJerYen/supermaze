@@ -4,9 +4,16 @@ import type { MapData } from "../src/map/types.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING as BASE_TUNING, type ItemKind, type Tuning } from "../src/tuning/index.js";
 
+/** Ticks needed from standstill to arrive on the next tile: turn + delay + one tile. */
+const STEP_TICKS =
+  Math.ceil(BASE_TUNING.tickRate / BASE_TUNING.movement.speedTilesPerSec) +
+  Math.round(BASE_TUNING.movement.turnDelaySec * BASE_TUNING.tickRate) +
+  1;
+
 /** These tests exercise the real item rules, so effects are switched on. */
 const DEFAULT_TUNING: Tuning = { ...BASE_TUNING, placeables: { ...BASE_TUNING.placeables, effectsEnabled: true } };
 import { TINY_MAP } from "./fixtures.js";
+import { walk, push } from "./walk.js";
 
 /**
  * Corridor test bed: row 1 of TINY_MAP is a straight east-west road (1,1)..(7,1)
@@ -20,18 +27,7 @@ const W: PlayerInput = { moveX: -1, moveY: 0 };
 const N: PlayerInput = { moveX: 0, moveY: -1 };
 const S: PlayerInput = { moveX: 0, moveY: 1 };
 
-const ticksPerTile = Math.ceil(DEFAULT_TUNING.tickRate / DEFAULT_TUNING.movement.speedTilesPerSec);
 
-function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
-  for (const d of dirs) {
-    for (let i = 0; i < ticksPerTile - 1; i++) sim.step(new Map([[id, d]]));
-    for (let i = 0; i < ticksPerTile; i++) sim.step(new Map());
-  }
-}
-/** Hold a direction for a while without settling (to test being blocked). */
-function push(sim: Simulation, id: string, d: PlayerInput, ticks = ticksPerTile * 2): void {
-  for (let i = 0; i < ticks; i++) sim.step(new Map([[id, d]]));
-}
 
 function onlyItem(kind: ItemKind, patch: Partial<Tuning> = {}): Tuning {
   const weights = { oneWayDoor: 0, obstacle: 0, hammer: 0, trap: 0, teleportNode: 0, [kind]: 1 };
@@ -119,7 +115,7 @@ describe("obstacle and hammer", () => {
     sim.step(new Map([["a", press]])); // obstacle on (2,1)
     push(sim, "a", N);
     expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 2, y: 2, layer: "road" });
-    // 1 s lifetime = 20 ticks; we already spent 2*ticksPerTile pushing. Wait out the rest.
+    // 1 s lifetime = 20 ticks; the push above already spent some. Wait out the rest.
     for (let i = 0; i < 20; i++) sim.step(new Map());
     expect(Object.values(sim.getState().placeables)).toHaveLength(0);
     walk(sim, "a", [N]);
@@ -192,7 +188,7 @@ describe("trap", () => {
     const sim = armed("trap", { placeables: { ...DEFAULT_TUNING.placeables, trapFreezeSec: freeze } });
     sim.step(new Map([["a", press]])); // trap at (2,1)
     const ev: string[] = [];
-    for (let i = 0; i < ticksPerTile; i++) ev.push(...sim.step(new Map([["a", N]])).map((e) => e.type));
+    for (let i = 0; i < STEP_TICKS; i++) ev.push(...sim.step(new Map([["a", N]])).map((e) => e.type));
     expect(ev).toContain("trapTriggered");
     const a = sim.getState().players["a"]!;
     expect(a.mover.from).toEqual({ x: 2, y: 1, layer: "road" });
@@ -246,7 +242,7 @@ describe("teleport nodes", () => {
 
     // Step onto n1 at (1,3): arrive at n0 (5,1) instantly.
     const events: string[] = [];
-    for (let i = 0; i < ticksPerTile; i++) events.push(...s.step(new Map([["a", S]])).map((e) => e.type));
+    for (let i = 0; i < STEP_TICKS; i++) events.push(...s.step(new Map([["a", S]])).map((e) => e.type));
     expect(events).toContain("teleported");
     expect(s.getState().players["a"]!.mover.from).toEqual({ x: 5, y: 1, layer: "road" });
     expect(s.getState().players["a"]!.teleportImmunity).toBe("n0");
@@ -257,7 +253,7 @@ describe("teleport nodes", () => {
     walk(s, "a", [E]);
     expect(s.getState().players["a"]!.teleportImmunity).toBeNull();
     const ev2: string[] = [];
-    for (let i = 0; i < ticksPerTile; i++) ev2.push(...s.step(new Map([["a", W]])).map((e) => e.type));
+    for (let i = 0; i < STEP_TICKS; i++) ev2.push(...s.step(new Map([["a", W]])).map((e) => e.type));
     expect(ev2).toContain("teleported");
     expect(s.getState().players["a"]!.mover.from).toEqual({ x: 1, y: 3, layer: "road" });
   });
@@ -266,7 +262,7 @@ describe("teleport nodes", () => {
     const s = twoNodes();
     placePair(s);
     // a stands at (1,2). Walk onto n1 (1,3) -> teleports to n0 (5,1) with immunity; pressing there picks n0 up.
-    for (let i = 0; i < ticksPerTile; i++) s.step(new Map([["a", S]]));
+    for (let i = 0; i < STEP_TICKS; i++) s.step(new Map([["a", S]]));
     expect(s.getState().players["a"]!.mover.from).toEqual({ x: 5, y: 1, layer: "road" });
     expect(s.availableAction(s.getState().players["a"]!)).toBe("pickUpNode");
     s.step(new Map([["a", press]]));

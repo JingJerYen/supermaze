@@ -243,6 +243,7 @@ export class Simulation {
     if (this.state.status === "finished") return [];
     const tick = this.state.tick + 1;
     const speed = this.tuning.movement.speedTilesPerSec / this.tuning.tickRate;
+    const turnTicks = Math.round(this.tuning.movement.turnDelaySec * this.tuning.tickRate);
 
     const work: ItemWork & {
       keys: Record<string, KeyState>;
@@ -286,13 +287,13 @@ export class Simulation {
 
       if (p.phase === "tower") {
         // On the platform the commander walks freely (section 5); nothing else applies up there.
-        work.players[id] = { ...p, mover: stepMover(p.mover, input, this.grid, speed) };
+        work.players[id] = { ...p, mover: stepMover(p.mover, input, this.grid, speed, undefined, turnTicks) };
         continue;
       }
 
       if (tick >= p.frozenUntilTick) {
         const before = p.mover.from;
-        p = { ...p, mover: stepMover(p.mover, input, this.grid, speed, placeableMoveFilter(work.placeables)) };
+        p = { ...p, mover: stepMover(p.mover, input, this.grid, speed, placeableMoveFilter(work.placeables), turnTicks) };
         if (!sameTile(before, p.mover.from)) p = this.onArrive(work, p, tick);
       }
       if (p.teleportImmunity && !sameTile(p.mover.from, work.nodes[p.teleportImmunity]?.pos ?? p.mover.from)) {

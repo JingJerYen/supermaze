@@ -5,19 +5,13 @@ import { DIRS, MapGrid } from "../src/map/grid.js";
 import { validateMap } from "../src/map/validate.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { LATTICE_MAP } from "./fixtures.js";
+import { walk } from "./walk.js";
 
 const grid = MapGrid.fromMapData(LATTICE_MAP);
 const still: PlayerInput = { moveX: 0, moveY: 0 };
 const press: PlayerInput = { ...still, action: true };
 
 /** Drive `id` one tile per direction, ending at rest (release before the arrival tick). */
-function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
-  const n = Math.ceil(sim.tuning.tickRate / sim.tuning.movement.speedTilesPerSec);
-  for (const d of dirs) {
-    for (let i = 0; i < n - 1; i++) sim.step(new Map([[id, d]]));
-    for (let i = 0; i < n; i++) sim.step(new Map());
-  }
-}
 
 describe("deriveSwitchFacing", () => {
   it("prefers north, then east, west, south", () => {

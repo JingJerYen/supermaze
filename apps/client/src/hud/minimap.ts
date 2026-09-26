@@ -3,7 +3,7 @@ import { TEAM_COLORS, teamColorIndex } from "../render/teamColors.js";
 import { towerGeometry } from "../render/mapMesh.js";
 
 const CSS = `
-.mm{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:calc(max(14px,env(safe-area-inset-bottom)) + 100px);background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:4px;pointer-events:none}
+.mm{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(max(14px,env(safe-area-inset-bottom)) + 84px);background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:4px;pointer-events:none}
 .mm canvas{display:block;image-rendering:pixelated}
 `;
 
