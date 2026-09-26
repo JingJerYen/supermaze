@@ -3,12 +3,23 @@ import {
   C2S,
   PROTOCOL_VERSION,
   S2C,
+  type FullStateMessage,
   type InputMessage,
   type PingMessage,
   type SnapshotMessage,
+  type StateSection,
   type WelcomeMessage,
 } from "@supermaze/protocol";
-import { DEFAULT_TUNING, NO_INPUT, Simulation, rotateMap, type MapData, type PlayerInput, type QuarterTurns } from "@supermaze/sim";
+import {
+  DEFAULT_TUNING,
+  NO_INPUT,
+  Simulation,
+  rotateMap,
+  type MapData,
+  type PlayerInput,
+  type QuarterTurns,
+  type SimulationState,
+} from "@supermaze/sim";
 import { loadMap } from "./mapLoader.js";
 
 /**
@@ -23,6 +34,8 @@ export class MazeRoom extends Room {
   private map!: MapData;
   private readonly latestInputs = new Map<string, PlayerInput>();
   private nextTeam = 0;
+  /** Serialised form of each section as last broadcast; a section is resent only when this differs. */
+  private readonly lastSent = new Map<StateSection, string>();
 
   override async onCreate(options: { mapId?: string }): Promise<void> {
     const seed = Date.now() >>> 0;
@@ -54,6 +67,13 @@ export class MazeRoom extends Room {
       tickRate: this.sim.tuning.tickRate,
     };
     client.send(S2C.welcome, welcome);
+    this.sendFull(client);
+  }
+
+  /** Complete state for a client that has no baseline yet (join, reconnect). */
+  private sendFull(client: Client): void {
+    const full: FullStateMessage = { serverTime: Date.now(), state: this.sim.getState() };
+    client.send(S2C.full, full);
   }
 
   override async onLeave(client: Client, code?: number): Promise<void> {
@@ -64,11 +84,28 @@ export class MazeRoom extends Room {
     }
     this.sim.setController(client.sessionId, "cpu");
     try {
-      await this.allowReconnection(client, this.sim.tuning.connection.reconnectWindowSec);
+      const back = await this.allowReconnection(client, this.sim.tuning.connection.reconnectWindowSec);
       this.sim.setController(client.sessionId, "human");
+      this.sendFull(back);
     } catch {
       // Window expired: the player stays CPU-controlled until the round ends.
     }
+  }
+
+  /**
+   * Players every tick; any other section only when its serialised form changed
+   * since the last broadcast. Stringifying ~3 KB per tick costs microseconds.
+   */
+  private deltaSnapshot(state: SimulationState): SnapshotMessage {
+    const msg: SnapshotMessage = { serverTime: Date.now(), tick: state.tick, players: state.players };
+    for (const section of SECTIONS) {
+      const now = JSON.stringify(state[section]);
+      if (this.lastSent.get(section) !== now) {
+        this.lastSent.set(section, now);
+        (msg as unknown as Record<string, unknown>)[section] = state[section];
+      }
+    }
+    return msg;
   }
 
   private tick(): void {
@@ -79,10 +116,25 @@ export class MazeRoom extends Room {
     }
     this.sim.step(frame);
 
-    const snapshot: SnapshotMessage = { serverTime: Date.now(), state: this.sim.getState() };
-    this.broadcast(S2C.snapshot, snapshot);
+    this.broadcast(S2C.snapshot, this.deltaSnapshot(this.sim.getState()));
   }
 }
+
+const SECTIONS: readonly StateSection[] = [
+  "status",
+  "startTick",
+  "endsAtTick",
+  "keys",
+  "towerArrivals",
+  "lightsOn",
+  "switches",
+  "boxes",
+  "placeables",
+  "nodes",
+  "teamClimbTicks",
+  "winnerTeamId",
+  "result",
+];
 
 /** Never trust client numbers: clamp to the unit square and drop NaN. */
 function sanitizeInput(msg: unknown): PlayerInput {

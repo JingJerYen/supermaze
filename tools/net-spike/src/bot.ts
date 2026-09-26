@@ -1,6 +1,6 @@
 import { Client, type Room } from "@colyseus/sdk";
-import { C2S, ROOM_NAME, S2C, type PingMessage, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
-import type { PlayerInput } from "@supermaze/sim";
+import { C2S, ROOM_NAME, S2C, applySnapshot, type FullStateMessage, type PingMessage, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
+import type { PlayerInput, SimulationState } from "@supermaze/sim";
 
 /**
  * One scripted client: joins, random-walks at the tick rate, records snapshot
@@ -9,7 +9,10 @@ import type { PlayerInput } from "@supermaze/sim";
 export class Bot {
   room: Room | null = null;
   welcome: WelcomeMessage | null = null;
-  latest: SnapshotMessage | null = null;
+  /** Merged authoritative state, kept the same way the real client does. */
+  state: SimulationState | null = null;
+  /** Bytes of the last full-state message, JSON-equivalent, for the report. */
+  fullBytes = 0;
   readonly snapshotGapsMs: number[] = [];
   readonly snapshotBytes: number[] = [];
   readonly rttMs: number[] = [];
@@ -40,12 +43,16 @@ export class Bot {
     room.onMessage<WelcomeMessage>(S2C.welcome, (m) => {
       this.welcome = m;
     });
+    room.onMessage<FullStateMessage>(S2C.full, (m) => {
+      this.state = m.state;
+      this.fullBytes = JSON.stringify(m).length;
+    });
     room.onMessage<SnapshotMessage>(S2C.snapshot, (m) => {
       const now = performance.now();
       if (this.lastSnapshotAt) this.snapshotGapsMs.push(now - this.lastSnapshotAt);
       this.lastSnapshotAt = now;
-      this.latest = m;
-      // Approximation: Colyseus encodes with msgpack, so the wire size is a bit smaller than JSON.
+      if (this.state) this.state = applySnapshot(this.state, m);
+      // Approximation: Colyseus encodes with msgpackr, so the wire size is roughly a third of JSON.
       this.snapshotBytes.push(JSON.stringify(m).length);
     });
     room.onMessage<PingMessage>(S2C.pong, (m) => this.rttMs.push(performance.now() - m.t));
@@ -83,7 +90,7 @@ export class Bot {
   /** Ticks seen since the last call; >0 means snapshots are still arriving. */
   private lastSeenTick = 0;
   snapshotsAdvanced(): boolean {
-    const t = this.latest?.state.tick ?? 0;
+    const t = this.state?.tick ?? 0;
     const advanced = t > this.lastSeenTick;
     this.lastSeenTick = t;
     return advanced;

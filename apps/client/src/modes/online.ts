@@ -1,5 +1,5 @@
-import type { SnapshotMessage, WelcomeMessage } from "@supermaze/protocol";
-import { DEFAULT_TUNING, MapGrid, availableAction, type MapData } from "@supermaze/sim";
+import { applySnapshot, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
+import { DEFAULT_TUNING, MapGrid, availableAction, type MapData, type SimulationState } from "@supermaze/sim";
 import { Connection } from "../net/connection.js";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import { formatSeconds, roundBanner } from "./roundHud.js";
@@ -16,6 +16,8 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
   const grid = MapGrid.fromMapData(map);
   let welcome: WelcomeMessage | null = null;
   let buffer = new SnapshotBuffer(50);
+  /** Our copy of the authoritative state; per-tick messages are merged into it. */
+  let current: SimulationState | null = null;
   let rttMs = 0;
   let status = "connecting";
   let banner: string | null = `連線中 ${endpoint} ...`;
@@ -35,8 +37,14 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
       status = "online";
       banner = null;
     },
+    onFull(m, at) {
+      current = m.state;
+      buffer.push(current, at);
+    },
     onSnapshot(m: SnapshotMessage, at) {
-      buffer.push(m, at);
+      if (!current) return; // no baseline yet; the full state is on its way
+      current = applySnapshot(current, m);
+      buffer.push(current, at);
     },
     onPong(m, at) {
       rttMs = at - m.t;
@@ -62,11 +70,10 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
       if (status === "online") conn.sendInput(input);
     },
     sample(now) {
-      const s = buffer.sample(now);
-      return s ? { from: s.from.state, to: s.to.state, alpha: s.alpha } : null;
+      return buffer.sample(now);
     },
     hud: () => {
-      const st = buffer.latest()?.state;
+      const st = buffer.latest();
       const meId = welcome?.playerId ?? conn.sessionId;
       const me = meId ? st?.players[meId] : undefined;
       return {
@@ -82,6 +89,6 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
         action: (me && st && availableAction(grid, st.switches, st.nodes, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
       };
     },
-    banner: () => banner ?? (buffer.latest() ? roundBanner(buffer.latest()!.state) : null),
+    banner: () => banner ?? (buffer.latest() ? roundBanner(buffer.latest()!) : null),
   };
 }

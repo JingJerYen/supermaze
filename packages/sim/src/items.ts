@@ -63,8 +63,8 @@ export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: 
     return { ...p, items: p.items.slice(1) };
   };
 
-  // Development mode: everything but teleport nodes becomes a passable placeholder block.
-  if (!tuning.placeables.effectsEnabled && item !== "teleportNode") {
+  // Development mode: everything but teleport nodes and hammers becomes a passable placeholder block.
+  if (!tuning.placeables.effectsEnabled && item !== "teleportNode" && item !== "hammer") {
     if (placementProblem(grid, work, front)) return p;
     const id = work.nextPlaceableId();
     const lifetime = Math.round(tuning.placeables.placeholderLifetimeSec * tuning.tickRate);
@@ -78,12 +78,24 @@ export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: 
 
   switch (item) {
     case "hammer": {
+      // Breaks whatever players put on the tile ahead: any placeable (real or placeholder)
+      // and any team's teleport node. Never map geometry, boxes, keys or switches (10.3).
       const target = placeableAt(work.placeables, front);
-      if (target && target.kind === "obstacle" && !target.placeholder) {
+      if (target) {
         const rest = { ...work.placeables };
         delete rest[target.id];
         work.placeables = rest;
-        work.events.push({ type: "obstacleDestroyed", tick: work.tick, playerId: p.id, placeableId: target.id });
+        work.events.push({ type: "placeableDestroyed", tick: work.tick, playerId: p.id, placeableId: target.id, kind: target.kind });
+      }
+      const node = nodeAt(work.nodes, front);
+      if (node) {
+        const nodes = { ...work.nodes };
+        delete nodes[node.id];
+        if (node.pairedWith && nodes[node.pairedWith]) {
+          nodes[node.pairedWith] = { ...(nodes[node.pairedWith] as TeleportNodeState), pairedWith: null };
+        }
+        work.nodes = nodes;
+        work.events.push({ type: "nodeDestroyed", tick: work.tick, playerId: p.id, nodeId: node.id, teamId: node.teamId });
       }
       return consume(); // a swing at nothing still uses the hammer up
     }

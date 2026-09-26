@@ -1,35 +1,35 @@
-import type { SnapshotMessage } from "@supermaze/protocol";
+import type { SimulationState } from "@supermaze/sim";
 
 /**
- * Keeps the two most recent snapshots and tells the renderer how far between
- * them to draw. Rendering runs one snapshot interval behind arrival so there
- * is always a "next" state to interpolate toward; the cost is a small, constant
+ * Keeps the two most recent full states and tells the renderer how far between
+ * them to draw. Rendering runs one tick interval behind arrival so there is
+ * always a "next" state to interpolate toward; the cost is a small, constant
  * visual delay, the gain is motion without stepping.
  */
 export class SnapshotBuffer {
-  private prev: { snap: SnapshotMessage; at: number } | null = null;
-  private curr: { snap: SnapshotMessage; at: number } | null = null;
+  private prev: { state: SimulationState; at: number } | null = null;
+  private curr: { state: SimulationState; at: number } | null = null;
 
   constructor(private readonly intervalMs: number) {}
 
-  push(snap: SnapshotMessage, receivedAt: number): void {
-    if (this.curr && snap.state.tick <= this.curr.snap.state.tick) return; // late or duplicate
+  push(state: SimulationState, receivedAt: number): void {
+    if (this.curr && state.tick <= this.curr.state.tick) return; // late or duplicate
     this.prev = this.curr;
-    this.curr = { snap, at: receivedAt };
+    this.curr = { state, at: receivedAt };
   }
 
-  /** Latest snapshot, for HUD and non-interpolated data. */
-  latest(): SnapshotMessage | null {
-    return this.curr?.snap ?? null;
+  /** Latest state, for HUD and non-interpolated data. */
+  latest(): SimulationState | null {
+    return this.curr?.state ?? null;
   }
 
-  /** Pair to interpolate between and the 0..1 blend, or null before two snapshots exist. */
-  sample(now: number): { from: SnapshotMessage; to: SnapshotMessage; alpha: number } | null {
+  /** Pair to interpolate between and the 0..1 blend, or null before any state exists. */
+  sample(now: number): { from: SimulationState; to: SimulationState; alpha: number } | null {
     if (!this.curr) return null;
-    if (!this.prev) return { from: this.curr.snap, to: this.curr.snap, alpha: 1 };
+    if (!this.prev) return { from: this.curr.state, to: this.curr.state, alpha: 1 };
     const renderTime = now - this.intervalMs;
     const span = Math.max(this.curr.at - this.prev.at, 1);
     const alpha = Math.min(Math.max((renderTime - this.prev.at) / span, 0), 1);
-    return { from: this.prev.snap, to: this.curr.snap, alpha };
+    return { from: this.prev.state, to: this.curr.state, alpha };
   }
 }

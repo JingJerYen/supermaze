@@ -131,7 +131,7 @@ describe("obstacle and hammer", () => {
     const miss = sim.step(new Map([["a", press]])); // nothing ahead: still consumed, nothing destroyed
     expect(sim.getState().players["a"]!.items).toEqual([]);
     expect(miss.map((e) => e.type)).toContain("itemUsed");
-    expect(miss.map((e) => e.type)).not.toContain("obstacleDestroyed");
+    expect(miss.map((e) => e.type)).not.toContain("placeableDestroyed");
 
     // Have b place an obstacle on (2,1)? Simpler: give a an obstacle too via a second box... use a fresh sim with two boxes.
     const map: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 6, layer: "road" }], itemBoxes: [{ x: 2, y: 2, layer: "road" }, { x: 1, y: 2, layer: "road" }, { x: 7, y: 4, layer: "road" }, { x: 6, y: 6, layer: "road" }] } };
@@ -157,7 +157,7 @@ describe("obstacle and hammer", () => {
     push(s, "a", E); // blocked by own obstacle
     expect(s.getState().players["a"]!.mover.from).toEqual({ x: 4, y: 1, layer: "road" });
     const ev = s.step(new Map([["a", press]])); // hammer breaks it
-    expect(ev.map((e) => e.type)).toContain("obstacleDestroyed");
+    expect(ev.map((e) => e.type)).toContain("placeableDestroyed");
     expect(Object.values(s.getState().placeables)).toHaveLength(0);
     expect(s.getState().players["a"]!.items).toEqual([]);
   });
@@ -278,5 +278,57 @@ describe("teleport nodes", () => {
     // Replacement boxes exist elsewhere ((7,4) and (6,6)); check the exclusion directly via a fresh draw count.
     const owned = Object.values(s.getState().nodes).length + s.getState().players["a"]!.items.filter((i) => i === "teleportNode").length;
     expect(owned).toBe(2);
+  });
+});
+
+describe("hammer versus teleport nodes", () => {
+  it("destroys a node of any team and unpairs its partner", () => {
+    // Two nodes for team A placed by a, then a hammer for player b of team B who smashes one.
+    const map: MapData = {
+      ...TINY_MAP,
+      spawns: {
+        ...TINY_MAP.spawns,
+        keys: [{ x: 7, y: 6, layer: "road" }, { x: 1, y: 6, layer: "road" }],
+        // Exactly four candidates: once (2,2) and (1,2) are opened, the replacements must land on (7,4) and (6,6).
+        itemBoxes: [{ x: 2, y: 2, layer: "road" }, { x: 1, y: 2, layer: "road" }, { x: 7, y: 4, layer: "road" }, { x: 6, y: 6, layer: "road" }],
+      },
+    };
+    const tuning: Tuning = { ...DEFAULT_TUNING, itemBoxes: { perParticipant: 1, weights: { oneWayDoor: 0, obstacle: 0, hammer: 0, trap: 0, teleportNode: 1 } } };
+    let seed = 0;
+    let s: Simulation;
+    for (;;) {
+      s = new Simulation({ seed: ++seed, map, participants: [{ id: "a", teamId: "A", controller: "human" }, { id: "b", teamId: "B", controller: "human" }], tuning });
+      s.start();
+      const tiles = Object.values(s.getState().boxes).map((bx) => `${bx.pos.x},${bx.pos.y}`).sort().join("|");
+      if (tiles === "1,2|2,2") break;
+      if (seed > 200) throw new Error("no seed");
+    }
+    // a: (2,3) -> (2,2) -> (1,2): two nodes. b spawns at (2,5) and stays put.
+    walk(s, "a", [N, W]);
+    expect(s.getState().players["a"]!.items).toEqual(["teleportNode", "teleportNode"]);
+    walk(s, "a", [N, E, E, E]); // (4,1) facing east
+    s.step(new Map([["a", press]])); // n0 at (5,1)
+    walk(s, "a", [W, W, W, S]); // (1,2) facing south
+    s.step(new Map([["a", press]])); // n1 at (1,3), paired with n0
+    expect(Object.values(s.getState().nodes).every((n) => n.pairedWith !== null)).toBe(true);
+
+    // The sim keeps a reference to `tuning`, so switching the weights now makes a's next box a hammer.
+    tuning.itemBoxes.weights = { oneWayDoor: 0, obstacle: 0, hammer: 1, trap: 0, teleportNode: 0 };
+    walk(s, "a", [S]); // onto n1 (1,3): paired -> teleports a to n0 (5,1)
+    expect(s.getState().players["a"]!.mover.from).toEqual({ x: 5, y: 1, layer: "road" });
+    s.step(new Map([["a", press]])); // picks n0 up (standing on it); n1 unpaired
+    expect(Object.keys(s.getState().nodes)).toEqual(["n1"]);
+    // Walk a to the replacement box on (7,4): (5,1)->(6,1)->(7,1)->(7,2)->(7,3)->(7,4).
+    walk(s, "a", [E, E, S, S, S]);
+    expect(s.getState().players["a"]!.items).toEqual(["teleportNode", "hammer"]);
+    // a has node then hammer: FIFO makes the node come out first. Place it: at (7,4) facing south, front (7,5) road.
+    s.step(new Map([["a", press]])); // node n2 at (7,5), pairs with n1
+    expect(s.getState().nodes["n1"]!.pairedWith).toBe("n2");
+    // Smash n2 with the hammer.
+    const ev = s.step(new Map([["a", press]]));
+    expect(ev).toContainEqual(expect.objectContaining({ type: "nodeDestroyed", nodeId: "n2", teamId: "A" }));
+    expect(Object.keys(s.getState().nodes)).toEqual(["n1"]);
+    expect(s.getState().nodes["n1"]!.pairedWith).toBeNull();
+    expect(s.getState().players["a"]!.items).toEqual([]);
   });
 });

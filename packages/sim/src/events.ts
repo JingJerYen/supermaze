@@ -15,7 +15,8 @@ export type SimEvent =
   | { type: "itemUsed"; tick: Tick; playerId: PlayerId; item: ItemKind }
   | { type: "placeablePlaced"; tick: Tick; playerId: PlayerId; placeableId: string; kind: PlaceableKind | "hammer"; placeholder: boolean }
   | { type: "placeableExpired"; tick: Tick; placeableId: string; kind: PlaceableKind | "hammer" }
-  | { type: "obstacleDestroyed"; tick: Tick; playerId: PlayerId; placeableId: string }
+  | { type: "placeableDestroyed"; tick: Tick; playerId: PlayerId; placeableId: string; kind: PlaceableKind | "hammer" }
+  | { type: "nodeDestroyed"; tick: Tick; playerId: PlayerId; nodeId: string; teamId: TeamId }
   | { type: "trapTriggered"; tick: Tick; playerId: PlayerId; placeableId: string; frozenUntilTick: Tick }
   | { type: "nodePlaced"; tick: Tick; playerId: PlayerId; nodeId: string; pairedWith: string | null }
   | { type: "nodePickedUp"; tick: Tick; playerId: PlayerId; nodeId: string }

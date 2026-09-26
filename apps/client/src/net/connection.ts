@@ -1,11 +1,12 @@
 import { Client, type Room } from "@colyseus/sdk";
-import { C2S, ROOM_NAME, S2C, type PingMessage, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
+import { C2S, ROOM_NAME, S2C, type FullStateMessage, type PingMessage, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
 import type { PlayerInput } from "@supermaze/sim";
 
 const TOKEN_KEY = "supermaze.reconnectionToken";
 
 export interface ConnectionEvents {
   onWelcome(msg: WelcomeMessage): void;
+  onFull(msg: FullStateMessage, receivedAt: number): void;
   onSnapshot(msg: SnapshotMessage, receivedAt: number): void;
   onPong(msg: PingMessage, receivedAt: number): void;
   onLeave(code: number): void;
@@ -35,6 +36,7 @@ export class Connection {
     safeSet(TOKEN_KEY, this.room.reconnectionToken);
 
     this.room.onMessage<WelcomeMessage>(S2C.welcome, (m) => this.events.onWelcome(m));
+    this.room.onMessage<FullStateMessage>(S2C.full, (m) => this.events.onFull(m, performance.now()));
     this.room.onMessage<SnapshotMessage>(S2C.snapshot, (m) => this.events.onSnapshot(m, performance.now()));
     this.room.onMessage<PingMessage>(S2C.pong, (m) => this.events.onPong(m, performance.now()));
     this.room.onLeave((code) => {

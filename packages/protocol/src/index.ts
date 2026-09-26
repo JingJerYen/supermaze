@@ -1,4 +1,4 @@
-import type { PlayerInput, SimulationState } from "@supermaze/sim";
+import type { PlayerInput, PlayerState, SimulationState } from "@supermaze/sim";
 
 /**
  * Wire messages between client and server, carried as Colyseus room messages.
@@ -18,6 +18,9 @@ export const C2S = {
 /** Server -> client message names. */
 export const S2C = {
   welcome: "welcome",
+  /** Complete state; sent on join and after a reconnection. */
+  full: "full",
+  /** Per-tick update: players always, other sections only when they changed. */
   snapshot: "snapshot",
   pong: "pong",
 } as const;
@@ -38,11 +41,29 @@ export interface WelcomeMessage {
   tickRate: number;
 }
 
-export interface SnapshotMessage {
-  /** Server clock when the snapshot was produced, ms since epoch. */
+export interface FullStateMessage {
   serverTime: number;
-  /** Full authoritative state. Delta encoding is a phase-2 optimisation. */
   state: SimulationState;
+}
+
+/** Everything in the state except the per-tick fields; each is sent only on change. */
+export type StateSection = Exclude<keyof SimulationState, "tick" | "players">;
+
+/**
+ * Per-tick message. `players` and `tick` are always present because they change
+ * every tick; every other section appears only when its content differs from
+ * what this room last broadcast. Clients merge it into their copy of the state.
+ */
+export interface SnapshotMessage extends Partial<Pick<SimulationState, StateSection>> {
+  serverTime: number;
+  tick: number;
+  players: Record<string, PlayerState>;
+}
+
+/** Apply a per-tick message to the previous full state. */
+export function applySnapshot(prev: SimulationState, msg: SnapshotMessage): SimulationState {
+  const { serverTime: _t, ...rest } = msg;
+  return { ...prev, ...rest };
 }
 
 export type PongMessage = PingMessage;
