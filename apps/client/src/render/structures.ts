@@ -8,17 +8,15 @@ import type { Dir } from "@supermaze/sim";
 
 const STEP = 0xc2a96a;
 const STEP_ALT = 0xb39a5e;
-const CURB = 0x8e9bb3;
 const PLANK = 0xb08a5a;
 const PLANK_ALT = 0xa07c4f;
 const RAIL = 0x6d5436;
 
-/** `rise` points from the stairs tile toward the wall it climbs onto. */
+/** `rise` points from the stairs tile toward the wall it climbs onto. Open on both sides. */
 export function createStairs(rise: Dir, steps = 5): THREE.Object3D {
   const g = new THREE.Group();
   const stepMat = new THREE.MeshLambertMaterial({ color: STEP });
   const stepAltMat = new THREE.MeshLambertMaterial({ color: STEP_ALT });
-  const curbMat = new THREE.MeshLambertMaterial({ color: CURB });
   const width = 0.9;
   const depth = 1 / steps;
   // Local frame: +Z is the rise direction (toward the wall); the tile spans z in [-0.5, 0.5].
@@ -27,13 +25,6 @@ export function createStairs(rise: Dir, steps = 5): THREE.Object3D {
     const box = new THREE.Mesh(new THREE.BoxGeometry(width, h, depth), i % 2 ? stepAltMat : stepMat);
     box.position.set(0, h / 2, -0.5 + depth * (i + 0.5));
     g.add(box);
-  }
-  // Low curbs along both open sides so the run reads as a staircase from any angle.
-  for (const side of [-1, 1]) {
-    const curb = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.0, 1.0), curbMat);
-    curb.position.set(side * (width / 2 + 0.03), 0.5, 0);
-    // Slant the curb top by using a wedge-like scale trick: simply keep it a slab; the steps carry the read.
-    g.add(curb);
   }
   g.rotation.y = Math.atan2(rise.dx, rise.dy);
   return g;
