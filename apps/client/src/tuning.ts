@@ -46,6 +46,11 @@ export const CLIENT_TUNING = {
     /** Full hue cycle per second for the glass tint; 0 keeps a fixed colour. */
     hueCyclePerSec: 0.12,
   },
+  teleportBeam: {
+    /** Beam above a paired teleport node, world units. */
+    height: 2.2,
+    opacity: 0.4,
+  },
   keyBeam: {
     /** World units above the key. */
     height: 3.5,

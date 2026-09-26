@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CLIENT_TUNING } from "../tuning.js";
+import { createBeam } from "./itemModels.js";
 import { models } from "./models.js";
 
 /**
@@ -26,36 +27,9 @@ export function createKeyModel(): THREE.Object3D {
 /** Tall, unlit beam so a key is visible from afar even when the map is dark. */
 export function createKeyBeam(): THREE.Object3D {
   const { height, radius, opacity, color } = CLIENT_TUNING.keyBeam;
-  const geo = new THREE.CylinderGeometry(radius, radius * 0.6, height, 12, 1, true);
-  // Fade toward the top by baking alpha into vertex colours.
-  const pos = geo.attributes["position"] as THREE.BufferAttribute;
-  const colors = new Float32Array(pos.count * 4);
-  const c = new THREE.Color(color);
-  for (let i = 0; i < pos.count; i++) {
-    const t = (pos.getY(i) + height / 2) / height; // 0 bottom .. 1 top
-    colors[i * 4] = c.r;
-    colors[i * 4 + 1] = c.g;
-    colors[i * 4 + 2] = c.b;
-    colors[i * 4 + 3] = (1 - t) * opacity;
-  }
-  geo.setAttribute("color", new THREE.BufferAttribute(colors, 4));
-  const mat = new THREE.MeshBasicMaterial({
-    vertexColors: true,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const beam = new THREE.Mesh(geo, mat);
-  beam.position.y = height / 2 + 0.3;
-  return beam;
+  return createBeam(color, height, opacity, radius);
 }
 
-/**
- * Item box: a translucent cube balanced on one corner (a diamond from the side)
- * floating above the tile, with a spinning question mark inside. The cube's
- * `userData.spin` and the mark's `userData.mark` are animated by BoxViews.
- */
 export function createBoxModel(): THREE.Object3D {
   const real = models.instantiate("box");
   if (real) return real;
