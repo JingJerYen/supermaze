@@ -1,6 +1,6 @@
 import type { PlayerInput } from "@supermaze/sim";
 
-/** WASD / arrow keys -> movement intent; E or Space -> context action (edge-triggered). */
+/** WASD / arrow keys -> movement; E or Space -> the single context action (edge-triggered). */
 export class KeyboardInput {
   private readonly down = new Set<string>();
   private actionPending = false;

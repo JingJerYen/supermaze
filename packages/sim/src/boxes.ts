@@ -24,9 +24,12 @@ export function drawBoxTiles(
   return rng.shuffle([...free]).slice(0, Math.min(count, free.length));
 }
 
-/** Weighted item draw from the tuning table. Kinds with weight 0 are never drawn. */
-export function drawItem(rng: SeededRandom, tuning: Tuning): ItemKind {
-  const kinds = Object.keys(tuning.itemBoxes.weights) as ItemKind[];
+/**
+ * Weighted item draw from the tuning table. Kinds with weight 0 and kinds in
+ * `excluded` (e.g. teleport nodes when the team already owns two) are never drawn.
+ */
+export function drawItem(rng: SeededRandom, tuning: Tuning, excluded: readonly ItemKind[] = []): ItemKind {
+  const kinds = (Object.keys(tuning.itemBoxes.weights) as ItemKind[]).filter((k) => !excluded.includes(k));
   const weights = kinds.map((k) => tuning.itemBoxes.weights[k]);
   return rng.pickWeighted(kinds, weights);
 }

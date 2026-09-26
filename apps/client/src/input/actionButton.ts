@@ -6,11 +6,11 @@ export class ActionButton {
   private readonly el: HTMLButtonElement;
   private pending = false;
 
-  constructor(parent: HTMLElement) {
+  constructor(parent: HTMLElement, rightPx = 24) {
     this.el = document.createElement("button");
     Object.assign(this.el.style, {
       position: "fixed",
-      right: "max(24px, env(safe-area-inset-right))",
+      right: `max(${rightPx}px, env(safe-area-inset-right))`,
       bottom: "max(24px, env(safe-area-inset-bottom))",
       width: "84px",
       height: "84px",

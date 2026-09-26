@@ -1,4 +1,4 @@
-import type { Dir, MapGrid } from "./map/grid.js";
+import { DIRS, type Dir, type MapGrid } from "./map/grid.js";
 import type { TilePos } from "./map/types.js";
 
 /**
@@ -13,6 +13,8 @@ export interface MoverState {
   target: TilePos | null;
   /** 0..1 fraction of the way from `from` to `target`. */
   progress: number;
+  /** Last direction the player pushed; items are placed one tile this way. */
+  facing: Dir;
 }
 
 export interface MoveIntent {
@@ -20,31 +22,44 @@ export interface MoveIntent {
   moveY: number;
 }
 
-export function createMover(at: TilePos): MoverState {
-  return { from: at, target: null, progress: 0 };
+/** Extra veto on a topologically legal step (obstacles, one-way doors). */
+export type MoveFilter = (from: TilePos, to: TilePos, dir: Dir) => boolean;
+
+export function createMover(at: TilePos, facing: Dir = DIRS.south): MoverState {
+  return { from: at, target: null, progress: 0, facing };
 }
 
 /** Advance one tick. `speed` is tiles per tick. */
-export function stepMover(m: MoverState, intent: MoveIntent, grid: MapGrid, speed: number): MoverState {
-  let { from, target, progress } = m;
+export function stepMover(
+  m: MoverState,
+  intent: MoveIntent,
+  grid: MapGrid,
+  speed: number,
+  allow?: MoveFilter,
+): MoverState {
+  let { from, target, progress, facing } = m;
   // Distance still available this tick. Carrying the remainder across a tile
   // boundary keeps speed constant instead of pausing for a tick at every tile.
   let budget = speed;
 
   if (target) {
     progress += budget;
-    if (progress < 1) return { from, target, progress };
+    if (progress < 1) return { from, target, progress, facing };
     budget = progress - 1;
     from = target;
     target = null;
     progress = 0;
   }
 
-  for (const dir of intentDirections(intent)) {
+  const dirs = intentDirections(intent);
+  if (dirs[0]) facing = dirs[0];
+  for (const dir of dirs) {
     const dest = grid.tryMove(from, dir);
-    if (dest) return { from, target: dest, progress: Math.min(budget, MAX_PROGRESS_PER_TICK) };
+    if (dest && (!allow || allow(from, dest, dir))) {
+      return { from, target: dest, progress: Math.min(budget, MAX_PROGRESS_PER_TICK), facing: dir };
+    }
   }
-  return { from, target: null, progress: 0 };
+  return { from, target: null, progress: 0, facing };
 }
 
 /** A single tick never completes a whole tile; speeds are expected to stay well below 1 tile/tick. */
@@ -72,4 +87,13 @@ export function moverPosition(m: MoverState): { x: number; y: number } {
     x: m.from.x + (m.target.x - m.from.x) * t,
     y: m.from.y + (m.target.y - m.from.y) * t,
   };
+}
+
+/** The tile directly in front of a standing mover, on the same layer. */
+export function frontTile(m: MoverState): TilePos {
+  return { x: m.from.x + m.facing.dx, y: m.from.y + m.facing.dy, layer: m.from.layer };
+}
+
+export function sameTile(a: TilePos, b: TilePos): boolean {
+  return a.x === b.x && a.y === b.y && a.layer === b.layer;
 }

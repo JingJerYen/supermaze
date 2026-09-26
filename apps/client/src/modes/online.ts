@@ -79,7 +79,7 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
         tower: st?.towerArrivals.length ?? 0,
         lights: st ? (st.lightsOn ? "on" : "OFF") : "-",
         items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
-        action: (me && st && availableAction(grid, st.switches, me)) ?? "-",
+        action: (me && st && availableAction(grid, st.switches, st.nodes, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
       };
     },
     banner: () => banner ?? (buffer.latest() ? roundBanner(buffer.latest()!.state) : null),

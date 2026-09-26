@@ -52,7 +52,13 @@ export const DEFAULT_TUNING: Tuning = {
     darkRadiusTowerTiles: 6,
   },
 
+  teleport: {
+    maxNodesPerTeam: 2,
+  },
+
   placeables: {
+    effectsEnabled: false,
+    placeholderLifetimeSec: 30,
     lifetimeSec: {
       oneWayDoor: 10,
       obstacle: 10,

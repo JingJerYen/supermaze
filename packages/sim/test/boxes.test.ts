@@ -124,3 +124,42 @@ describe("item boxes", () => {
     expect(run()).toEqual(run());
   });
 });
+
+describe("using items", () => {
+  it("consumes the oldest item first and frees a slot for the next box", () => {
+    const tuning = tuningWith({ inventory: { capacity: 1 } });
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    const sim = new Simulation({ seed: 4, map, participants: one, tuning });
+    sim.start();
+    walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // (2,2)
+    walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // (2,1): bag may already be full
+    const before = sim.getState().players["a"]!.items;
+    expect(before).toHaveLength(1);
+
+    // Face a legal tile: (4,1) looking east at (5,1). (3,1) hosts a light switch, so not there.
+    walk(sim, "a", [{ moveX: 1, moveY: 0 }, { moveX: 1, moveY: 0 }]);
+    const ev = sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]]));
+    expect(ev).toContainEqual({ type: "itemUsed", tick: expect.any(Number), playerId: "a", item: before[0] });
+    // Nothing left to use and nothing else to do here: a second press is a no-op.
+    expect(sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]])).find((e) => e.type === "itemUsed")).toBeUndefined();
+
+    // With the slot free, stepping onto a remaining box opens it.
+    walk(sim, "a", [{ moveX: -1, moveY: 0 }, { moveX: -1, moveY: 0 }, { moveX: -1, moveY: 0 }]); // (3,1), (2,1), (1,1)
+    expect(sim.getState().players["a"]!.items.length).toBe(1);
+  });
+
+  it("keeps acquisition order", () => {
+    const tuning = tuningWith({
+      inventory: { capacity: 3 },
+      itemBoxes: { perParticipant: 2, weights: { oneWayDoor: 0, obstacle: 0, hammer: 1, trap: 0, teleportNode: 0 } },
+    });
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    const sim = new Simulation({ seed: 4, map, participants: one, tuning });
+    sim.start();
+    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }, { moveX: 1, moveY: 0 }, { moveX: 1, moveY: 0 }]); // end at (4,1) facing east
+    const items = sim.getState().players["a"]!.items;
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]]));
+    expect(sim.getState().players["a"]!.items).toEqual(items.slice(1));
+  });
+});

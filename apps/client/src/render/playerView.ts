@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { moverPosition, type MapGrid, type MoverState } from "@supermaze/sim";
+import { moverPosition, type Dir, type MapGrid, type MoverState } from "@supermaze/sim";
 import { tileElevation } from "./elevation.js";
 
 export const PLAYER_HEIGHT = 0.9;
@@ -14,14 +14,29 @@ function poseOf(grid: MapGrid, m: MoverState, out: THREE.Vector3): THREE.Vector3
 
 export class PlayerView {
   readonly mesh: THREE.Mesh;
+  private readonly nose: THREE.Mesh;
+  private readonly color: number;
   private readonly prevPose = new THREE.Vector3();
   private readonly currPose = new THREE.Vector3();
 
   constructor(color: number) {
+    this.color = color;
     this.mesh = new THREE.Mesh(
       new THREE.BoxGeometry(0.6, PLAYER_HEIGHT, 0.6),
       new THREE.MeshLambertMaterial({ color }),
     );
+    // Small "nose" showing which way the player faces, i.e. where an item would be placed.
+    this.nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.16), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    this.nose.position.set(0, 0.2, 0.38);
+    this.mesh.add(this.nose);
+  }
+
+  setFacing(dir: Dir): void {
+    this.mesh.rotation.y = Math.atan2(dir.dx, dir.dy);
+  }
+
+  setFrozen(frozen: boolean): void {
+    (this.mesh.material as THREE.MeshLambertMaterial).color.setHex(frozen ? 0x9fd3ff : this.color);
   }
 
   /**

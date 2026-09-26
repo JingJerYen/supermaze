@@ -1,4 +1,4 @@
-import type { ItemKind } from "./tuning/index.js";
+import type { ItemKind, PlaceableKind } from "./tuning/index.js";
 import type { PlayerId, TeamId, Tick } from "./types.js";
 
 /**
@@ -12,6 +12,14 @@ export type SimEvent =
   | { type: "lightsToggled"; tick: Tick; playerId: PlayerId; switchId: string; lightsOn: boolean }
   | { type: "boxOpened"; tick: Tick; playerId: PlayerId; boxId: string; item: ItemKind }
   | { type: "boxSpawned"; tick: Tick; boxId: string }
+  | { type: "itemUsed"; tick: Tick; playerId: PlayerId; item: ItemKind }
+  | { type: "placeablePlaced"; tick: Tick; playerId: PlayerId; placeableId: string; kind: PlaceableKind | "hammer"; placeholder: boolean }
+  | { type: "placeableExpired"; tick: Tick; placeableId: string; kind: PlaceableKind | "hammer" }
+  | { type: "obstacleDestroyed"; tick: Tick; playerId: PlayerId; placeableId: string }
+  | { type: "trapTriggered"; tick: Tick; playerId: PlayerId; placeableId: string; frozenUntilTick: Tick }
+  | { type: "nodePlaced"; tick: Tick; playerId: PlayerId; nodeId: string; pairedWith: string | null }
+  | { type: "nodePickedUp"; tick: Tick; playerId: PlayerId; nodeId: string }
+  | { type: "teleported"; tick: Tick; playerId: PlayerId; fromNodeId: string; toNodeId: string }
   | { type: "teamCompleted"; tick: Tick; teamId: TeamId; isWinner: boolean }
   | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason };
 
