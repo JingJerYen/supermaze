@@ -34,6 +34,18 @@ export const CLIENT_TUNING = {
     /** Low base covering the whole footprint so the blocked tiles read as tower ground. */
     baseHeight: 0.3,
   },
+  itemBox: {
+    /** Cube edge length, tiles. */
+    size: 0.42,
+    /** Gap between the floor and the cube's lowest tip, tiles. */
+    hover: 0.25,
+    opacity: 0.45,
+    /** Rotations per second of the cube and of the question mark. */
+    spinPerSec: 0.35,
+    markSpinPerSec: 0.8,
+    /** Full hue cycle per second for the glass tint; 0 keeps a fixed colour. */
+    hueCyclePerSec: 0.12,
+  },
   keyBeam: {
     /** World units above the key. */
     height: 3.5,

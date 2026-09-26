@@ -51,16 +51,57 @@ export function createKeyBeam(): THREE.Object3D {
   return beam;
 }
 
+/**
+ * Item box: a translucent cube balanced on one corner (a diamond from the side)
+ * floating above the tile, with a spinning question mark inside. The cube's
+ * `userData.spin` and the mark's `userData.mark` are animated by BoxViews.
+ */
 export function createBoxModel(): THREE.Object3D {
   const real = models.instantiate("box");
   if (real) return real;
+  const { size, hover, opacity } = CLIENT_TUNING.itemBox;
   const group = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.36, 0.42), new THREE.MeshLambertMaterial({ color: 0x8a5a2b }));
-  body.position.y = 0.18;
-  const lid = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.14, 0.46), new THREE.MeshLambertMaterial({ color: 0xb07a3c }));
-  lid.position.y = 0.43;
-  const band = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.08, 0.1), new THREE.MeshLambertMaterial({ color: 0xd9c27a }));
-  band.position.y = 0.3;
-  group.add(body, lid, band);
+
+  const cube = new THREE.Group();
+  const glass = new THREE.Mesh(
+    new THREE.BoxGeometry(size, size, size),
+    new THREE.MeshLambertMaterial({ color: 0x7fd8ff, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(glass.geometry), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
+  cube.add(glass, edges);
+  // Stand the cube on a corner: tilt so a vertex points straight down.
+  cube.rotation.set(Math.atan(Math.SQRT2), Math.PI / 4, 0, "ZYX");
+  cube.name = "spin";
+
+  const mark = new THREE.Mesh(
+    new THREE.PlaneGeometry(size * 0.55, size * 0.55),
+    new THREE.MeshBasicMaterial({ map: questionMarkTexture(), transparent: true, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  mark.name = "mark";
+
+  // Cube on a corner spans size*sqrt(3) tip to tip; hover so the tip floats above the floor.
+  const lift = hover + (size * Math.SQRT2) / 2 + 0.1;
+  cube.position.y = lift;
+  mark.position.y = lift;
+  group.add(cube, mark);
   return group;
+}
+
+let questionTex: THREE.CanvasTexture | null = null;
+function questionMarkTexture(): THREE.CanvasTexture {
+  if (questionTex) return questionTex;
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d")!;
+  ctx.font = "bold 104px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 12;
+  ctx.strokeStyle = "rgba(60,30,0,0.9)";
+  ctx.strokeText("?", 64, 70);
+  ctx.fillStyle = "#ffd23f";
+  ctx.fillText("?", 64, 70);
+  questionTex = new THREE.CanvasTexture(canvas);
+  return questionTex;
 }
