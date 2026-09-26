@@ -126,10 +126,12 @@ describe("obstacle and hammer", () => {
     expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 2, y: 1, layer: "road" });
   });
 
-  it("a hammer is consumed only when it actually breaks an obstacle", () => {
+  it("a hammer is spent on a swing at nothing, and breaks an obstacle when there is one", () => {
     const sim = armed("hammer");
-    sim.step(new Map([["a", press]])); // nothing ahead: no-op, hammer stays
-    expect(sim.getState().players["a"]!.items).toEqual(["hammer"]);
+    const miss = sim.step(new Map([["a", press]])); // nothing ahead: still consumed, nothing destroyed
+    expect(sim.getState().players["a"]!.items).toEqual([]);
+    expect(miss.map((e) => e.type)).toContain("itemUsed");
+    expect(miss.map((e) => e.type)).not.toContain("obstacleDestroyed");
 
     // Have b place an obstacle on (2,1)? Simpler: give a an obstacle too via a second box... use a fresh sim with two boxes.
     const map: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 6, layer: "road" }], itemBoxes: [{ x: 2, y: 2, layer: "road" }, { x: 1, y: 2, layer: "road" }, { x: 7, y: 4, layer: "road" }, { x: 6, y: 6, layer: "road" }] } };

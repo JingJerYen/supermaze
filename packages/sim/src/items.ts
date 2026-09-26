@@ -50,8 +50,9 @@ export function teamNodeCount(players: Record<PlayerId, PlayerState>, nodes: Rec
 }
 
 /**
- * Use the oldest item of `p`. Returns the updated player. Consumes the item only
- * when its effect actually happened (a hammer that hits nothing stays in the bag).
+ * Use the oldest item of `p`. Returns the updated player. Placeables are kept
+ * when the tile ahead refuses them; a hammer is spent whether or not it hits,
+ * so a hammer at the front of the FIFO bag never jams it (CLAUDE.md 10.3).
  */
 export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: PlayerState): PlayerState {
   const item = p.items[0];
@@ -78,12 +79,13 @@ export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: 
   switch (item) {
     case "hammer": {
       const target = placeableAt(work.placeables, front);
-      if (!target || target.kind !== "obstacle" || target.placeholder) return p;
-      const rest = { ...work.placeables };
-      delete rest[target.id];
-      work.placeables = rest;
-      work.events.push({ type: "obstacleDestroyed", tick: work.tick, playerId: p.id, placeableId: target.id });
-      return consume();
+      if (target && target.kind === "obstacle" && !target.placeholder) {
+        const rest = { ...work.placeables };
+        delete rest[target.id];
+        work.placeables = rest;
+        work.events.push({ type: "obstacleDestroyed", tick: work.tick, playerId: p.id, placeableId: target.id });
+      }
+      return consume(); // a swing at nothing still uses the hammer up
     }
     case "oneWayDoor":
     case "obstacle":
