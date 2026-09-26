@@ -35,6 +35,7 @@ export class PlayerViews {
     alpha: number,
     tick: number,
     dtSec: number,
+    meId: string | null = null,
   ): void {
     const newTick = tick !== this.lastTick;
     this.lastTick = tick;
@@ -69,6 +70,7 @@ export class PlayerViews {
       view.update(this.grid, prev, p.mover, alpha, dtSec);
       view.setFacing(p.mover.facing);
       view.setFrozen(p.frozenUntilTick > tick);
+      view.setSelfMarker(id === meId && p.phase === "maze");
     }
     for (const [id, view] of this.views) {
       if (!to[id]) {

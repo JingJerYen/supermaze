@@ -3,6 +3,7 @@ import { moverPosition, type Dir, type MapGrid, type MoverState } from "@superma
 import { characters, type CharacterRig } from "./characters.js";
 import { tileElevation } from "./elevation.js";
 import { HammerSwing } from "./hammerSwing.js";
+import { CLIENT_TUNING } from "../tuning.js";
 
 export const PLAYER_HEIGHT = 0.9;
 const FROZEN_COLOR = 0x9fd3ff;
@@ -30,6 +31,9 @@ export class PlayerView {
   private readonly hammer = new HammerSwing();
   private walking = false;
   private oneShot: THREE.AnimationAction | null = null;
+  /** "This is you" arrow above the head; only the local player's view has one. */
+  private marker: THREE.Mesh | null = null;
+  private markerTime = 0;
 
   constructor(playerId: string, color: number) {
     this.color = color;
@@ -75,6 +79,30 @@ export class PlayerView {
     this.setWalking(curr.target !== null);
     this.rig?.mixer.update(dtSec);
     this.hammer.update(dtSec);
+    if (this.marker) {
+      const t = CLIENT_TUNING.selfMarker;
+      this.markerTime += dtSec;
+      this.marker.position.y = t.height + t.length / 2 + Math.sin(this.markerTime * t.bobHz * Math.PI * 2) * t.bobAmp;
+    }
+  }
+
+  /**
+   * Show or hide the local-player arrow: a team-coloured cone pointing down at
+   * the head, unlit so it reads in the dark, bobbing slowly. Twelve characters
+   * shared by up to six players are not enough to tell yourself apart otherwise.
+   */
+  setSelfMarker(on: boolean): void {
+    if (on && !this.marker) {
+      const t = CLIENT_TUNING.selfMarker;
+      this.marker = new THREE.Mesh(
+        new THREE.ConeGeometry(t.radius, t.length, 4),
+        new THREE.MeshBasicMaterial({ color: this.color, transparent: true, opacity: t.opacity, depthWrite: false }),
+      );
+      this.marker.rotation.x = Math.PI; // apex down
+      this.marker.position.y = t.height + t.length / 2;
+      this.mesh.add(this.marker);
+    }
+    if (this.marker) this.marker.visible = on;
   }
 
   /** Place the character at a world x/z on the ground (used while walking into the tower). */

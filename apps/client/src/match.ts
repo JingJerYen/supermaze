@@ -102,7 +102,7 @@ export class Match {
     const s = this.mode.sample(now, alpha);
     const meId = this.mode.localPlayerId();
     if (s) {
-      this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt);
+      this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt, meId);
       this.keys.update(s.to.keys, now / 1000);
       this.boxes.update(s.to.boxes, now / 1000);
       this.placeables.update(s.to.placeables, s.to.nodes, now / 1000);

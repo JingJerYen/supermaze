@@ -69,6 +69,17 @@ export const CLIENT_TUNING = {
     opacity: 0.9,
     opacityDesktop: 0.45,
   },
+  selfMarker: {
+    /** Height of the arrow's tip above the feet, world units (the character is 0.9 tall). */
+    height: 1.25,
+    /** Cone radius and length, world units. */
+    radius: 0.14,
+    length: 0.26,
+    /** Bob amplitude (world units) and rate (cycles per second). */
+    bobAmp: 0.06,
+    bobHz: 1.1,
+    opacity: 0.95,
+  },
   keyBeam: {
     /** World units above the key. */
     height: 3.5,
