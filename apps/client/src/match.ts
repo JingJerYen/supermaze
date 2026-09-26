@@ -140,6 +140,8 @@ export class Match {
         drawCalls: r.calls,
         triangles: r.triangles,
         pixels: `${this.renderer.domElement.width}x${this.renderer.domElement.height} @${this.renderer.getPixelRatio()}`,
+        gpuObjects: `${this.renderer.info.memory.geometries} geo, ${this.renderer.info.memory.textures} tex`,
+        jsHeap: jsHeapMB(),
         mode: this.mode.label,
         ...this.mode.hud(),
       },
@@ -158,4 +160,10 @@ export class Match {
     this.input.dispose();
     this.renderer.clear();
   }
+}
+
+/** Chrome-only JS heap size; other browsers show "-". */
+function jsHeapMB(): string {
+  const m = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
+  return m ? `${(m.usedJSHeapSize / 1048576).toFixed(0)} MB` : "-";
 }
