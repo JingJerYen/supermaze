@@ -4,6 +4,7 @@ import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import type { MapData } from "../src/map/types.js";
 import { TINY_MAP } from "./fixtures.js";
+import { faceTower } from "./walk.js";
 
 const still: PlayerInput = { moveX: 0, moveY: 0 };
 const climb: PlayerInput = { ...still, action: true };
@@ -38,6 +39,7 @@ function make(teams: Record<string, string>, tuning?: Partial<Tuning["round"]>, 
   const sim = new Simulation({ seed: 5, map: instantMap(participants.length), participants, tuning: t, timeLimitSec: timeLimitSec ?? 10 });
   sim.start();
   sim.step(new Map()); // everyone picks up the key under their feet
+  faceTower(sim, Object.keys(teams)); // and turns to face the door (climbing needs it)
   return sim;
 }
 
@@ -90,9 +92,9 @@ describe("round end by everyone climbing", () => {
 
 describe("round end by timeout", () => {
   it("counts down from start and ends at the limit", () => {
-    const sim = make({ a1: "A", b1: "B" }, undefined, 1); // 1 s = 20 ticks
-    expect(sim.remainingSec()).toBeCloseTo(0.95, 5);
-    for (let i = 0; i < 18; i++) sim.step(new Map());
+    const sim = make({ a1: "A", b1: "B" }, undefined, 1); // 1 s = 20 ticks; make() already spent 2
+    expect(sim.remainingSec()).toBeCloseTo(0.9, 5);
+    for (let i = 0; i < 17; i++) sim.step(new Map());
     expect(sim.getState().status).toBe("running");
     const events = sim.step(new Map());
     expect(sim.getState().status).toBe("finished");

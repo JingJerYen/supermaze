@@ -26,6 +26,20 @@ export function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
   }
 }
 
+/**
+ * One tick of pushing toward the tower door each player stands in front of: a
+ * tap that turns without moving. Players not on a door tile get no input.
+ */
+export function faceTower(sim: Simulation, ids: string[]): void {
+  const inputs = new Map<string, PlayerInput>();
+  for (const id of ids) {
+    const p = sim.getState().players[id]!;
+    const d = sim.grid.doorDir(p.mover.from.x, p.mover.from.y);
+    if (d) inputs.set(id, { moveX: d.dx, moveY: d.dy });
+  }
+  sim.step(inputs);
+}
+
 /** Hold a direction for a while without settling (to test being blocked). */
 export function push(sim: Simulation, id: string, d: PlayerInput, ticks?: number): void {
   const t = ticks ?? ticksPerTile(sim) * 2 + turnTicks(sim) + 1;

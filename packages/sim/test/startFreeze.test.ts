@@ -68,7 +68,8 @@ describe("start freeze (CLAUDE.md section 4)", () => {
     expect(sim.getState().players["a"]!.mover.facing).toEqual({ dx: 1, dy: 0 });
     expect(facingBefore).not.toEqual({ dx: 1, dy: 0 });
 
-    // And the action key works again: b climbs.
+    // And the action key works again: b turns to face the east door and climbs.
+    sim.step(new Map([["b", { moveX: -1, moveY: 0 }]]));
     expect(sim.availableAction(sim.getState().players["b"]!)).toBe("climb");
     const climbed = sim.step(new Map([["b", press]]));
     expect(climbed.map((e) => e.type)).toContain("towerClimbed");

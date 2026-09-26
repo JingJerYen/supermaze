@@ -3,6 +3,7 @@ import { MapGrid } from "../src/map/grid.js";
 import type { MapData } from "../src/map/types.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
+import { faceTower } from "./walk.js";
 
 const press: PlayerInput = { moveX: 0, moveY: 0, action: true };
 
@@ -44,6 +45,7 @@ describe("tower platform", () => {
     });
     sim.start();
     sim.step(new Map()); // pick up keys underfoot
+    faceTower(sim, ["a", "b"]);
     sim.step(new Map([["a", press], ["b", press]]));
     const a = sim.getState().players["a"]!;
     const b = sim.getState().players["b"]!;
@@ -65,6 +67,7 @@ describe("tower platform", () => {
     });
     solo.start();
     solo.step(new Map());
+    faceTower(solo, ["a"]);
     solo.step(new Map([["a", press]]));
     expect(solo.getState().status).toBe("running");
     const start = solo.getState().players["a"]!.mover.from;

@@ -135,6 +135,7 @@ describe("ghost rules", () => {
     });
     sim.start();
     sim.step(new Map()); // a and b pick up keys underfoot
+    sim.step(new Map([["b", { moveX: -1, moveY: 0 }]])); // b faces the east door
     sim.step(new Map([["b", { ...still, action: true }]])); // b climbs
     expect(sim.getState().players["b"]!.phase).toBe("tower");
     run(sim, 2 * T); // -> active; eligible teams: A (a) and B (c)

@@ -142,6 +142,46 @@ export class MapGrid {
   }
 
   private entryKeys: Set<string> | null = null;
+  private doorMap: Map<string, Dir> | null = null;
+
+  /**
+   * Tower doors (CLAUDE.md section 5): one per face, at the centre of that face.
+   * Returns the direction a player standing on (x,y) must face to use the door
+   * there, or null when the tile is not a door tile. Even-sided footprints have
+   * no centre and therefore no doors; the validator rejects them.
+   */
+  doorDir(x: number, y: number): Dir | null {
+    if (!this.doorMap) {
+      this.doorMap = new Map();
+      const tower = this.findCells("tower");
+      if (tower.length > 0) {
+        const xs = tower.map((c) => c.x);
+        const ys = tower.map((c) => c.y);
+        const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const faces: [number, number, Dir][] = [
+          [cx, maxY + 1, DIRS.north], // south door: stand south of the tower, face north
+          [maxX + 1, cy, DIRS.west],
+          [minX - 1, cy, DIRS.east],
+          [cx, minY - 1, DIRS.south],
+        ];
+        for (const [fx, fy, dir] of faces) {
+          if (Number.isInteger(fx) && Number.isInteger(fy) && this.kindAt(fx, fy) === "road") this.doorMap.set(`${fx},${fy}`, dir);
+        }
+      }
+    }
+    return this.doorMap.get(`${x},${y}`) ?? null;
+  }
+
+  /** The door tiles in the spawn order of their faces: south, east, west, north. */
+  doorTiles(): TilePos[] {
+    this.doorDir(0, 0);
+    return [...(this.doorMap as Map<string, Dir>).keys()].map((k) => {
+      const [x, y] = k.split(",").map(Number) as [number, number];
+      return { x, y, layer: "road" as const };
+    });
+  }
 
   /** Whether a road tile touches the tower footprint. Players climb from these tiles. */
   isTowerEntry(x: number, y: number): boolean {

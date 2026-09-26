@@ -19,7 +19,15 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
     return [(e as Error).message];
   }
 
-  if (grid.findCells("tower").length === 0) errors.push("map has no tower cells (T)");
+  const tower = grid.findCells("tower");
+  if (tower.length === 0) errors.push("map has no tower cells (T)");
+  else {
+    const w = Math.max(...tower.map((c) => c.x)) - Math.min(...tower.map((c) => c.x)) + 1;
+    const h = Math.max(...tower.map((c) => c.y)) - Math.min(...tower.map((c) => c.y)) + 1;
+    if (tower.length !== w * h) errors.push("tower footprint must be a filled rectangle");
+    // Each face needs a centre tile for its door (CLAUDE.md section 5).
+    if (w % 2 === 0 || h % 2 === 0) errors.push(`tower footprint is ${w}x${h}; both sides must be odd so every face has a centre door`);
+  }
 
   for (const { x, y } of grid.findCells("stairs")) {
     const rise = grid.stairsRiseDir(x, y);

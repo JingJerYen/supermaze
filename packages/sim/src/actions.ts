@@ -27,7 +27,8 @@ export interface ActionContext {
 /**
  * Shared by the authoritative step and the client HUD, so what the button says
  * it will do is exactly what the server will do. The player must be standing
- * still in the maze and the start freeze must be over. Priority: climb, light switch underfoot, pick up the
+ * still in the maze and the start freeze must be over. Priority: climb (with a key, on a
+ * door tile, facing the door), light switch underfoot, pick up the
  * team's teleport node underfoot, then use the oldest carried item; the last
  * only when the item could really be used (a refused placement offers nothing).
  */
@@ -37,7 +38,10 @@ export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerStat
   const at = p.mover.from;
   // A ghost's key and bag are locked for the chase; light switches stay usable (section 13).
   if (isGhost(ctx.ghost, p)) return usableSwitchAt(ctx.switches, at) ? "switch" : null;
-  if (at.layer === "road" && p.keyId !== null && grid.isTowerEntry(at.x, at.y)) return "climb";
+  if (at.layer === "road" && p.keyId !== null) {
+    const door = grid.doorDir(at.x, at.y);
+    if (door && door.dx === p.mover.facing.dx && door.dy === p.mover.facing.dy) return "climb";
+  }
   if (usableSwitchAt(ctx.switches, at)) return "switch";
   const node = nodeAt(ctx.nodes, at);
   if (node && node.teamId === p.teamId && p.items.length < inventoryCapacity) return "pickUpNode";
