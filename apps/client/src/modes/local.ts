@@ -1,6 +1,6 @@
 import { DEFAULT_TUNING, Simulation, type MapData, type SimulationState } from "@supermaze/sim";
 import { formatSeconds } from "./roundHud.js";
-import type { GameMode } from "./mode.js";
+import { switchTileSet, type GameMode } from "./mode.js";
 
 /** Single-player: the simulation runs inside the page. Same code the server runs. */
 export function createLocalMode(map: MapData, options: { players?: number; seed?: number; name?: string } = {}): GameMode {
@@ -27,6 +27,7 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
     grid: sim.grid,
     theme: map.theme,
     plazaRadius: map.plazaRadius ?? 0,
+    switchTiles: switchTileSet(map),
     tickRate: DEFAULT_TUNING.tickRate,
     localPlayerId: () => id,
     tick(input) {

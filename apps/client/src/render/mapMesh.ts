@@ -3,8 +3,9 @@ import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
 import { platformTopY as platformTopYWorld } from "./elevation.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { collectTorches, tileHash, torchMaterials } from "./decor.js";
 import { createBridge, createStairs } from "./structures.js";
-import { patternTexture, themeFor, type Theme } from "./themes.js";
+import { patternTexture, runeTexture, themeFor, type Theme } from "./themes.js";
 
 const COLORS = {
   tower: 0x9a3f3c,
@@ -34,13 +35,20 @@ export interface MapView {
   group: THREE.Group;
   tower: TowerView;
   setDark(dark: boolean): void;
+  /** Per-frame animation of the few moving decorations (the tower crystal). */
+  update(timeSec: number): void;
 }
 
 /**
  * World x = tile x, world z = tile y. One tile is one world unit; walls are one
  * unit high. `plazaRadius` marks the tiles around the tower drawn as plaza.
  */
-export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), plazaRadius = 0): MapView {
+export function buildMapMesh(
+  grid: MapGrid,
+  theme: Theme = themeFor(undefined),
+  plazaRadius = 0,
+  switchTiles: ReadonlySet<string> = new Set(),
+): MapView {
   const group = new THREE.Group();
   const lambert = (color: number, map: THREE.Texture | null) =>
     new THREE.MeshLambertMaterial(map ? { color, map } : { color });
@@ -48,8 +56,12 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
   const floorMat = lambert(theme.floor, patternTexture(theme.floorPattern, theme.floor));
   const plazaMat = lambert(theme.plaza, patternTexture(theme.floorPattern, theme.plaza));
   const sideMat = lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide));
+  // A second side material with moss / frost / flowers, used on a share of inner walls to break repetition.
+  const sideGrowthMat = theme.growth
+    ? lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide, theme.growth))
+    : sideMat;
   const outerSideMat = lambert(theme.outerWall, patternTexture(theme.wallPattern, theme.outerWall));
-  const topMat = lambert(theme.wallTop, null);
+  const topMat = lambert(theme.wallTop, patternTexture(theme.wallPattern === "blocks" ? "slab" : theme.wallPattern, theme.wallTop));
   const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 
   const tower = grid.findCells("tower");
@@ -63,6 +75,7 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
     floor: [] as THREE.BufferGeometry[],
     plaza: [] as THREE.BufferGeometry[],
     side: [] as THREE.BufferGeometry[],
+    sideGrowth: [] as THREE.BufferGeometry[],
     outerSide: [] as THREE.BufferGeometry[],
     top: [] as THREE.BufferGeometry[],
     shadow: [] as THREE.BufferGeometry[],
@@ -99,7 +112,8 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
           break;
         case "wall": {
           const outer = isOuter(x, y);
-          const sides = outer ? batches.outerSide : batches.side;
+          const grown = !outer && theme.growth !== 0 && tileHash(x, y, 7) % 100 < theme.growthShare * 100;
+          const sides = outer ? batches.outerSide : grown ? batches.sideGrowth : batches.side;
           // Only faces that can be seen: skip a face when the neighbour is also a wall.
           const neighbourWall = (dx: number, dy: number) => grid.kindAt(x + dx, y + dy) === "wall";
           if (!neighbourWall(0, 1)) sides.push(at(sideProtos[0] as THREE.BufferGeometry, x, y));
@@ -163,17 +177,25 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
   addMerged(batches.floor, floorMat);
   addMerged(batches.plaza, plazaMat);
   addMerged(batches.side, sideMat);
+  addMerged(batches.sideGrowth, sideGrowthMat);
   addMerged(batches.outerSide, outerSideMat);
   addMerged(batches.top, topMat);
   addMerged(batches.shadow, shadowMat);
   for (const [material, list] of structureBatches) addMerged(list, material);
+
+  // Torches: three batches (brackets, flames, floor glows). Flames and glows are unlit.
+  const torches = collectTorches(grid, theme, switchTiles);
+  const torchMats = torchMaterials(theme);
+  addMerged(torches.brackets, torchMats.bracket);
+  addMerged(torches.flames, torchMats.flame);
+  addMerged(torches.glows, torchMats.glow);
 
   const lineMat = (opacity: number) => new THREE.LineBasicMaterial({ color: theme.line, transparent: true, opacity });
   const topLines = new THREE.LineSegments(lineGeometry(topEdges), lineMat(0.55));
   const floorLines = new THREE.LineSegments(lineGeometry(floorEdges), lineMat(0.12));
   group.add(topLines, floorLines);
 
-  const { group: towerGroup, view } = buildTower(grid);
+  const { group: towerGroup, view, crystal } = buildTower(grid, theme);
   group.add(towerGroup);
   return {
     group,
@@ -182,6 +204,16 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
       const show = !dark || theme.linesGlowInDark;
       topLines.visible = show;
       floorLines.visible = show;
+      // Torches keep a faint presence in the dark; they are ambience, not a light source.
+      (torchMats.flame as THREE.MeshBasicMaterial).opacity = dark ? 0.45 : 1;
+      (torchMats.flame as THREE.MeshBasicMaterial).transparent = true;
+      (torchMats.glow as THREE.MeshBasicMaterial).opacity = dark ? 0.05 : 0.16;
+    },
+    update(timeSec: number) {
+      if (crystal) {
+        crystal.rotation.y = timeSec * 0.6;
+        crystal.position.y = crystal.userData["baseY"] + Math.sin(timeSec * 1.5) * 0.08;
+      }
     },
   };
 }
@@ -209,13 +241,18 @@ export function towerGeometry(grid: MapGrid): { center: THREE.Vector3; footW: nu
   };
 }
 
-/** One slender shaft rising from a low base, topped by a see-through platform with an outlined edge. */
-function buildTower(grid: MapGrid): { group: THREE.Group; view: TowerView } {
+/**
+ * Stone tower: two stepped tiers, a textured shaft with glowing rune strips on
+ * each face, the see-through walkable platform, and a floating crystal above
+ * it as a landmark visible from anywhere in the maze.
+ */
+function buildTower(grid: MapGrid, theme: Theme): { group: THREE.Group; view: TowerView; crystal: THREE.Mesh | null } {
   const tower = new THREE.Group();
   const { center, footW, footD } = towerGeometry(grid);
   const t = CLIENT_TUNING.tower;
-  const baseMat = new THREE.MeshLambertMaterial({ color: COLORS.tower });
-  const shaftMat = new THREE.MeshLambertMaterial({ color: COLORS.towerShaft });
+  const stoneTex = patternTexture("blocks", theme.towerStone);
+  const baseMat = new THREE.MeshLambertMaterial({ color: theme.towerStone, map: patternTexture("slab", theme.towerStone) });
+  const shaftMat = new THREE.MeshLambertMaterial(stoneTex ? { color: theme.towerStone, map: stoneTex } : { color: theme.towerStone });
   const platformMat = new THREE.MeshLambertMaterial({
     color: COLORS.towerPlatform,
     transparent: true,
@@ -223,23 +260,52 @@ function buildTower(grid: MapGrid): { group: THREE.Group; view: TowerView } {
     depthWrite: false,
   });
   const view = new TowerView(platformMat, shaftMat);
-  if (footW === 0) return { group: tower, view };
+  if (footW === 0) return { group: tower, view, crystal: null };
   const cx = center.x;
   const cy = center.z;
 
-  const base = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight, footD), baseMat);
-  base.position.set(cx, t.baseHeight / 2, cy);
+  // Two stepped tiers instead of a flat base.
+  const tier1 = new THREE.Mesh(new THREE.BoxGeometry(footW + 0.6, t.baseHeight, footD + 0.6), baseMat);
+  tier1.position.set(cx, t.baseHeight / 2, cy);
+  const tier2 = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight * 1.6, footD), baseMat);
+  tier2.position.set(cx, t.baseHeight + (t.baseHeight * 1.6) / 2, cy);
 
-  const shaft = new THREE.Mesh(new THREE.BoxGeometry(t.shaftWidth, t.shaftHeight, t.shaftWidth), shaftMat);
-  shaft.position.set(cx, t.baseHeight + t.shaftHeight / 2, cy);
+  const shaftBottom = t.baseHeight * 2.6;
+  const shaftH = t.shaftHeight - t.baseHeight * 1.6;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(t.shaftWidth, shaftH, t.shaftWidth), shaftMat);
+  shaft.position.set(cx, shaftBottom + shaftH / 2, cy);
+
+  // Rune strips: one unlit glowing plane per shaft face.
+  const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(theme.towerRune), transparent: true, depthWrite: false });
+  const runeGeo = new THREE.PlaneGeometry(t.shaftWidth * 0.6, shaftH * 0.7);
+  for (const [dx, dz, yaw] of [
+    [0, 1, 0],
+    [0, -1, Math.PI],
+    [1, 0, Math.PI / 2],
+    [-1, 0, -Math.PI / 2],
+  ] as const) {
+    const r = new THREE.Mesh(runeGeo, runeMat);
+    r.position.set(cx + dx * (t.shaftWidth / 2 + 0.01), shaftBottom + shaftH / 2, cy + dz * (t.shaftWidth / 2 + 0.01));
+    r.rotation.y = yaw;
+    tower.add(r);
+  }
 
   const slabGeo = new THREE.BoxGeometry(footW + t.platformOverhang * 2, t.platformThickness, footD + t.platformOverhang * 2);
   const platform = new THREE.Mesh(slabGeo, platformMat);
   platform.position.set(cx, t.baseHeight + t.shaftHeight + t.platformThickness / 2, cy);
-  // Crisp outline so the walkable extent stays readable even when the slab is nearly invisible.
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo), new THREE.LineBasicMaterial({ color: 0xfff1ec }));
   edges.position.copy(platform.position);
 
-  tower.add(base, shaft, platform, edges);
-  return { group: tower, view };
+  // Landmark crystal floating above the platform centre; players walk beneath it.
+  const crystal = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.42),
+    new THREE.MeshLambertMaterial({ color: theme.towerCrystal, emissive: theme.towerRune, emissiveIntensity: 0.6, transparent: true, opacity: 0.85 }),
+  );
+  crystal.scale.set(1, 1.6, 1);
+  const baseY = t.baseHeight + t.shaftHeight + t.platformThickness + 1.9;
+  crystal.position.set(cx, baseY, cy);
+  crystal.userData["baseY"] = baseY;
+
+  tower.add(tier1, tier2, shaft, platform, edges, crystal);
+  return { group: tower, view, crystal };
 }

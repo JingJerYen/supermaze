@@ -1,4 +1,4 @@
-import type { MapGrid, PlayerInput, SimulationState } from "@supermaze/sim";
+import { normalizeMap, type MapData, type MapGrid, type PlayerInput, type SimulationState } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 
 /** What main.ts needs from a game mode; local and online implement it identically from the outside. */
@@ -8,6 +8,8 @@ export interface GameMode {
   /** Visual theme id from the map file; undefined means the default. */
   theme: string | undefined;
   plazaRadius: number;
+  /** "x,y" of every light-switch candidate tile; decorations stay off them. */
+  switchTiles: ReadonlySet<string>;
   tickRate: number;
   localPlayerId(): string | null;
   /** Called at the fixed tick rate with the current intent. */
@@ -21,4 +23,9 @@ export interface GameMode {
   results(): ResultsActions;
   /** Developer command (F4 forces a ghost event). Optional. */
   debug?(cmd: "ghost"): void;
+}
+
+/** Tiles that may host a light switch this round, as "x,y". */
+export function switchTileSet(map: MapData): ReadonlySet<string> {
+  return new Set(normalizeMap(map).spawns.lightSwitches.map((t) => `${t.x},${t.y}`));
 }

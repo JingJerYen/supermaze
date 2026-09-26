@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CLIENT_TUNING } from "../tuning.js";
+import type { Theme } from "./themes.js";
 
 /**
  * Map-wide lighting states (CLAUDE.md section 8). Lit: hemisphere + sun.
@@ -7,13 +8,15 @@ import { CLIENT_TUNING } from "../tuning.js";
  * range is the tunable darkness radius, so only a circle around them is visible.
  */
 export class SceneLighting {
-  private readonly hemi = new THREE.HemisphereLight(0xdfe8ff, 0x303540, 1.0);
-  private readonly sun = new THREE.DirectionalLight(0xffffff, 1.4);
+  private readonly hemi: THREE.HemisphereLight;
+  private readonly sun: THREE.DirectionalLight;
   private readonly lamp: THREE.PointLight;
   private readonly fill: THREE.PointLight;
   private dark = false;
 
-  constructor(scene: THREE.Scene, radiusTiles: number) {
+  constructor(scene: THREE.Scene, radiusTiles: number, private readonly theme: Theme) {
+    this.hemi = new THREE.HemisphereLight(theme.hemiSky, theme.hemiGround, theme.hemiIntensity);
+    this.sun = new THREE.DirectionalLight(theme.sunColor, theme.sunIntensity);
     this.sun.position.set(6, 12, 4);
     this.lamp = new THREE.PointLight(0xfff1d6, 0, radiusTiles, CLIENT_TUNING.dark.lampDecay);
     this.lamp.visible = false;
@@ -25,8 +28,8 @@ export class SceneLighting {
   setDark(dark: boolean): void {
     if (dark === this.dark) return;
     this.dark = dark;
-    this.hemi.intensity = dark ? CLIENT_TUNING.dark.ambient : 1.0;
-    this.sun.intensity = dark ? 0 : 1.4;
+    this.hemi.intensity = dark ? CLIENT_TUNING.dark.ambient : this.theme.hemiIntensity;
+    this.sun.intensity = dark ? 0 : this.theme.sunIntensity;
     this.lamp.visible = dark;
     this.lamp.intensity = dark ? CLIENT_TUNING.dark.lampIntensity : 0;
     this.fill.visible = dark && CLIENT_TUNING.dark.fillIntensity > 0;

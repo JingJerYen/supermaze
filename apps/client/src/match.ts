@@ -61,14 +61,16 @@ export class Match {
     private readonly mode: GameMode,
   ) {
     this.scene = createScene();
-    this.mapMesh = buildMapMesh(mode.grid, themeFor(mode.theme), mode.plazaRadius);
+    const theme = themeFor(mode.theme);
+    this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
+    this.scene.background = new THREE.Color(theme.sky);
     this.scene.add(this.mapMesh.group);
     this.players = new PlayerViews(this.scene, mode.grid);
     this.keys = new KeyViews(this.scene, mode.grid);
     this.boxes = new BoxViews(this.scene, mode.grid);
     this.placeables = new PlaceableViews(this.scene, mode.grid);
     this.switches = new SwitchViews(this.scene, mode.grid);
-    this.lighting = new SceneLighting(this.scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
+    this.lighting = new SceneLighting(this.scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles, theme);
     this.follow = new FollowCamera(window.innerWidth / window.innerHeight, mode.grid.width, mode.grid.height);
     this.input = new InputSource(root);
     this.debug = new DebugOverlay(root);
@@ -107,7 +109,8 @@ export class Match {
       const dark = !s.to.lightsOn;
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
-      this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : CLIENT_TUNING.render.clearColor);
+      this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : themeFor(this.mode.theme).sky);
+      this.mapMesh.update(now / 1000);
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);

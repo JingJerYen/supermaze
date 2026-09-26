@@ -6,8 +6,8 @@ import type { Dir } from "@supermaze/sim";
  * Each factory returns a group whose origin is the tile centre on the ground.
  */
 
-const STEP = 0xc2a96a;
-const STEP_ALT = 0xb39a5e;
+const STEP = 0xb98a55;
+const STEP_ALT = 0xa5784a;
 const PLANK = 0xb08a5a;
 const PLANK_ALT = 0xa07c4f;
 const RAIL = 0x6d5436;

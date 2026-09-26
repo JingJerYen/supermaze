@@ -2,7 +2,7 @@ import { applySnapshot, type SnapshotMessage } from "@supermaze/protocol";
 import { DEFAULT_TUNING, MapGrid, availableAction, type MapData, type PlayerInput, type SimulationState } from "@supermaze/sim";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import { formatSeconds } from "./roundHud.js";
-import type { GameMode } from "./mode.js";
+import { switchTileSet, type GameMode } from "./mode.js";
 
 /**
  * One online match as seen by the renderer: the session feeds it full states
@@ -14,6 +14,7 @@ export class OnlineMatchMode implements GameMode {
   readonly grid: MapGrid;
   readonly theme: string | undefined;
   readonly plazaRadius: number;
+  readonly switchTiles: ReadonlySet<string>;
   private buffer: SnapshotBuffer;
   private current: SimulationState | null = null;
   rttMs = 0;
@@ -31,6 +32,7 @@ export class OnlineMatchMode implements GameMode {
     this.grid = MapGrid.fromMapData(map);
     this.theme = map.theme;
     this.plazaRadius = map.plazaRadius ?? 0;
+    this.switchTiles = switchTileSet(map);
     this.buffer = new SnapshotBuffer(1000 / tickRate);
   }
 

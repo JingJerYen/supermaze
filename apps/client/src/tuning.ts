@@ -82,7 +82,7 @@ export const CLIENT_TUNING = {
     fillIntensity: 3,
     fillOffsetY: 0.9,
     fillOffsetZ: 1.2,
-    /** Background colour while dark. */
+    /** Background colour while dark; the lit background comes from the map theme. */
     clearColor: 0x05060a,
   },
   render: {
