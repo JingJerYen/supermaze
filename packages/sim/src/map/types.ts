@@ -11,7 +11,11 @@
  *
  * The format is finalised in phase 1 together with the validator.
  */
-export type Layer = "road" | "wallTop";
+/**
+ * Walkable layers. `towerTop` is the platform on the central tower: the tower
+ * footprint plus a one-tile ring, reachable only by climbing (irreversible).
+ */
+export type Layer = "road" | "wallTop" | "towerTop";
 
 export interface TilePos {
   x: number;

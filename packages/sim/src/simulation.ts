@@ -285,7 +285,8 @@ export class Simulation {
       const input = inputs.get(id) ?? NO_INPUT;
 
       if (p.phase === "tower") {
-        work.players[id] = p;
+        // On the platform the commander walks freely (section 5); nothing else applies up there.
+        work.players[id] = { ...p, mover: stepMover(p.mover, input, this.grid, speed) };
         continue;
       }
 
@@ -310,7 +311,16 @@ export class Simulation {
             const placementScore = table[Math.min(arrival, table.length - 1)] ?? 0;
             // Unused items vanish and become a flat score each (section 3.1 / 5).
             const leftover = p.items.length * this.tuning.scoring.leftoverItem;
-            p = { ...p, phase: "tower", towerArrival: arrival, score: p.score + placementScore + leftover, items: [] };
+            const seats = this.grid.platformTiles();
+            const seat = seats[arrival % Math.max(seats.length, 1)] ?? p.mover.from;
+            p = {
+              ...p,
+              phase: "tower",
+              towerArrival: arrival,
+              score: p.score + placementScore + leftover,
+              items: [],
+              mover: createMover(seat, p.mover.facing),
+            };
             teamClimbTicks[p.teamId] = [...(teamClimbTicks[p.teamId] ?? []), tick];
             work.events.push({ type: "towerClimbed", tick, playerId: id, arrival });
           } else if (action === "switch") {

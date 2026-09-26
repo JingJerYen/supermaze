@@ -3,6 +3,12 @@
  * Game-rule numbers live in @supermaze/sim, not here.
  */
 export const CLIENT_TUNING = {
+  overview: {
+    /** Extra room around the map when looking straight down from the tower, as a factor. */
+    margin: 1.08,
+    /** Blend speed of the camera swing between follow and overview, per second. */
+    transitionPerSec: 3,
+  },
   camera: {
     /** Height above the focus point, world units (1 unit = 1 tile). Kept near the tower platform height so the platform reads edge-on and occludes little. */
     height: 8,
@@ -14,12 +20,17 @@ export const CLIENT_TUNING = {
   },
   tower: {
     /** Height of the slender shaft, world units (1 unit = 1 tile). */
-    shaftHeight: 7,
+    shaftHeight: 12,
     /** Shaft footprint side length; the map footprint can be wider than this. */
     shaftWidth: 1.2,
-    /** How much wider than the map footprint the top platform is, per side. */
-    platformOverhang: 0.8,
+    /** Platform overhang per side. Must equal the sim's PLATFORM_RING (1 tile) so the walkable tiles match the slab. */
+    platformOverhang: 1,
     platformThickness: 0.35,
+    /** Platform slab opacity seen from the maze (follow camera). */
+    platformOpacityFollow: 0.55,
+    /** Platform and shaft opacity while looking straight down from the tower top. */
+    platformOpacityOverview: 0.12,
+    shaftOpacityOverview: 0.25,
     /** Low base covering the whole footprint so the blocked tiles read as tower ground. */
     baseHeight: 0.3,
   },

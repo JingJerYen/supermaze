@@ -15,9 +15,8 @@ function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
   }
 }
 
-describe("placeholder items (effects disabled, the default)", () => {
+describe("placeholder items (effects disabled)", () => {
   it("any non-teleport item drops a passable block that expires after placeholderLifetimeSec", () => {
-    expect(DEFAULT_TUNING.placeables.effectsEnabled).toBe(false);
     const map: MapData = {
       ...TINY_MAP,
       spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 6, layer: "road" }], itemBoxes: [{ x: 2, y: 2, layer: "road" }, { x: 7, y: 4, layer: "road" }, { x: 6, y: 6, layer: "road" }] },
@@ -25,7 +24,7 @@ describe("placeholder items (effects disabled, the default)", () => {
     const tuning = {
       ...DEFAULT_TUNING,
       itemBoxes: { perParticipant: 1, weights: { oneWayDoor: 0, obstacle: 1, hammer: 0, trap: 0, teleportNode: 0 } },
-      placeables: { ...DEFAULT_TUNING.placeables, placeholderLifetimeSec: 1 },
+      placeables: { ...DEFAULT_TUNING.placeables, effectsEnabled: false, placeholderLifetimeSec: 1 },
     };
     let seed = 0;
     let sim: Simulation;

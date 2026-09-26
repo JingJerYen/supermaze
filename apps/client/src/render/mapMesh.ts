@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
+import { platformTopY as platformTopYWorld } from "./elevation.js";
 import { createRampGeometry } from "./geometry.js";
 
 const COLORS = {
@@ -14,8 +15,25 @@ const COLORS = {
   towerPlatform: 0xf0a19b,
 } as const;
 
+/** Handle to the tower's materials so the view can see through it from above. */
+export class TowerView {
+  constructor(
+    private readonly platform: THREE.MeshLambertMaterial,
+    private readonly shaft: THREE.MeshLambertMaterial,
+  ) {}
+
+  /** Overview: the commander stands on the slab and must see the plaza beneath it. */
+  setOverview(overview: boolean): void {
+    const t = CLIENT_TUNING.tower;
+    this.platform.opacity = overview ? t.platformOpacityOverview : t.platformOpacityFollow;
+    this.shaft.transparent = overview;
+    this.shaft.opacity = overview ? t.shaftOpacityOverview : 1;
+    this.shaft.needsUpdate = true;
+  }
+}
+
 /** World x = tile x, world z = tile y. One tile is one world unit; walls are one unit high. */
-export function buildMapMesh(grid: MapGrid): THREE.Group {
+export function buildMapMesh(grid: MapGrid): { group: THREE.Group; tower: TowerView } {
   const group = new THREE.Group();
   const floorGeo = new THREE.PlaneGeometry(1, 1);
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -69,15 +87,15 @@ export function buildMapMesh(grid: MapGrid): THREE.Group {
       }
     }
   }
-  group.add(buildTower(grid));
-  return group;
+  const { group: towerGroup, view } = buildTower(grid);
+  group.add(towerGroup);
+  return { group, tower: view };
 }
 
 /** Footprint centre and size of the tower, and the world height of its platform top. */
 export function towerGeometry(grid: MapGrid): { center: THREE.Vector3; footW: number; footD: number; platformTopY: number } {
-  const t = CLIENT_TUNING.tower;
   const cells = grid.findCells("tower");
-  const platformTopY = t.baseHeight + t.shaftHeight + t.platformThickness;
+  const platformTopY = platformTopYWorld();
   if (cells.length === 0) return { center: new THREE.Vector3(), footW: 0, footD: 0, platformTopY };
   const minX = Math.min(...cells.map((c) => c.x));
   const maxX = Math.max(...cells.map((c) => c.x));
@@ -91,18 +109,23 @@ export function towerGeometry(grid: MapGrid): { center: THREE.Vector3; footW: nu
   };
 }
 
-/** One slender shaft rising from a low base, topped by a platform wider than the footprint. */
-function buildTower(grid: MapGrid): THREE.Group {
+/** One slender shaft rising from a low base, topped by a see-through platform with an outlined edge. */
+function buildTower(grid: MapGrid): { group: THREE.Group; view: TowerView } {
   const tower = new THREE.Group();
   const { center, footW, footD } = towerGeometry(grid);
-  if (footW === 0) return tower;
-  const cx = center.x;
-  const cy = center.z;
-
   const t = CLIENT_TUNING.tower;
   const baseMat = new THREE.MeshLambertMaterial({ color: COLORS.tower });
   const shaftMat = new THREE.MeshLambertMaterial({ color: COLORS.towerShaft });
-  const platformMat = new THREE.MeshLambertMaterial({ color: COLORS.towerPlatform });
+  const platformMat = new THREE.MeshLambertMaterial({
+    color: COLORS.towerPlatform,
+    transparent: true,
+    opacity: t.platformOpacityFollow,
+    depthWrite: false,
+  });
+  const view = new TowerView(platformMat, shaftMat);
+  if (footW === 0) return { group: tower, view };
+  const cx = center.x;
+  const cy = center.z;
 
   const base = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight, footD), baseMat);
   base.position.set(cx, t.baseHeight / 2, cy);
@@ -110,12 +133,13 @@ function buildTower(grid: MapGrid): THREE.Group {
   const shaft = new THREE.Mesh(new THREE.BoxGeometry(t.shaftWidth, t.shaftHeight, t.shaftWidth), shaftMat);
   shaft.position.set(cx, t.baseHeight + t.shaftHeight / 2, cy);
 
-  const platform = new THREE.Mesh(
-    new THREE.BoxGeometry(footW + t.platformOverhang * 2, t.platformThickness, footD + t.platformOverhang * 2),
-    platformMat,
-  );
+  const slabGeo = new THREE.BoxGeometry(footW + t.platformOverhang * 2, t.platformThickness, footD + t.platformOverhang * 2);
+  const platform = new THREE.Mesh(slabGeo, platformMat);
   platform.position.set(cx, t.baseHeight + t.shaftHeight + t.platformThickness / 2, cy);
+  // Crisp outline so the walkable extent stays readable even when the slab is nearly invisible.
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo), new THREE.LineBasicMaterial({ color: 0xfff1ec }));
+  edges.position.copy(platform.position);
 
-  tower.add(base, shaft, platform);
-  return tower;
+  tower.add(base, shaft, platform, edges);
+  return { group: tower, view };
 }

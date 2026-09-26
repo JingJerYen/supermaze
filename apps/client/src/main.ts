@@ -41,7 +41,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 root.appendChild(renderer.domElement);
 
 const scene = createScene();
-scene.add(buildMapMesh(mode.grid));
+const mapMesh = buildMapMesh(mode.grid);
+scene.add(mapMesh.group);
 const players = new PlayerViews(scene, mode.grid);
 const keys = new KeyViews(scene, mode.grid);
 const boxes = new BoxViews(scene, mode.grid);
@@ -50,7 +51,7 @@ const switches = new SwitchViews(scene, mode.grid);
 const lighting = new SceneLighting(scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
 const ACTION_LABEL: Record<string, string> = { climb: "登塔", switch: "開關", pickUpNode: "收回傳送點", useItem: "使用道具" };
 const ITEM_LABEL: Record<string, string> = { oneWayDoor: "單向門", obstacle: "障礙物", hammer: "鐵鎚", trap: "陷阱", teleportNode: "傳送點" };
-const follow = new FollowCamera(window.innerWidth / window.innerHeight);
+const follow = new FollowCamera(window.innerWidth / window.innerHeight, mode.grid.width, mode.grid.height);
 const input = new InputSource(root);
 const debug = new DebugOverlay(root);
 
@@ -88,6 +89,11 @@ startLoop(
       input.actionButton.setAction(label);
     }
     const mePos = meId ? players.position(meId) : null;
+    const meState = meId && s ? s.to.players[meId] : undefined;
+    const onTower = meState?.phase === "tower";
+    follow.setMode(onTower ? "overview" : "follow");
+    mapMesh.tower.setOverview(onTower);
+    lighting.setRadius(onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
     if (mePos) {
       follow.update(mePos, dt);
       lighting.follow(mePos);

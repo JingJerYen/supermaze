@@ -1,4 +1,4 @@
-import { cellKindFromCode, isWalkable, otherLayer, type CellKind } from "./cells.js";
+import { PLATFORM_RING, cellKindFromCode, isWalkable, otherLayer, type CellKind } from "./cells.js";
 import type { Layer, MapData, TilePos } from "./types.js";
 
 export interface Dir {
@@ -58,7 +58,42 @@ export class MapGrid {
   }
 
   isWalkable(x: number, y: number, layer: Layer): boolean {
+    if (layer === "towerTop") return this.isPlatformTile(x, y);
     return isWalkable(this.kindAt(x, y), layer);
+  }
+
+  private platformBounds: { minX: number; maxX: number; minY: number; maxY: number } | null | undefined;
+
+  /** Tower footprint expanded by PLATFORM_RING; null when the map has no tower. */
+  private bounds() {
+    if (this.platformBounds !== undefined) return this.platformBounds;
+    const cells = this.findCells("tower");
+    if (cells.length === 0) return (this.platformBounds = null);
+    const xs = cells.map((c) => c.x);
+    const ys = cells.map((c) => c.y);
+    return (this.platformBounds = {
+      minX: Math.min(...xs) - PLATFORM_RING,
+      maxX: Math.max(...xs) + PLATFORM_RING,
+      minY: Math.min(...ys) - PLATFORM_RING,
+      maxY: Math.max(...ys) + PLATFORM_RING,
+    });
+  }
+
+  /** Whether (x,y) is part of the walkable platform on top of the tower. */
+  isPlatformTile(x: number, y: number): boolean {
+    const b = this.bounds();
+    return !!b && x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY;
+  }
+
+  /** Platform tiles, centre first then outward, used to seat climbers without overlap. */
+  platformTiles(): TilePos[] {
+    const b = this.bounds();
+    if (!b) return [];
+    const cx = (b.minX + b.maxX) / 2;
+    const cy = (b.minY + b.maxY) / 2;
+    const out: TilePos[] = [];
+    for (let y = b.minY; y <= b.maxY; y++) for (let x = b.minX; x <= b.maxX; x++) out.push({ x, y, layer: "towerTop" });
+    return out.sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy) || p.y - q.y || p.x - q.x);
   }
 
   /**

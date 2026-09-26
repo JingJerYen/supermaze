@@ -33,6 +33,11 @@ export class SceneLighting {
     this.lamp.position.set(pos.x, pos.y + 1.2, pos.z);
   }
 
+  /** Visible radius in the dark; larger on the tower top (CLAUDE.md section 8). */
+  setRadius(tiles: number): void {
+    this.lamp.distance = tiles;
+  }
+
   isDark(): boolean {
     return this.dark;
   }

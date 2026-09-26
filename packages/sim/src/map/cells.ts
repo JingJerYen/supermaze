@@ -37,6 +37,7 @@ export function cellKindFromCode(code: string): CellKind {
 
 /** Whether a player standing on `layer` may occupy a cell of this kind. */
 export function isWalkable(kind: CellKind, layer: Layer): boolean {
+  if (layer === "towerTop") return false; // decided by MapGrid.isPlatformTile, not by the cell
   switch (kind) {
     case "road":
       return layer === "road";
@@ -53,3 +54,6 @@ export function isWalkable(kind: CellKind, layer: Layer): boolean {
 export function otherLayer(layer: Layer): Layer {
   return layer === "road" ? "wallTop" : "road";
 }
+
+/** Ring width of the tower platform around the footprint, in tiles. */
+export const PLATFORM_RING = 1;

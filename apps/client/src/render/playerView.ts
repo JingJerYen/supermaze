@@ -50,15 +50,4 @@ export class PlayerView {
     this.mesh.position.lerpVectors(this.prevPose, this.currPose, alpha);
     this.mesh.position.y += PLAYER_HEIGHT / 2;
   }
-
-  /** Park the player on the tower platform; `slot` spreads arrivals so they do not overlap. */
-  placeOnTower(center: THREE.Vector3, platformTopY: number, slot: number): void {
-    const ring = 0.9;
-    const angle = (slot / 6) * Math.PI * 2;
-    this.mesh.position.set(
-      center.x + Math.cos(angle) * ring,
-      platformTopY + PLAYER_HEIGHT / 2,
-      center.z + Math.sin(angle) * ring,
-    );
-  }
 }
