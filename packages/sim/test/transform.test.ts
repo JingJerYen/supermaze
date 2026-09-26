@@ -19,7 +19,7 @@ describe("rotateMap", () => {
       expect(validateMap(r)).toEqual([]);
       const g0 = MapGrid.fromMapData(LATTICE_MAP);
       const g1 = MapGrid.fromMapData(r);
-      LATTICE_MAP.spawns.keys.forEach((k, i) => {
+      LATTICE_MAP.spawns!.keys!.forEach((k, i) => {
         const rk = r.spawns.keys[i]!;
         expect(g1.kindAt(rk.x, rk.y)).toBe(g0.kindAt(k.x, k.y));
       });

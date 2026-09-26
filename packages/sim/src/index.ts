@@ -4,6 +4,7 @@ export * from "./random/seeded.js";
 export * from "./map/types.js";
 export * from "./map/cells.js";
 export * from "./map/grid.js";
+export * from "./map/normalize.js";
 export * from "./map/validate.js";
 export * from "./map/transform.js";
 export * from "./movement.js";

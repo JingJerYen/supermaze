@@ -24,7 +24,12 @@ export interface MapData {
   name: string;
   /** Player counts this map is validated for. */
   supportedParticipants: number[];
-  /** Row-major cell codes. All rows must have the same length. */
+  /**
+   * Row-major cell codes. All rows must have the same length. Besides the six
+   * cell codes, rows may carry spawn markers (K/k keys, B/b item boxes,
+   * L/l light switches; upper case on road, lower case on a wall top) which
+   * `normalizeMap` converts into `spawns` entries.
+   */
   rows: string[];
   /**
    * Chebyshev distance from the tower footprint within which the one-tile-wide
@@ -42,11 +47,21 @@ export interface MapData {
    *   lightSwitches -> exactly `lightSwitchCount`
    * The three lists must not share tiles with each other or with tower entries.
    */
+  spawns?: {
+    keys?: TilePos[];
+    itemBoxes?: TilePos[];
+    lightSwitches?: TilePos[];
+  };
+  /** Light switches placed per round. Even and at least tuning.lighting.switchCountMin. */
+  lightSwitchCount: number;
+}
+
+/** A map after `normalizeMap`: plain cell codes and every spawn list present. */
+export interface NormalizedMapData extends MapData {
+  rows: string[];
   spawns: {
     keys: TilePos[];
     itemBoxes: TilePos[];
     lightSwitches: TilePos[];
   };
-  /** Light switches placed per round. Even and at least tuning.lighting.switchCountMin. */
-  lightSwitchCount: number;
 }

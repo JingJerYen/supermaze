@@ -1,4 +1,5 @@
-import type { MapData, TilePos } from "./types.js";
+import { normalizeMap } from "./normalize.js";
+import type { MapData, NormalizedMapData, TilePos } from "./types.js";
 
 export type QuarterTurns = 0 | 1 | 2 | 3;
 
@@ -8,13 +9,13 @@ export type QuarterTurns = 0 | 1 | 2 | 3;
  * Stairs directions and bridge orientations are derived from neighbours, so
  * rotating the cell grid and the spawn coordinates is all that is needed.
  */
-export function rotateMap(map: MapData, turns: QuarterTurns): MapData {
-  let out: MapData = { ...map, rows: [...map.rows], spawns: cloneSpawns(map.spawns) };
+export function rotateMap(raw: MapData, turns: QuarterTurns): NormalizedMapData {
+  let out: NormalizedMapData = normalizeMap(raw);
   for (let i = 0; i < turns; i++) out = rotateOnce(out);
-  return { ...out, rotation: (((map.rotation ?? 0) + turns) % 4) as QuarterTurns };
+  return { ...out, rotation: (((raw.rotation ?? 0) + turns) % 4) as QuarterTurns };
 }
 
-function rotateOnce(map: MapData): MapData {
+function rotateOnce(map: NormalizedMapData): NormalizedMapData {
   const h = map.rows.length;
   const w = map.rows[0]?.length ?? 0;
   // Clockwise: new[x'][y'] with x' = h-1-y, y' = x. New width = h, new height = w.
@@ -38,8 +39,4 @@ function rotateOnce(map: MapData): MapData {
       lightSwitches: map.spawns.lightSwitches.map(rot),
     },
   };
-}
-
-function cloneSpawns(s: MapData["spawns"]): MapData["spawns"] {
-  return { keys: [...s.keys], itemBoxes: [...s.itemBoxes], lightSwitches: [...s.lightSwitches] };
 }

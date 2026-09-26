@@ -1,16 +1,19 @@
 import { DEFAULT_TUNING, type Tuning } from "../tuning/index.js";
 import { ALL_DIRS, DIRS, MapGrid, tileKey } from "./grid.js";
-import type { MapData, TilePos } from "./types.js";
+import { normalizeMap } from "./normalize.js";
+import type { MapData, NormalizedMapData, TilePos } from "./types.js";
 
 /**
  * Structural checks a hand-made map must pass (CLAUDE.md section 6).
  * Returns human-readable problems; an empty array means the map is valid.
  * Phase 0 covers geometry and reachability; spawn-point checks arrive in phase 1.
  */
-export function validateMap(data: MapData, tuning: Tuning = DEFAULT_TUNING): string[] {
+export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): string[] {
   const errors: string[] = [];
   let grid: MapGrid;
+  let data: NormalizedMapData;
   try {
+    data = normalizeMap(raw);
     grid = MapGrid.fromMapData(data);
   } catch (e) {
     return [(e as Error).message];
@@ -64,15 +67,15 @@ export function validateMap(data: MapData, tuning: Tuning = DEFAULT_TUNING): str
   // Spawn candidates: enough of each kind for the largest supported round, all
   // walkable, reachable, unique, off the tower entries, and disjoint across kinds.
   const maxParticipants = Math.max(0, ...data.supportedParticipants);
-  const candidates: MapData["spawns"] = data.spawns ?? { keys: [], itemBoxes: [], lightSwitches: [] };
-  const needed: Record<keyof MapData["spawns"], number> = {
+  const candidates = data.spawns;
+  const needed: Record<keyof NormalizedMapData["spawns"], number> = {
     keys: maxParticipants * tuning.keys.perParticipant,
     itemBoxes: maxParticipants * tuning.itemBoxes.perParticipant,
     lightSwitches: data.lightSwitchCount ?? 0,
   };
   const seen = new Map<string, string>();
   for (const kind of ["keys", "itemBoxes", "lightSwitches"] as const) {
-    const list: TilePos[] = candidates[kind] ?? [];
+    const list: TilePos[] = candidates[kind];
     if (list.length < needed[kind]) {
       errors.push(`only ${list.length} ${kind} spawns but ${needed[kind]} may be needed`);
     }

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { rotateMap, type MapData, type QuarterTurns } from "@supermaze/sim";
-import mazeMap from "../../../content/maps/maze-01.json";
 import { DebugOverlay } from "./debug.js";
+import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
 import { InputSource } from "./input/index.js";
 import { startLoop } from "./loop.js";
 import { createLocalMode } from "./modes/local.js";
@@ -23,7 +23,7 @@ const endpoint = params.get("server") ?? `ws://${location.hostname}:2567`;
 // participant count (idle CPUs), ?seed=N reproducible spawn draw. Online play takes the
 // server's rotation and seed instead.
 const rot = (Number(params.get("rot") ?? 0) % 4) as QuarterTurns;
-const map = rotateMap(mazeMap as MapData, rot);
+const map = rotateMap(loadMapById(params.get("map") ?? DEFAULT_MAP_ID), rot);
 const mode = params.has("online")
   ? createOnlineMode(map, endpoint, rot)
   : createLocalMode(map, {

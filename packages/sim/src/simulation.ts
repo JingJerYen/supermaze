@@ -1,7 +1,8 @@
 import type { SimEvent } from "./events.js";
 import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys.js";
 import { MapGrid } from "./map/grid.js";
-import type { MapData, TilePos } from "./map/types.js";
+import { normalizeMap } from "./map/normalize.js";
+import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
 import { createMover, stepMover, type MoveIntent, type MoverState } from "./movement.js";
 import { SeededRandom } from "./random/seeded.js";
 import { decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
@@ -66,7 +67,7 @@ export class Simulation {
   readonly tuning: Tuning;
   readonly rng: SeededRandom;
   readonly grid: MapGrid;
-  private readonly map: MapData;
+  private readonly map: NormalizedMapData;
   private state: SimulationState;
   private readonly spawns: TilePos[];
   private spawnCursor = 0;
@@ -75,8 +76,8 @@ export class Simulation {
   constructor(options: SimulationOptions) {
     this.tuning = options.tuning ?? DEFAULT_TUNING;
     this.rng = new SeededRandom(options.seed);
-    this.map = options.map;
-    this.grid = MapGrid.fromMapData(options.map);
+    this.map = normalizeMap(options.map);
+    this.grid = MapGrid.fromMapData(this.map);
 
     this.spawns = this.grid.spawnTiles();
     if (this.spawns.length === 0) {

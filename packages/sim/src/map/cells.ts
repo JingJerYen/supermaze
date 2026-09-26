@@ -12,8 +12,25 @@ const CODE_TO_KIND: Record<string, CellKind> = {
   T: "tower",
 };
 
+export type SpawnKind = "keys" | "itemBoxes" | "lightSwitches";
+
+/**
+ * Spawn-candidate markers drawn straight into the rows. Upper case marks a road
+ * cell, lower case the top of a wall cell. They are authoring sugar: loading
+ * turns them into `spawns` entries and plain `.` / `#` cells.
+ */
+export const SPAWN_MARKERS: Record<string, { kind: SpawnKind; base: "." | "#" }> = {
+  K: { kind: "keys", base: "." },
+  k: { kind: "keys", base: "#" },
+  B: { kind: "itemBoxes", base: "." },
+  b: { kind: "itemBoxes", base: "#" },
+  L: { kind: "lightSwitches", base: "." },
+  l: { kind: "lightSwitches", base: "#" },
+};
+
 export function cellKindFromCode(code: string): CellKind {
-  const kind = CODE_TO_KIND[code];
+  const marker = SPAWN_MARKERS[code];
+  const kind = CODE_TO_KIND[marker ? marker.base : code];
   if (!kind) throw new Error(`unknown map cell code ${JSON.stringify(code)}`);
   return kind;
 }

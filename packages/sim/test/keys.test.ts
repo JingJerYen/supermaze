@@ -25,7 +25,7 @@ function walk(sim: Simulation, id: string, dirs: PlayerInput[]): void {
 
 describe("selectKeySpawns", () => {
   it("is reproducible for the same seed and picks distinct tiles", () => {
-    const c = TINY_MAP.spawns.keys;
+    const c = TINY_MAP.spawns!.keys!;
     const a = selectKeySpawns(new SeededRandom(9), c, 2);
     const b = selectKeySpawns(new SeededRandom(9), c, 2);
     expect(a).toEqual(b);
@@ -33,7 +33,7 @@ describe("selectKeySpawns", () => {
   });
 
   it("throws when the map has too few candidates", () => {
-    expect(() => selectKeySpawns(new SeededRandom(1), TINY_MAP.spawns.keys, 4)).toThrow(/needed/);
+    expect(() => selectKeySpawns(new SeededRandom(1), TINY_MAP.spawns!.keys!, 4)).toThrow(/needed/);
   });
 });
 
