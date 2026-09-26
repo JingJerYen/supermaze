@@ -3,6 +3,7 @@ import {
   C2S,
   ROOM_NAME,
   S2C,
+  type DebugMessage,
   type FullStateMessage,
   type LobbyMessage,
   type MatchStartedMessage,
@@ -93,6 +94,9 @@ export class Connection {
   }
   requestStart(): void {
     this.room?.send(C2S.start, {});
+  }
+  sendDebug(cmd: DebugMessage["cmd"]): void {
+    this.room?.send(C2S.debug, { cmd } satisfies DebugMessage);
   }
   ping(): void {
     this.room?.send(C2S.ping, { t: performance.now() } satisfies PingMessage);

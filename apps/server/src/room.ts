@@ -3,6 +3,7 @@ import {
   C2S,
   PROTOCOL_VERSION,
   S2C,
+  type DebugMessage,
   type FullStateMessage,
   type InputMessage,
   type LobbyMessage,
@@ -27,6 +28,9 @@ import {
 } from "@supermaze/sim";
 import { canSwitchTeam, makeRoomCode, shouldCountDown, startBlocker, teamForNewPlayer, type LobbyRules } from "./lobbyLogic.js";
 import { loadMap } from "./mapLoader.js";
+
+/** Developer commands (force a ghost event, ...). On unless the server runs with SUPERMAZE_DEBUG=0. */
+const DEBUG_COMMANDS = process.env["SUPERMAZE_DEBUG"] !== "0";
 
 /** Lobby timings (CLAUDE.md 2.1). Server-side only, so they live here rather than in game tuning. */
 const COUNTDOWN_MS = 10_000;
@@ -75,6 +79,10 @@ export class MazeRoom extends Room {
       this.latestInputs.set(client.sessionId, sanitizeInput(msg));
     });
     this.onMessage<PingMessage>(C2S.ping, (client, msg) => client.send(S2C.pong, msg));
+    this.onMessage<DebugMessage>(C2S.debug, (_client, msg) => {
+      if (!DEBUG_COMMANDS || !this.sim) return;
+      if (msg?.cmd === "ghost") this.sim.debugForceGhost();
+    });
     this.onMessage<{ ready?: unknown }>(C2S.ready, (client, msg) => {
       const p = this.lobby.get(client.sessionId);
       if (!p || !this.inLobby()) return;

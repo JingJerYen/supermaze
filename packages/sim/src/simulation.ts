@@ -1,7 +1,7 @@
 import { availableAction } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState } from "./boxes.js";
 import type { SimEvent } from "./events.js";
-import { initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
+import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
 import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys.js";
 import { createLightSwitches, usableSwitchAt, type LightSwitchState } from "./lighting.js";
@@ -504,6 +504,17 @@ export class Simulation {
   /** Whether `p` is currently a ghost. */
   isGhost(p: PlayerState): boolean {
     return isGhost(this.state.ghost, p);
+  }
+
+  /**
+   * Developer shortcut: start the next ghost event now with a short warning.
+   * Only acts while the schedule is idle so the fair rotation is untouched.
+   */
+  debugForceGhost(warningSec = 3): SimEvent[] {
+    if (this.state.status !== "running" || this.state.ghost.phase !== "idle") return [];
+    const { ghost, events } = beginWarning(this.state.ghost, this.state.players, this.state.tick, this.tuning, Math.round(warningSec * this.tuning.tickRate));
+    this.state = { ...this.state, ghost };
+    return events;
   }
 
   getState(): Readonly<SimulationState> {

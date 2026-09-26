@@ -139,3 +139,17 @@ describe("ghost rules", () => {
     expect(sim.isGhost(sim.getState().players["b"]!)).toBe(false);
   });
 });
+
+describe("developer shortcut", () => {
+  it("forces a warning at once, respecting rotation, and is ignored outside idle", () => {
+    const sim = new Simulation({ seed: 3, map: MAP, participants: two, tuning: FAST });
+    sim.start();
+    const ev = sim.debugForceGhost(1);
+    expect(ev.map((e) => e.type)).toEqual(["ghostWarning"]);
+    expect(sim.getState().ghost.phase).toBe("warning");
+    expect(sim.getState().ghost.teamId).toBe("A");
+    expect(sim.debugForceGhost(1)).toEqual([]); // already warning
+    run(sim, T);
+    expect(sim.getState().ghost.phase).toBe("active");
+  });
+});

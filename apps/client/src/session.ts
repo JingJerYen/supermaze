@@ -108,6 +108,7 @@ export class Session {
     const map = rotateMap(loadMapById(m.mapId), m.rotation);
     this.matchMode = new OnlineMatchMode(map, m.tickRate, this.meId, (input) => this.conn.sendInput(input));
     this.matchMode.onLeaveRoom = () => void this.leave();
+    this.matchMode.onDebug = (cmd) => this.conn.sendDebug(cmd);
     this.match = new Match(this.root, this.renderer, this.matchMode);
     this.pendingStart = null;
   }

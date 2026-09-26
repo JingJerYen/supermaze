@@ -42,7 +42,7 @@ Add `?server=ws://host:2567` to point the client at another machine.
 
 Opening `http://localhost:5173/` shows the home screen: quick match, create a private
 room, or join one by its four-letter code. Several tabs or devices on the LAN can share
-a room. Press F3 in game for the developer status panel.
+a room. Press F3 in game for the developer status panel, F4 to force a ghost-tag event (server honours it unless started with `SUPERMAZE_DEBUG=0`).
 
 Sandbox: `http://localhost:5173/?local` runs the single-player simulation in the page
 with no server. Extra parameters: `players=N` pretends N participants (idle CPUs) so

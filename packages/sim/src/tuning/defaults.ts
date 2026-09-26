@@ -72,7 +72,7 @@ export const DEFAULT_TUNING: Tuning = {
     intervalSec: 90,
     warningSec: 60,
     durationSec: 20,
-    speedMultiplier: 1.12,
+    speedMultiplier: 1.5,
     caughtFreezeSec: 3,
     caughtProtectionSec: 5,
     catchRadiusTiles: 0.6,

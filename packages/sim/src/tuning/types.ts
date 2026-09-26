@@ -96,7 +96,7 @@ export interface Tuning {
     warningSec: number;
     /** Active chase duration, seconds. */
     durationSec: number;
-    /** Ghost movement speed relative to a normal player. Initial range 1.10-1.15. */
+    /** Ghost movement speed relative to a normal player. */
     speedMultiplier: number;
     /** Freeze applied to a caught player, seconds. */
     caughtFreezeSec: number;

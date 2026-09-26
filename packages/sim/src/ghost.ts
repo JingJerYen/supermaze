@@ -54,17 +54,7 @@ export function stepGhost(
   const events: SimEvent[] = [];
 
   if (ghost.phase === "idle") {
-    const teams = eligibleTeams(players);
-    if (teams.length < 2) {
-      return { ghost: { ...ghost, phaseEndsAtTick: tick + sec(tuning.ghostEvent.intervalSec, tuning) }, events };
-    }
-    const fewest = Math.min(...teams.map((t) => ghost.counts[t] ?? 0));
-    let candidates = teams.filter((t) => (ghost.counts[t] ?? 0) === fewest).sort();
-    if (candidates.length > 1 && ghost.lastTeamId !== null) candidates = candidates.filter((t) => t !== ghost.lastTeamId);
-    const teamId = candidates[0] as TeamId;
-    const startsAtTick = tick + sec(tuning.ghostEvent.warningSec, tuning);
-    events.push({ type: "ghostWarning", tick, teamId, startsAtTick });
-    return { ghost: { ...ghost, phase: "warning", teamId, phaseEndsAtTick: startsAtTick }, events };
+    return beginWarning(ghost, players, tick, tuning, sec(tuning.ghostEvent.warningSec, tuning));
   }
 
   if (ghost.phase === "warning") {
@@ -90,6 +80,36 @@ export function stepGhost(
   // active -> idle
   events.push({ type: "ghostEnded", tick, teamId: ghost.teamId as TeamId });
   return { ghost: { ...ghost, phase: "idle", teamId: null, phaseEndsAtTick: tick + sec(tuning.ghostEvent.intervalSec, tuning) }, events };
+}
+
+/** Next ghost team by the fair-rotation rule, or null when fewer than two teams are in the maze. */
+export function chooseGhostTeam(ghost: GhostState, players: Record<PlayerId, PlayerState>): TeamId | null {
+  const teams = eligibleTeams(players);
+  if (teams.length < 2) return null;
+  const fewest = Math.min(...teams.map((t) => ghost.counts[t] ?? 0));
+  let candidates = teams.filter((t) => (ghost.counts[t] ?? 0) === fewest).sort();
+  if (candidates.length > 1 && ghost.lastTeamId !== null) candidates = candidates.filter((t) => t !== ghost.lastTeamId);
+  return candidates[0] ?? null;
+}
+
+/**
+ * Enter the warning phase with a countdown of `warningTicks`. Used by the
+ * schedule and by the developer shortcut that forces an event immediately.
+ */
+export function beginWarning(
+  ghost: GhostState,
+  players: Record<PlayerId, PlayerState>,
+  tick: Tick,
+  tuning: Tuning,
+  warningTicks: number,
+): { ghost: GhostState; events: SimEvent[] } {
+  const teamId = chooseGhostTeam(ghost, players);
+  if (!teamId) return { ghost: { ...ghost, phaseEndsAtTick: tick + sec(tuning.ghostEvent.intervalSec, tuning) }, events: [] };
+  const startsAtTick = tick + Math.max(1, warningTicks);
+  return {
+    ghost: { ...ghost, phase: "warning", teamId, phaseEndsAtTick: startsAtTick },
+    events: [{ type: "ghostWarning", tick, teamId, startsAtTick }],
+  };
 }
 
 /** Teams that still have someone in the maze. */

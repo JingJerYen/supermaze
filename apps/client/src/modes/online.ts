@@ -18,6 +18,7 @@ export class OnlineMatchMode implements GameMode {
   /** Set by the session from the lobby message while the room is in its results phase. */
   resultsEndAt: number | null = null;
   onLeaveRoom: (() => void) | null = null;
+  onDebug: ((cmd: "ghost") => void) | null = null;
 
   constructor(
     map: MapData,
@@ -67,6 +68,10 @@ export class OnlineMatchMode implements GameMode {
       items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
       action: (me && st && availableAction(this.grid, st, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
     };
+  }
+
+  debug(cmd: "ghost"): void {
+    this.onDebug?.(cmd);
   }
 
   results() {

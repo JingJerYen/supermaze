@@ -16,4 +16,6 @@ export interface GameMode {
   banner?(): string | null;
   /** What the results screen offers once the round is finished. */
   results(): ResultsActions;
+  /** Developer command (F4 forces a ghost event). Optional. */
+  debug?(cmd: "ghost"): void;
 }
