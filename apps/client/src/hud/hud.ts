@@ -1,4 +1,5 @@
 import { TEAM_COLORS } from "../render/teamColors.js";
+import { itemIconSvg } from "./itemIcons.js";
 import { ACTION_LABEL, ITEM_GLYPH, ITEM_LABEL } from "./labels.js";
 import type { HudModel, TeamRow } from "./model.js";
 
@@ -30,6 +31,7 @@ const CSS = `
 .hud-badge.frozen{color:#9fd3ff}
 .hud-items{position:absolute;right:calc(max(24px,env(safe-area-inset-right)) + 84px + 14px);bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:10px;align-items:center}
 .hud-slot{width:clamp(48px,9vh,60px);height:clamp(48px,9vh,60px);border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
+.hud-slot svg{width:80%;height:80%;display:block}
 .hud-slot.next{border:2px solid #ffd23f}
 .hud-slot.empty{border-style:dashed;background:rgba(0,0,0,.25)}
 .hud-toasts{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 84px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -112,11 +114,17 @@ export class Hud {
     }
 
     this.items.replaceChildren();
+    // Team colour feeds the teleport icon's pad through currentColor.
+    const teamColor = m.myTeam ? `#${(TEAM_COLORS[m.myTeam.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}` : "#5be6ff";
     for (let i = 0; i < m.capacity; i++) {
       const kind = m.items[i];
       const slot = el("div", `hud-slot${kind ? (i === 0 ? " next" : "") : " empty"}`);
       if (kind) {
-        slot.textContent = ITEM_GLYPH[kind] ?? "?";
+        const svg = itemIconSvg(kind);
+        if (svg) {
+          slot.innerHTML = svg;
+          slot.style.color = teamColor;
+        } else slot.textContent = ITEM_GLYPH[kind] ?? "?";
         slot.title = ITEM_LABEL[kind] ?? kind;
       }
       this.items.appendChild(slot);

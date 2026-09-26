@@ -7,7 +7,7 @@ export const ITEM_LABEL: Record<string, string> = {
   teleportNode: "傳送點",
 };
 
-/** One-glyph stand-ins for item icons until art arrives. */
+/** One-glyph fallback for item kinds that have no icon in itemIcons.ts. */
 export const ITEM_GLYPH: Record<string, string> = {
   oneWayDoor: "門",
   obstacle: "障",
