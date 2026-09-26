@@ -28,7 +28,7 @@ const CSS = `
 .hud-ghost.active{display:inline-block;background:rgba(226,75,74,.92);color:#fff;animation:hud-pulse 1s infinite}
 .hud-ghost.active.me{background:rgba(120,30,160,.95)}
 .hud-badge.frozen{color:#9fd3ff}
-.hud-items{position:absolute;left:var(--pad);bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end}
+.hud-items{position:absolute;right:calc(max(24px,env(safe-area-inset-right)) + 84px + 14px);bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:10px;align-items:center}
 .hud-slot{width:clamp(48px,9vh,60px);height:clamp(48px,9vh,60px);border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
 .hud-slot.next{border:2px solid #ffd23f}
 .hud-slot.empty{border-style:dashed;background:rgba(0,0,0,.25)}
@@ -45,8 +45,9 @@ const CSS = `
 
 /**
  * In-game overlay: rosters top-left/right, big countdown top-centre, FIFO item
- * slots bottom-left, event toasts under the clock. Plain HTML over the canvas;
- * the context button lives in the input layer and is positioned to match.
+ * slots bottom-right next to the context button (the pad owns the bottom-left),
+ * event toasts under the clock. Plain HTML over the canvas; the context button
+ * lives in the input layer and is positioned to match.
  */
 export class Hud {
   private readonly root: HTMLDivElement;
