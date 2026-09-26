@@ -28,9 +28,7 @@ npm run typecheck
 npm run validate-maps
 ```
 
-Open `http://localhost:5173/?online` to join the server instead of running the
-simulation in the page. Add `&server=ws://host:2567` to point at another machine.
-Several tabs or devices on the LAN join the same room.
+Add `?server=ws://host:2567` to point the client at another machine.
 
 ## Where the knobs are
 
@@ -42,8 +40,12 @@ Several tabs or devices on the LAN join the same room.
 | Feel: camera height/distance/FOV/smoothing, tower proportions, key beam, darkness look, pixel ratio cap, frame delta clamp | `apps/client/src/tuning.ts` | Client only; never affects rules. |
 | Real models | `apps/client/public/models/*.glb` + manifest in `apps/client/src/render/models.ts` | Drop `key.glb` / `box.glb` in; missing files fall back to placeholders in `render/assets.ts`. |
 
-Sandbox URL parameters (`http://localhost:5173/?...`): `players=N` pretends N participants
-(idle CPUs) so keys and boxes are drawn as in a real round; `seed=N` fixes the draw;
-`rot=0..3` picks the map orientation; `map=<id>` picks a map; `name=<nick>` sets your
-display name (otherwise remembered from last time, or asked once); `online` joins the
-server instead. Press F3 in game for the developer status panel.
+Opening `http://localhost:5173/` shows the home screen: quick match, create a private
+room, or join one by its four-letter code. Several tabs or devices on the LAN can share
+a room. Press F3 in game for the developer status panel.
+
+Sandbox: `http://localhost:5173/?local` runs the single-player simulation in the page
+with no server. Extra parameters: `players=N` pretends N participants (idle CPUs) so
+keys and boxes are drawn as in a real round; `seed=N` fixes the draw; `rot=0..3` picks
+the map orientation; `map=<id>` picks a map; `name=<nick>` sets your display name
+(also used online; otherwise remembered from last time).

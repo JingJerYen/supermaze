@@ -1,94 +1,73 @@
-import { applySnapshot, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
-import { DEFAULT_TUNING, MapGrid, availableAction, type MapData, type SimulationState } from "@supermaze/sim";
-import { Connection } from "../net/connection.js";
+import { applySnapshot, type SnapshotMessage } from "@supermaze/protocol";
+import { DEFAULT_TUNING, MapGrid, availableAction, type MapData, type PlayerInput, type SimulationState } from "@supermaze/sim";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import { formatSeconds, roundBanner } from "./roundHud.js";
 import type { GameMode } from "./mode.js";
 
 /**
- * Multiplayer: the server owns the simulation, the page sends intents and
- * interpolates between snapshots. Connecting happens in the background so the
- * map is visible immediately and a failed connection is reported on screen
- * instead of leaving a blank page. Phase 0 assumes the client already has the
- * same map file the server loaded; map delivery is a phase-2 topic.
+ * One online match as seen by the renderer: the session feeds it full states
+ * and per-tick messages, it interpolates and forwards inputs. It knows nothing
+ * about rooms or lobbies.
  */
-export function createOnlineMode(map: MapData, endpoint: string, currentRotation: number, name: string): GameMode {
-  const grid = MapGrid.fromMapData(map);
-  let welcome: WelcomeMessage | null = null;
-  let buffer = new SnapshotBuffer(50);
-  /** Our copy of the authoritative state; per-tick messages are merged into it. */
-  let current: SimulationState | null = null;
-  let rttMs = 0;
-  let status = "connecting";
-  let banner: string | null = `連線中 ${endpoint} ...`;
+export class OnlineMatchMode implements GameMode {
+  readonly label = "online";
+  readonly grid: MapGrid;
+  private buffer: SnapshotBuffer;
+  private current: SimulationState | null = null;
+  rttMs = 0;
 
-  const conn = new Connection(endpoint, {
-    onWelcome(m) {
-      if (m.rotation !== currentRotation) {
-        // The server picked another orientation: reload with the matching ?rot so the
-        // scene is rebuilt from the same map the server is simulating.
-        const url = new URL(location.href);
-        url.searchParams.set("rot", String(m.rotation));
-        location.replace(url.toString());
-        return;
-      }
-      welcome = m;
-      buffer = new SnapshotBuffer(1000 / m.tickRate);
-      status = "online";
-      banner = null;
-    },
-    onFull(m, at) {
-      current = m.state;
-      buffer.push(current, at);
-    },
-    onSnapshot(m: SnapshotMessage, at) {
-      if (!current) return; // no baseline yet; the full state is on its way
-      current = applySnapshot(current, m);
-      buffer.push(current, at);
-    },
-    onPong(m, at) {
-      rttMs = at - m.t;
-    },
-    onLeave(code) {
-      status = `left (${code})`;
-      banner = `已離開房間（代碼 ${code}）。重新整理頁面可重連。`;
-    },
-  }, name);
+  constructor(
+    map: MapData,
+    readonly tickRate: number,
+    private readonly meId: string,
+    private readonly send: (input: PlayerInput) => void,
+  ) {
+    this.grid = MapGrid.fromMapData(map);
+    this.buffer = new SnapshotBuffer(1000 / tickRate);
+  }
 
-  conn.connect().catch((e: unknown) => {
-    status = "error";
-    banner = `無法連線到 ${endpoint}\n請先在專案目錄執行 npm run dev:server\n(${(e as Error).message ?? String(e)})`;
-  });
-  setInterval(() => conn.ping(), 1000);
+  applyFull(state: SimulationState, at: number): void {
+    this.current = state;
+    this.buffer.push(state, at);
+  }
 
-  return {
-    label: "online",
-    grid,
-    tickRate: 20,
-    localPlayerId: () => welcome?.playerId ?? conn.sessionId,
-    tick(input) {
-      if (status === "online") conn.sendInput(input);
-    },
-    sample(now) {
-      return buffer.sample(now);
-    },
-    hud: () => {
-      const st = buffer.latest();
-      const meId = welcome?.playerId ?? conn.sessionId;
-      const me = meId ? st?.players[meId] : undefined;
-      return {
-        status: st ? `${status} / ${st.status}` : status,
-        time: st ? formatSeconds(Math.max(0, st.endsAtTick - st.tick) / (welcome?.tickRate ?? 20)) : "-",
-        players: Object.keys(st?.players ?? {}).length,
-        rtt: `${rttMs.toFixed(0)}ms`,
-        key: me?.keyId ? "yes" : "no",
-        score: me?.score ?? 0,
-        tower: st?.towerArrivals.length ?? 0,
-        lights: st ? (st.lightsOn ? "on" : "OFF") : "-",
-        items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
-        action: (me && st && availableAction(grid, st.switches, st.nodes, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
-      };
-    },
-    banner: () => banner ?? (buffer.latest() ? roundBanner(buffer.latest()!) : null),
-  };
+  applyDelta(msg: SnapshotMessage, at: number): void {
+    if (!this.current) return; // baseline not yet received
+    this.current = applySnapshot(this.current, msg);
+    this.buffer.push(this.current, at);
+  }
+
+  localPlayerId(): string | null {
+    return this.meId;
+  }
+
+  tick(input: PlayerInput): void {
+    if (this.current && this.current.status === "running") this.send(input);
+  }
+
+  sample(now: number) {
+    return this.buffer.sample(now);
+  }
+
+  hud(): Record<string, string | number> {
+    const st = this.buffer.latest();
+    const me = st?.players[this.meId];
+    return {
+      status: st?.status ?? "-",
+      time: st ? formatSeconds(Math.max(0, st.endsAtTick - st.tick) / this.tickRate) : "-",
+      players: Object.keys(st?.players ?? {}).length,
+      rtt: `${this.rttMs.toFixed(0)}ms`,
+      key: me?.keyId ? "yes" : "no",
+      score: me?.score ?? 0,
+      tower: st?.towerArrivals.length ?? 0,
+      lights: st ? (st.lightsOn ? "on" : "OFF") : "-",
+      items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
+      action: (me && st && availableAction(this.grid, st.switches, st.nodes, me, DEFAULT_TUNING.inventory.capacity)) ?? "-",
+    };
+  }
+
+  banner(): string | null {
+    const st = this.buffer.latest();
+    return st ? roundBanner(st) : null;
+  }
 }

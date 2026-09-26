@@ -62,6 +62,11 @@ export class DebugOverlay {
     parent.appendChild(this.bannerEl);
   }
 
+  dispose(): void {
+    this.el.remove();
+    this.bannerEl.remove();
+  }
+
   /** Show a centre-screen message, or hide it with null. */
   banner(text: string | null): void {
     if (text === null) {

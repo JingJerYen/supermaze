@@ -30,6 +30,10 @@ export class ActionButton {
     parent.appendChild(this.el);
   }
 
+  dispose(): void {
+    this.el.remove();
+  }
+
   /** Show with a label, or hide with null. */
   setAction(label: string | null): void {
     if (label === null) {

@@ -104,6 +104,10 @@ export class Hud {
     return ACTION_LABEL[m.action] ?? m.action;
   }
 
+  dispose(): void {
+    this.root.remove();
+  }
+
   toast(text: string): void {
     const t = el("div", "hud-toast");
     t.textContent = text;

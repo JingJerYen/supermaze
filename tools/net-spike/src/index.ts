@@ -27,13 +27,33 @@ async function main(): Promise<void> {
   // A private room for this run: real players on the same server must not eat our seats.
   const roomId = await (bots[0] as Bot).create();
   const startedAt = Date.now();
-  await Promise.all(bots.slice(1).map((b) => b.join(roomId)));
+  await sleep(300);
+  const code = bots[0]?.lobby?.code ?? null;
+  check(!!code && code.length === 4, `private room has a 4-letter code (${code})`);
+
+  // Second bot joins by code (metadata filter), the rest by room id.
+  if (bots[1] && code) await bots[1].joinByCode(code);
+  await Promise.all(bots.slice(2).map((b) => b.join(roomId)));
   await sleep(300);
 
-  const tickRate = bots[0]?.welcome?.tickRate ?? 20;
   check(bots.every((b) => b.welcome), "every bot received welcome");
   check(new Set(bots.map((b) => b.room?.roomId)).size === 1, "all bots landed in the same room");
+  const lobby = bots[0]?.lobby;
+  const sizes = { A: 0, B: 0 };
+  for (const p of lobby?.players ?? []) sizes[p.teamId as "A" | "B"]++;
+  check(!!lobby && lobby.players.length === BOTS, `lobby lists all ${BOTS} players`);
+  check(Math.abs(sizes.A - sizes.B) <= 1, `teams auto-balanced (${sizes.A} v ${sizes.B})`);
+  check(lobby?.phase === "lobby", "no countdown before everyone is ready");
 
+  for (const b of bots) b.ready();
+  await sleep(400);
+  check(bots[0]?.lobby?.phase === "countdown", "all ready -> countdown");
+  const countdownMs = (bots[0]?.lobby?.countdownEndsAt ?? Date.now()) - Date.now();
+  console.log(`waiting ${Math.max(0, countdownMs)} ms for the countdown ...`);
+  await sleep(Math.max(0, countdownMs) + 800);
+  check(bots.every((b) => b.matchStarted && b.state), "match started and every bot has a full state");
+
+  const tickRate = bots[0]?.matchStarted?.tickRate ?? 20;
   for (const b of bots) b.start(tickRate);
   console.log(`random-walking for ${RUN_MS} ms at ${tickRate} Hz ...`);
   await sleep(RUN_MS);
@@ -91,12 +111,13 @@ async function main(): Promise<void> {
   await sleep(300);
   check(auto.snapshotsAdvanced(), "[B] auto-reconnected client receives snapshots again");
 
-  // Fresh player replaced by a real leave should be removed.
+  // Leaving on purpose mid-match: the player stays in the round under CPU control.
   const leaver = bots[BOTS - 1] as Bot;
   const leaverId = leaver.room?.sessionId as string;
   await leaver.leave();
   await sleep(600);
-  check(!observer.state?.players[leaverId], "consented leave removes the player");
+  check(observer.state?.players[leaverId]?.controller === "cpu", "consented leave mid-match hands the player to the CPU");
+  check(observer.lobby?.players.find((p) => p.id === leaverId)?.connected === false, "lobby marks the leaver disconnected");
 
   // Best-effort cleanup; a leave() that never resolves must not hide the verdict.
   await Promise.race([Promise.all(bots.map((b) => b.leave().catch(() => undefined))), sleep(2000)]);

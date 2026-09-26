@@ -91,7 +91,7 @@ x=1 放鑰匙候選、x=3 放道具箱候選、x=5 放開關候選。牆頂候�
 ## 7. 預覽
 
 ```
-http://localhost:5173/?map=maze-01&players=6&seed=1&rot=0
+http://localhost:5173/?local&map=maze-01&players=6&seed=1&rot=0
 ```
 
 - `map`：地圖 id。放進 `content/maps/` 的檔案都會自動列入。

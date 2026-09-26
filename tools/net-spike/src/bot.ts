@@ -1,5 +1,16 @@
 import { Client, type Room } from "@colyseus/sdk";
-import { C2S, ROOM_NAME, S2C, applySnapshot, type FullStateMessage, type PingMessage, type SnapshotMessage, type WelcomeMessage } from "@supermaze/protocol";
+import {
+  C2S,
+  ROOM_NAME,
+  S2C,
+  applySnapshot,
+  type FullStateMessage,
+  type LobbyMessage,
+  type MatchStartedMessage,
+  type PingMessage,
+  type SnapshotMessage,
+  type WelcomeMessage,
+} from "@supermaze/protocol";
 import type { PlayerInput, SimulationState } from "@supermaze/sim";
 
 /**
@@ -9,6 +20,8 @@ import type { PlayerInput, SimulationState } from "@supermaze/sim";
 export class Bot {
   room: Room | null = null;
   welcome: WelcomeMessage | null = null;
+  lobby: LobbyMessage | null = null;
+  matchStarted: MatchStartedMessage | null = null;
   /** Merged authoritative state, kept the same way the real client does. */
   state: SimulationState | null = null;
   /** Bytes of the last full-state message, JSON-equivalent, for the report. */
@@ -24,14 +37,24 @@ export class Bot {
 
   /** Create a fresh room (so the test never shares one with real players). */
   async create(): Promise<string> {
-    this.room = await this.client.create(ROOM_NAME);
+    this.room = await this.client.create(ROOM_NAME, { name: this.name, mode: "private" });
     this.attach(this.room);
     return this.room.roomId;
   }
 
   async join(roomId: string): Promise<void> {
-    this.room = await this.client.joinById(roomId);
+    this.room = await this.client.joinById(roomId, { name: this.name });
     this.attach(this.room);
+  }
+
+  /** Join a private room by its four-letter code, exercising the metadata filter. */
+  async joinByCode(code: string): Promise<void> {
+    this.room = await this.client.join(ROOM_NAME, { name: this.name, mode: "private", code });
+    this.attach(this.room);
+  }
+
+  ready(): void {
+    this.room?.send(C2S.ready, { ready: true });
   }
 
   async reconnect(token: string): Promise<void> {
@@ -42,6 +65,12 @@ export class Bot {
   private attach(room: Room): void {
     room.onMessage<WelcomeMessage>(S2C.welcome, (m) => {
       this.welcome = m;
+    });
+    room.onMessage<LobbyMessage>(S2C.lobby, (m) => {
+      this.lobby = m;
+    });
+    room.onMessage<MatchStartedMessage>(S2C.matchStarted, (m) => {
+      this.matchStarted = m;
     });
     room.onMessage<FullStateMessage>(S2C.full, (m) => {
       this.state = m.state;

@@ -13,7 +13,8 @@ const PORT = Number(process.env["PORT"] ?? 2567);
 const server = new Server({
   transport: new WebSocketTransport(),
 });
-server.define(ROOM_NAME, MazeRoom);
+// Quick matching only joins quick rooms; private rooms are found by their code.
+server.define(ROOM_NAME, MazeRoom).filterBy(["mode", "metadata.code"]);
 
 await server.listen(PORT);
 console.log(`[server] listening on ws://localhost:${PORT} (room "${ROOM_NAME}")`);

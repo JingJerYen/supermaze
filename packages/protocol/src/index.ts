@@ -13,11 +13,21 @@ export const ROOM_NAME = "maze";
 export const C2S = {
   input: "input",
   ping: "ping",
+  /** Toggle ready in the lobby. */
+  ready: "ready",
+  /** Move to the other team if the size difference allows it. */
+  switchTeam: "switchTeam",
+  /** Host of a private room: start now (min players and team balance still apply). */
+  start: "start",
 } as const;
 
 /** Server -> client message names. */
 export const S2C = {
   welcome: "welcome",
+  /** Lobby/room state; sent on every change and when the match ends. */
+  lobby: "lobby",
+  /** The match begins: which map and orientation to build; a `full` state follows. */
+  matchStarted: "matchStarted",
   /** Complete state; sent on join and after a reconnection. */
   full: "full",
   /** Per-tick update: players always, other sections only when they changed. */
@@ -35,6 +45,37 @@ export interface PingMessage {
 export interface WelcomeMessage {
   protocolVersion: number;
   playerId: string;
+}
+
+export type RoomMode = "quick" | "private";
+export type LobbyPhase = "lobby" | "countdown" | "playing" | "results";
+
+export interface LobbyPlayer {
+  id: string;
+  name: string;
+  teamId: string;
+  ready: boolean;
+  connected: boolean;
+}
+
+export interface LobbyMessage {
+  mode: RoomMode;
+  /** Four-letter join code for private rooms. */
+  code: string | null;
+  phase: LobbyPhase;
+  hostId: string;
+  players: LobbyPlayer[];
+  minPlayers: number;
+  maxPlayers: number;
+  /** Server clock (ms since epoch) when the countdown ends, while phase is "countdown". */
+  countdownEndsAt: number | null;
+  /** Server clock when results give way to the lobby, while phase is "results". */
+  resultsEndAt: number | null;
+  /** One-line notice for everyone, e.g. the quick-match wait timed out. */
+  notice: string | null;
+}
+
+export interface MatchStartedMessage {
   mapId: string;
   /** Quarter turns clockwise the server applied to the authored map. */
   rotation: 0 | 1 | 2 | 3;

@@ -47,6 +47,10 @@ export class TouchInput {
     surface.addEventListener("pointercancel", end);
   }
 
+  dispose(): void {
+    this.knob.remove();
+  }
+
   read(): MoveIntent {
     if (!this.origin || !this.current) return { moveX: 0, moveY: 0 };
     const dx = this.current.x - this.origin.x;

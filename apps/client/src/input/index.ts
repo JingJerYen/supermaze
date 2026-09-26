@@ -14,6 +14,11 @@ export class InputSource {
     this.actionButton = new ActionButton(surface);
   }
 
+  dispose(): void {
+    this.touch.dispose();
+    this.actionButton.dispose();
+  }
+
   read(): PlayerInput {
     const k = this.keyboard.read();
     const move = k.moveX !== 0 || k.moveY !== 0 ? k : this.touch.read();
