@@ -1,4 +1,5 @@
 import { availableAction } from "./actions.js";
+import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState } from "./boxes.js";
 import type { SimEvent } from "./events.js";
 import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys.js";
 import { createLightSwitches, usableSwitchAt, type LightSwitchState } from "./lighting.js";
@@ -8,7 +9,7 @@ import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
 import { createMover, stepMover, type MoveIntent, type MoverState } from "./movement.js";
 import { SeededRandom } from "./random/seeded.js";
 import { decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
-import { DEFAULT_TUNING, type Tuning } from "./tuning/index.js";
+import { DEFAULT_TUNING, type ItemKind, type Tuning } from "./tuning/index.js";
 import type { Controller, Participant, PlayerId, PlayerPhase, TeamId, Tick } from "./types.js";
 
 /**
@@ -42,6 +43,8 @@ export interface PlayerState extends Participant {
   /** 0-based order of arrival on the tower top, null while still in the maze. */
   towerArrival: number | null;
   score: number;
+  /** Carried items, at most tuning.inventory.capacity. Item behaviour is not implemented yet. */
+  items: ItemKind[];
 }
 
 export type RoundStatus = "lobby" | "running" | "finished";
@@ -59,6 +62,8 @@ export interface SimulationState {
   /** Map-wide lighting (CLAUDE.md section 8). Starts lit. */
   lightsOn: boolean;
   switches: Record<string, LightSwitchState>;
+  /** Unopened boxes; always participants x perParticipant while running (section 9). */
+  boxes: Record<string, BoxState>;
   /** Per team: tick at which its 1st, 2nd, ... member climbed. */
   teamClimbTicks: Record<TeamId, Tick[]>;
   /** Set the moment the first team has every member on the tower. */
@@ -107,6 +112,7 @@ export class Simulation {
       towerArrivals: [],
       lightsOn: true,
       switches: {},
+      boxes: {},
       teamClimbTicks: {},
       winnerTeamId: null,
       result: null,
@@ -125,11 +131,22 @@ export class Simulation {
     if (this.state.players[p.id]) return;
     const at = this.spawns[this.spawnCursor % this.spawns.length] as TilePos;
     this.spawnCursor++;
-    const player: PlayerState = { ...p, mover: createMover(at), phase: "maze", keyId: null, towerArrival: null, score: 0 };
+    const player: PlayerState = {
+      ...p,
+      mover: createMover(at),
+      phase: "maze",
+      keyId: null,
+      towerArrival: null,
+      score: 0,
+      items: [],
+    };
     this.state = { ...this.state, players: { ...this.state.players, [p.id]: player } };
     // Keep "keys == participants" if someone joins after the round started (dev-only path;
     // real matchmaking fills the room before start).
-    if (this.state.status === "running") this.spawnKeys(this.tuning.keys.perParticipant);
+    if (this.state.status === "running") {
+      this.spawnKeys(this.tuning.keys.perParticipant);
+      this.spawnBoxes(this.tuning.itemBoxes.perParticipant);
+    }
   }
 
   /**
@@ -167,7 +184,27 @@ export class Simulation {
       switches,
     };
     this.spawnKeys(count);
+    this.spawnBoxes(Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];
+  }
+
+  private nextBoxIndex = 0;
+
+  /** Place `count` new boxes on free candidates: no box there and nobody standing on it. */
+  private spawnBoxes(count: number, players: Record<PlayerId, PlayerState> = this.state.players, strict = true): string[] {
+    if (count <= 0) return [];
+    const occupied = new Set<string>(Object.values(this.state.boxes).map((b) => tileId(b.pos)));
+    for (const p of Object.values(players)) occupied.add(tileId(p.mover.from));
+    const tiles = drawBoxTiles(this.rng, this.map.spawns.itemBoxes, occupied, count, strict);
+    const boxes = { ...this.state.boxes };
+    const ids: string[] = [];
+    for (const pos of tiles) {
+      const id = `b${this.nextBoxIndex++}`;
+      boxes[id] = { id, pos };
+      ids.push(id);
+    }
+    this.state = { ...this.state, boxes };
+    return ids;
   }
 
   private spawnKeys(count: number): void {
@@ -187,6 +224,8 @@ export class Simulation {
     const speed = this.tuning.movement.speedTilesPerSec / this.tuning.tickRate;
     const players: Record<PlayerId, PlayerState> = {};
     let keys = this.state.keys;
+    let boxes = this.state.boxes;
+    const openedBoxes: string[] = [];
     let switches = this.state.switches;
     let lightsOn = this.state.lightsOn;
     const towerArrivals = [...this.state.towerArrivals];
@@ -214,6 +253,20 @@ export class Simulation {
             events.push({ type: "keyPickedUp", tick, playerId: id, keyId: key.id });
           }
         }
+        // Boxes: walk onto one with a free slot and it opens. A full bag leaves the box in place.
+        if (p.items.length < this.tuning.inventory.capacity) {
+          const box = boxAt(boxes, p.mover.from);
+          if (box) {
+            const item = drawItem(this.rng, this.tuning);
+            const rest = { ...boxes };
+            delete rest[box.id];
+            boxes = rest;
+            openedBoxes.push(box.id);
+            p = { ...p, items: [...p.items, item] };
+            events.push({ type: "boxOpened", tick, playerId: id, boxId: box.id, item });
+          }
+        }
+
         if (input.action) {
           const action = availableAction(this.grid, switches, p);
           if (action === "climb") {
@@ -221,7 +274,9 @@ export class Simulation {
             towerArrivals.push(id);
             const table = this.tuning.scoring.towerPlacement;
             const placementScore = table[Math.min(arrival, table.length - 1)] ?? 0;
-            p = { ...p, phase: "tower", towerArrival: arrival, score: p.score + placementScore };
+            // Unused items vanish and become a flat score each (section 3.1 / 5).
+            const leftover = p.items.length * this.tuning.scoring.leftoverItem;
+            p = { ...p, phase: "tower", towerArrival: arrival, score: p.score + placementScore + leftover, items: [] };
             teamClimbTicks[p.teamId] = [...(teamClimbTicks[p.teamId] ?? []), tick];
             events.push({ type: "towerClimbed", tick, playerId: id, arrival });
           } else if (action === "switch") {
@@ -248,7 +303,14 @@ export class Simulation {
       }
     }
 
-    let next: SimulationState = { ...this.state, tick, players, keys, switches, lightsOn, towerArrivals, teamClimbTicks, winnerTeamId };
+    // Replacement boxes spawn in the same tick so the count never drops (section 9).
+    this.state = { ...this.state, boxes };
+    if (openedBoxes.length > 0 && this.state.status === "running") {
+      for (const boxId of this.spawnBoxes(openedBoxes.length, players, false)) events.push({ type: "boxSpawned", tick, boxId });
+      boxes = this.state.boxes;
+    }
+
+    let next: SimulationState = { ...this.state, tick, players, keys, switches, lightsOn, boxes, towerArrivals, teamClimbTicks, winnerTeamId };
 
     if (next.status === "running") {
       const everyoneClimbed = Object.values(players).length > 0 && Object.values(players).every((p) => p.phase === "tower");

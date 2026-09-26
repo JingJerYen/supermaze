@@ -32,7 +32,21 @@ export const TINY_MAP: MapData = {
       { x: 1, y: 6, layer: "road" },
       { x: 4, y: 2, layer: "wallTop" },
     ],
-    itemBoxes: [],
+    // Off every path the key/round tests walk; enough for a 5-player round (10) plus spares.
+    itemBoxes: [
+      { x: 1, y: 1, layer: "road" },
+      { x: 2, y: 1, layer: "road" },
+      { x: 4, y: 1, layer: "road" },
+      { x: 5, y: 1, layer: "road" },
+      { x: 6, y: 1, layer: "road" },
+      { x: 2, y: 6, layer: "road" },
+      { x: 3, y: 6, layer: "road" },
+      { x: 4, y: 6, layer: "road" },
+      { x: 5, y: 6, layer: "road" },
+      { x: 6, y: 6, layer: "road" },
+      { x: 7, y: 6, layer: "road" },
+      { x: 7, y: 4, layer: "road" },
+    ],
     lightSwitches: [
       { x: 3, y: 1, layer: "road" }, // wall (3,2) to the south
       { x: 6, y: 3, layer: "road" }, // wall (5,3) to the west
@@ -79,8 +93,10 @@ export const LATTICE_MAP: MapData = {
       { x: 3, y: 2, layer: "wallTop" },
     ],
     itemBoxes: [
+      { x: 1, y: 1, layer: "road" },
       { x: 3, y: 1, layer: "road" },
       { x: 3, y: 3, layer: "road" },
+      { x: 5, y: 3, layer: "road" },
       { x: 5, y: 7, layer: "road" },
       { x: 7, y: 7, layer: "road" },
     ],

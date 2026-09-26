@@ -43,6 +43,7 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
         key: me?.keyId ? "yes" : "no",
         score: me?.score ?? 0,
         lights: st.lightsOn ? "on" : "OFF",
+        items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
         action: (me && sim.availableAction(me)) ?? "-",
       };
     },

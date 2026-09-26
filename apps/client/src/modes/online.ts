@@ -1,5 +1,5 @@
 import type { SnapshotMessage, WelcomeMessage } from "@supermaze/protocol";
-import { MapGrid, availableAction, type MapData } from "@supermaze/sim";
+import { DEFAULT_TUNING, MapGrid, availableAction, type MapData } from "@supermaze/sim";
 import { Connection } from "../net/connection.js";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import { formatSeconds, roundBanner } from "./roundHud.js";
@@ -78,6 +78,7 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
         score: me?.score ?? 0,
         tower: st?.towerArrivals.length ?? 0,
         lights: st ? (st.lightsOn ? "on" : "OFF") : "-",
+        items: me ? `${me.items.length}/${DEFAULT_TUNING.inventory.capacity} ${me.items.join(",")}` : "-",
         action: (me && st && availableAction(grid, st.switches, me)) ?? "-",
       };
     },

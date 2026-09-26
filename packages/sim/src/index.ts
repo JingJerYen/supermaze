@@ -12,5 +12,6 @@ export * from "./events.js";
 export * from "./keys.js";
 export * from "./round.js";
 export * from "./lighting.js";
+export * from "./boxes.js";
 export * from "./actions.js";
 export * from "./simulation.js";

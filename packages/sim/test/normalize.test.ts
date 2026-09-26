@@ -12,9 +12,9 @@ const MARKED: MapData = {
   ...LATTICE_BASE,
   rows: [
     "XXXXXXXXX",
-    "X..B...KX",
+    "XB.B...KX",
     "X##k#.##X",
-    "XS.B...LX",
+    "XS.B.B.LX",
     "X.###.##X",
     "XL=..T..X",
     "X##.#.#.X",

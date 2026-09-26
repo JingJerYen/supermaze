@@ -23,6 +23,14 @@ export const CLIENT_TUNING = {
     /** Low base covering the whole footprint so the blocked tiles read as tower ground. */
     baseHeight: 0.3,
   },
+  keyBeam: {
+    /** World units above the key. */
+    height: 3.5,
+    radius: 0.12,
+    /** Alpha at the base; fades to 0 at the top. */
+    opacity: 0.55,
+    color: 0xffe08a,
+  },
   dark: {
     /** Residual ambient light when the map is dark; 0 is pitch black outside the circle. */
     ambient: 0.04,

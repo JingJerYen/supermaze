@@ -68,9 +68,11 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
   // walkable, reachable, unique, off the tower entries, and disjoint across kinds.
   const maxParticipants = Math.max(0, ...data.supportedParticipants);
   const candidates = data.spawns;
+  // Boxes need spare candidates so a replacement always has somewhere free to appear.
+  const BOX_SPARES = 2;
   const needed: Record<keyof NormalizedMapData["spawns"], number> = {
     keys: maxParticipants * tuning.keys.perParticipant,
-    itemBoxes: maxParticipants * tuning.itemBoxes.perParticipant,
+    itemBoxes: maxParticipants * tuning.itemBoxes.perParticipant + BOX_SPARES,
     lightSwitches: data.lightSwitchCount ?? 0,
   };
   const seen = new Map<string, string>();
