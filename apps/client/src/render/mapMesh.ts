@@ -2,14 +2,12 @@ import * as THREE from "three";
 import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
 import { platformTopY as platformTopYWorld } from "./elevation.js";
-import { createRampGeometry } from "./geometry.js";
+import { createBridge, createStairs } from "./structures.js";
 
 const COLORS = {
   road: 0x4d5a6d,
   wall: 0x8e9bb3,
   wallTop: 0xa9b6cc,
-  stairs: 0xc2a96a,
-  bridge: 0xb08a5a,
   tower: 0x9a3f3c,
   towerShaft: 0xd9534f,
   towerPlatform: 0xf0a19b,
@@ -37,13 +35,9 @@ export function buildMapMesh(grid: MapGrid): { group: THREE.Group; tower: TowerV
   const group = new THREE.Group();
   const floorGeo = new THREE.PlaneGeometry(1, 1);
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-  const slabGeo = new THREE.BoxGeometry(1, 0.12, 1);
-  const rampGeo = createRampGeometry();
   const mat = (color: number) => new THREE.MeshLambertMaterial({ color });
   const floorMat = mat(COLORS.road);
   const wallMat = mat(COLORS.wall);
-  const stairsMat = mat(COLORS.stairs);
-  const bridgeMat = mat(COLORS.bridge);
 
   const addFloor = (x: number, y: number) => {
     const m = new THREE.Mesh(floorGeo, floorMat);
@@ -67,17 +61,18 @@ export function buildMapMesh(grid: MapGrid): { group: THREE.Group; tower: TowerV
         case "stairs": {
           addFloor(x, y);
           const rise = grid.stairsRiseDir(x, y) ?? { dx: 0, dy: 1 };
-          const m = new THREE.Mesh(rampGeo, stairsMat);
-          m.position.set(x, 0, y);
-          m.rotation.y = Math.atan2(rise.dx, rise.dy);
-          group.add(m);
+          const s = createStairs(rise);
+          s.position.set(x, 0, y);
+          group.add(s);
           break;
         }
         case "bridge": {
           addFloor(x, y);
-          const m = new THREE.Mesh(slabGeo, bridgeMat);
-          m.position.set(x, 1 - 0.06, y);
-          group.add(m);
+          // The deck runs between the two walls: north-south when the walls are north and south.
+          const ns = grid.kindAt(x, y - 1) === "wall" && grid.kindAt(x, y + 1) === "wall";
+          const b = createBridge(ns ? { dx: 0, dy: 1 } : { dx: 1, dy: 0 });
+          b.position.set(x, 0, y);
+          group.add(b);
           break;
         }
         case "tower":
