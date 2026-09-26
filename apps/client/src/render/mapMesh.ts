@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
 import { platformTopY as platformTopYWorld } from "./elevation.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { createBridge, createStairs } from "./structures.js";
 import { patternTexture, themeFor, type Theme } from "./themes.js";
 
@@ -41,9 +42,6 @@ export interface MapView {
  */
 export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), plazaRadius = 0): MapView {
   const group = new THREE.Group();
-  const floorGeo = new THREE.PlaneGeometry(1, 1);
-  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-  const shadowGeo = new THREE.PlaneGeometry(1.16, 1.16);
   const lambert = (color: number, map: THREE.Texture | null) =>
     new THREE.MeshLambertMaterial(map ? { color, map } : { color });
 
@@ -52,9 +50,6 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
   const sideMat = lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide));
   const outerSideMat = lambert(theme.outerWall, patternTexture(theme.wallPattern, theme.outerWall));
   const topMat = lambert(theme.wallTop, null);
-  // BoxGeometry material order: +x, -x, +y (top), -y, +z, -z.
-  const wallMats = [sideMat, sideMat, topMat, topMat, sideMat, sideMat];
-  const outerWallMats = [outerSideMat, outerSideMat, topMat, topMat, outerSideMat, outerSideMat];
   const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 
   const tower = grid.findCells("tower");
@@ -62,11 +57,30 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
     plazaRadius > 0 && tower.some((t) => Math.max(Math.abs(t.x - x), Math.abs(t.y - y)) <= plazaRadius);
   const isOuter = (x: number, y: number) => x === 0 || y === 0 || x === grid.width - 1 || y === grid.height - 1;
 
+  // Every tile face of one surface kind is merged into a single geometry, so the
+  // whole maze costs a handful of draw calls regardless of its size.
+  const batches = {
+    floor: [] as THREE.BufferGeometry[],
+    plaza: [] as THREE.BufferGeometry[],
+    side: [] as THREE.BufferGeometry[],
+    outerSide: [] as THREE.BufferGeometry[],
+    top: [] as THREE.BufferGeometry[],
+    shadow: [] as THREE.BufferGeometry[],
+  };
+  const floorProto = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  const shadowProto = new THREE.PlaneGeometry(1.16, 1.16).rotateX(-Math.PI / 2);
+  const topProto = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 1, 0);
+  // Four vertical faces of a unit wall, each a plane facing outward, at their offsets.
+  const sideProtos = [
+    new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0.5), // south face (+z)
+    new THREE.PlaneGeometry(1, 1).rotateY(Math.PI).translate(0, 0.5, -0.5), // north face
+    new THREE.PlaneGeometry(1, 1).rotateY(Math.PI / 2).translate(0.5, 0.5, 0), // east face
+    new THREE.PlaneGeometry(1, 1).rotateY(-Math.PI / 2).translate(-0.5, 0.5, 0), // west face
+  ];
+  const at = (proto: THREE.BufferGeometry, x: number, y: number, dy = 0) => proto.clone().translate(x, dy, y);
+
   const addFloor = (x: number, y: number) => {
-    const m = new THREE.Mesh(floorGeo, inPlaza(x, y) ? plazaMat : floorMat);
-    m.rotation.x = -Math.PI / 2;
-    m.position.set(x, 0, y);
-    group.add(m);
+    (inPlaza(x, y) ? batches.plaza : batches.floor).push(at(floorProto, x, y));
   };
 
   const topEdges: number[] = [];
@@ -84,17 +98,17 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
           pushRect(floorEdges, x, y, 0.004);
           break;
         case "wall": {
-          const m = new THREE.Mesh(boxGeo, isOuter(x, y) ? outerWallMats : wallMats);
-          m.position.set(x, 0.5, y);
-          group.add(m);
+          const outer = isOuter(x, y);
+          const sides = outer ? batches.outerSide : batches.side;
+          // Only faces that can be seen: skip a face when the neighbour is also a wall.
+          const neighbourWall = (dx: number, dy: number) => grid.kindAt(x + dx, y + dy) === "wall";
+          if (!neighbourWall(0, 1)) sides.push(at(sideProtos[0] as THREE.BufferGeometry, x, y));
+          if (!neighbourWall(0, -1)) sides.push(at(sideProtos[1] as THREE.BufferGeometry, x, y));
+          if (!neighbourWall(1, 0)) sides.push(at(sideProtos[2] as THREE.BufferGeometry, x, y));
+          if (!neighbourWall(-1, 0)) sides.push(at(sideProtos[3] as THREE.BufferGeometry, x, y));
+          batches.top.push(at(topProto, x, y));
           pushRect(topEdges, x, y, 1.003);
-          if (!isOuter(x, y)) {
-            // Contact shadow: a dark square slightly larger than the wall, just above the floor.
-            const sh = new THREE.Mesh(shadowGeo, shadowMat);
-            sh.rotation.x = -Math.PI / 2;
-            sh.position.set(x, 0.006, y);
-            group.add(sh);
-          }
+          if (!outer) batches.shadow.push(at(shadowProto, x, y, 0.006));
           break;
         }
         case "stairs": {
@@ -122,6 +136,20 @@ export function buildMapMesh(grid: MapGrid, theme: Theme = themeFor(undefined), 
       }
     }
   }
+
+  const addMerged = (list: THREE.BufferGeometry[], material: THREE.Material) => {
+    if (list.length === 0) return;
+    const merged = mergeGeometries(list, false);
+    if (!merged) return;
+    for (const g of list) g.dispose();
+    group.add(new THREE.Mesh(merged, material));
+  };
+  addMerged(batches.floor, floorMat);
+  addMerged(batches.plaza, plazaMat);
+  addMerged(batches.side, sideMat);
+  addMerged(batches.outerSide, outerSideMat);
+  addMerged(batches.top, topMat);
+  addMerged(batches.shadow, shadowMat);
 
   const lineMat = (opacity: number) => new THREE.LineBasicMaterial({ color: theme.line, transparent: true, opacity });
   const topLines = new THREE.LineSegments(lineGeometry(topEdges), lineMat(0.55));

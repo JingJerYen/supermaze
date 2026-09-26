@@ -132,7 +132,12 @@ export class Match {
     }
 
     this.renderer.render(this.scene, this.follow.camera);
-    this.debug.frame({ tick: s?.to.tick ?? 0, objects: this.scene.children.length, extra: { mode: this.mode.label, ...this.mode.hud() } });
+    const r = this.renderer.info.render;
+    this.debug.frame({
+      tick: s?.to.tick ?? 0,
+      objects: this.scene.children.length,
+      extra: { drawCalls: r.calls, triangles: r.triangles, mode: this.mode.label, ...this.mode.hud() },
+    });
     this.debug.banner(this.mode.banner?.() ?? null);
   }
 
