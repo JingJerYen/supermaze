@@ -151,22 +151,33 @@ export class MapGrid {
     return this.entryKeys.has(`${x},${y}`);
   }
 
-  /** Road cells touching the tower footprint, in scan order. Players start here and climb from here. */
+  /**
+   * Road cells touching the tower footprint. Players start here and climb from here.
+   * Order (CLAUDE.md section 4): the south side first, so everyone stands in front of
+   * the tower as seen by the camera, then east, west and north; within a side from
+   * the centre outward, ties toward the smaller coordinate. Spawning wraps, so the
+   * same tile may hold several players.
+   */
   spawnTiles(): TilePos[] {
+    const tower = this.findCells("tower");
+    if (tower.length === 0) return [];
+    const cx = (Math.min(...tower.map((c) => c.x)) + Math.max(...tower.map((c) => c.x))) / 2;
+    const cy = (Math.min(...tower.map((c) => c.y)) + Math.max(...tower.map((c) => c.y))) / 2;
+    const sides: Dir[] = [DIRS.south, DIRS.east, DIRS.west, DIRS.north];
     const seen = new Set<string>();
-    const out: TilePos[] = [];
-    for (const t of this.findCells("tower")) {
-      for (const d of ALL_DIRS) {
+    const found: { pos: TilePos; side: number; offCentre: number; along: number }[] = [];
+    for (const t of tower) {
+      for (const d of sides) {
         const x = t.x + d.dx;
         const y = t.y + d.dy;
         const key = `${x},${y}`;
-        if (this.kindAt(x, y) === "road" && !seen.has(key)) {
-          seen.add(key);
-          out.push({ x, y, layer: "road" });
-        }
+        if (this.kindAt(x, y) !== "road" || seen.has(key)) continue;
+        seen.add(key);
+        const along = d.dy !== 0 ? x : y; // coordinate that runs along this side
+        found.push({ pos: { x, y, layer: "road" }, side: sides.indexOf(d), offCentre: Math.abs(along - (d.dy !== 0 ? cx : cy)), along });
       }
     }
-    return out;
+    return found.sort((a, b) => a.side - b.side || a.offCentre - b.offCentre || a.along - b.along).map((f) => f.pos);
   }
 
   /** Every tile reachable from `start` via legal moves. Keys are `tileKey(...)`. */

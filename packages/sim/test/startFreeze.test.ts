@@ -6,12 +6,13 @@ import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 
 const still: PlayerInput = { moveX: 0, moveY: 0 };
 const press: PlayerInput = { ...still, action: true };
-const north: PlayerInput = { moveX: 0, moveY: -1 };
+const south: PlayerInput = { moveX: 0, moveY: 1 };
+const east: PlayerInput = { moveX: 1, moveY: 0 };
 
-/** Keys under both entry tiles, so anyone free to act can pick up and climb at once. */
+/** Keys under the first two spawn tiles (south and east entries), so anyone free to act can pick up and climb at once. */
 const INSTANT: MapData = {
   ...TINY_MAP,
-  spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 3, layer: "road" }, { x: 2, y: 5, layer: "road" }] },
+  spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 4, layer: "road" }, { x: 3, y: 3, layer: "road" }] },
 };
 const two = [
   { id: "a", teamId: "A", controller: "human" as const },
@@ -43,7 +44,7 @@ describe("start freeze (CLAUDE.md section 4)", () => {
     const before = sim.getState().players;
     const n = freezeTicks(DEFAULT_TUNING);
     // Hold a direction for a and mash the action for b for the whole freeze minus one tick.
-    const events = run(sim, n - 1, new Map([["a", north], ["b", press]]));
+    const events = run(sim, n - 1, new Map([["a", south], ["b", press]]));
     const st = sim.getState();
     expect(st.tick).toBe(n - 1);
     expect(st.players["a"]).toEqual(before["a"]);
@@ -57,15 +58,15 @@ describe("start freeze (CLAUDE.md section 4)", () => {
     const sim = new Simulation({ seed: 1, map: INSTANT, participants: two });
     sim.start();
     const n = freezeTicks(DEFAULT_TUNING);
-    run(sim, n - 1, new Map([["a", north]]));
+    run(sim, n - 1, new Map([["a", east]]));
     const facingBefore = sim.getState().players["a"]!.mover.facing;
 
-    // The first free tick: pickups happen, a turns to face north.
-    const events = sim.step(new Map([["a", north]]));
+    // The first free tick: pickups happen, a turns to face east.
+    const events = sim.step(new Map([["a", east]]));
     expect(sim.getState().tick).toBe(sim.getState().freezeUntilTick);
     expect(events.map((e) => e.type).sort()).toEqual(["keyPickedUp", "keyPickedUp"]);
-    expect(sim.getState().players["a"]!.mover.facing).toEqual({ dx: 0, dy: -1 });
-    expect(facingBefore).not.toEqual({ dx: 0, dy: -1 });
+    expect(sim.getState().players["a"]!.mover.facing).toEqual({ dx: 1, dy: 0 });
+    expect(facingBefore).not.toEqual({ dx: 1, dy: 0 });
 
     // And the action key works again: b climbs.
     expect(sim.availableAction(sim.getState().players["b"]!)).toBe("climb");
@@ -96,7 +97,7 @@ describe("start freeze (CLAUDE.md section 4)", () => {
     const go = () => {
       const sim = new Simulation({ seed: 9, map: INSTANT, participants: two });
       sim.start();
-      run(sim, freezeTicks(DEFAULT_TUNING) + 10, new Map([["a", north], ["b", press]]));
+      run(sim, freezeTicks(DEFAULT_TUNING) + 10, new Map([["a", south], ["b", press]]));
       return sim.getState();
     };
     expect(go()).toEqual(go());

@@ -36,13 +36,13 @@ describe("stepMover", () => {
   });
 
   it("stays put when blocked", () => {
-    const m = stepMover(createMover({ x: 3, y: 1, layer: "road" }), { moveX: 0, moveY: 1 }, grid, 0.25);
+    const m = stepMover(createMover({ x: 3, y: 6, layer: "road" }), { moveX: 0, moveY: 1 }, grid, 0.25);
     expect(m.target).toBeNull();
   });
 
   it("falls back to the secondary axis when the primary is blocked", () => {
-    const m = stepMover(createMover({ x: 3, y: 1, layer: "road" }), { moveX: 0.5, moveY: 1 }, grid, 0.25);
-    expect(m.target).toEqual({ x: 4, y: 1, layer: "road" });
+    const m = stepMover(createMover({ x: 3, y: 6, layer: "road" }), { moveX: 0.5, moveY: 1 }, grid, 0.25);
+    expect(m.target).toEqual({ x: 4, y: 6, layer: "road" });
   });
 
   it("finishes the current step even when the intent is released", () => {

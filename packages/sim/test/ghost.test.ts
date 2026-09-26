@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
+import { moverPosition } from "../src/movement.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import { TINY_MAP } from "./fixtures.js";
@@ -14,7 +15,7 @@ const T = FAST.tickRate;
 const still: PlayerInput = { moveX: 0, moveY: 0 };
 
 /** Keys far away so nobody climbs by accident; a on team A, b on team B, both at tower entries. */
-const MAP: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 1, layer: "road" }, { x: 1, y: 6, layer: "road" }] } };
+const MAP: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 6, layer: "road" }, { x: 1, y: 1, layer: "road" }] } };
 const two = [
   { id: "a", teamId: "A", controller: "human" as const },
   { id: "b", teamId: "B", controller: "human" as const },
@@ -85,15 +86,16 @@ describe("ghost rules", () => {
     const a = sim.getState().players["a"]!;
     expect(sim.isGhost(a)).toBe(true);
     expect(sim.isGhost(sim.getState().players["b"]!)).toBe(false);
-    // Both push north from their entries; a is at (2,3), b at (2,5) -> b's north is the tower, so compare a vs a plain run.
+    // a (ghost) pushes south from the south entry (2,4); compare against a plain run of the same player.
     const plain = new Simulation({ seed: 1, map: MAP, participants: [two[0]!], tuning: FAST });
     plain.start();
-    const dirs = new Map([["a", { moveX: 0, moveY: -1 }]]);
-    run(sim, 8, dirs);
-    run(plain, 8, dirs);
-    const ghostProgress = sim.getState().players["a"]!.mover.progress;
-    const plainProgress = plain.getState().players["a"]!.mover.progress;
-    expect(ghostProgress).toBeGreaterThan(plainProgress);
+    const dirs = new Map([["a", { moveX: 0, moveY: 1 }]]);
+    run(sim, 6, dirs); // short enough that neither reaches the border wall at (2,7)
+    run(plain, 6, dirs);
+    const ghostY = moverPosition(sim.getState().players["a"]!.mover).y;
+    const plainY = moverPosition(plain.getState().players["a"]!.mover).y;
+    expect(plainY).toBeGreaterThan(4);
+    expect(ghostY).toBeGreaterThan(plainY);
   });
 
   it("a ghost's key and items are locked but switches still work", () => {
@@ -105,13 +107,13 @@ describe("ghost rules", () => {
 
   it("catching freezes the runner, empties the bag, keeps the key, scores the ghost and protects from re-catch", () => {
     const sim = activeSim();
-    // Move b (runner, at (2,5)) west to (1,5) then north to (1,4)... a (ghost, at (2,3)) heads west to (1,3) then south to (1,4).
-    // Simpler: b walks east to (3,5)? blocked by wall? row5 "X....#..X": (3,5) road. a walks (2,3)->(3,3)->(3,4)? (3,4) is a tower entry, road. Then (3,5).
+    // b (runner) starts on the east entry (3,3) and steps east to (4,3). a (ghost) starts on the
+    // south entry (2,4), walks east along row 4 to (4,4) (blocked by the wall at (5,4)), then north onto b.
     const bIn = new Map([["b", { moveX: 1, moveY: 0 }]]);
-    run(sim, 8, bIn); // b at/near (3,5) (turn 3 ticks + 5)
+    run(sim, 7, bIn); // released just before arriving, so b settles on (4,3) instead of walking on
     const aEast = new Map([["a", { moveX: 1, moveY: 0 }]]);
-    run(sim, 8, aEast); // a to (3,3)
-    const ev = run(sim, 12, new Map([["a", { moveX: 0, moveY: 1 }]])); // a south through (3,4) toward (3,5)
+    run(sim, 16, aEast); // a to (4,4)
+    const ev = run(sim, 12, new Map([["a", { moveX: 0, moveY: -1 }]])); // a north onto (4,3)
     const caught = ev.find((e) => e.type === "playerCaught");
     expect(caught).toBeDefined();
     const b = sim.getState().players["b"]!;
@@ -127,7 +129,7 @@ describe("ghost rules", () => {
   it("players on the tower are exempt", () => {
     const sim = new Simulation({
       seed: 3,
-      map: { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 3, layer: "road" }, { x: 2, y: 5, layer: "road" }, { x: 7, y: 1, layer: "road" }] } },
+      map: { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 4, layer: "road" }, { x: 3, y: 3, layer: "road" }, { x: 7, y: 6, layer: "road" }] } },
       participants: [...two, { id: "c", teamId: "B", controller: "human" as const }],
       tuning: FAST,
     });

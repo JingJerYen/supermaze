@@ -30,10 +30,10 @@ describe("Simulation", () => {
   it("moves a player according to its input", () => {
     const sim = new Simulation({ seed: 1, map: TINY_MAP, participants });
     const start = sim.getState().players["p1"]!.mover.from;
-    const inputs = new Map([["p1", { moveX: 0, moveY: -1 }]]);
+    const inputs = new Map([["p1", { moveX: 0, moveY: 1 }]]); // south: away from the tower
     for (let i = 0; i < 10; i++) sim.step(inputs);
     const after = sim.getState().players["p1"]!.mover;
-    expect(after.from.y).toBeLessThan(start.y);
+    expect(after.from.y).toBeGreaterThan(start.y);
     expect(sim.getState().players["p2"]!.mover.target).toBeNull();
   });
 

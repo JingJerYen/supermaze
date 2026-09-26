@@ -55,11 +55,15 @@ describe("lights in the simulation", () => {
     }
   });
 
-  /** a spawns at (5,4); the switch at (7,3) is three tiles away. */
+  /** a spawns on the south entry (5,6); the switch at (1,5) is seven tiles away round the bottom row. */
   const toFirstSwitch: PlayerInput[] = [
-    { moveX: 0, moveY: -1 }, // (5,3)
-    { moveX: 1, moveY: 0 }, // (6,3)
-    { moveX: 1, moveY: 0 }, // (7,3)
+    { moveX: 0, moveY: 1 }, // (5,7)
+    { moveX: -1, moveY: 0 }, // (4,7)
+    { moveX: -1, moveY: 0 }, // (3,7)
+    { moveX: 0, moveY: -1 }, // (3,6)
+    { moveX: 0, moveY: -1 }, // (3,5)
+    { moveX: -1, moveY: 0 }, // (2,5) under the bridge
+    { moveX: -1, moveY: 0 }, // (1,5)
   ];
 
   it("a switch flips the lights once and then is spent", () => {
@@ -68,7 +72,7 @@ describe("lights in the simulation", () => {
     sim.start();
     walk(sim, "a", toFirstSwitch);
     const a = sim.getState().players["a"]!;
-    expect(a.mover.from).toEqual({ x: 7, y: 3, layer: "road" });
+    expect(a.mover.from).toEqual({ x: 1, y: 5, layer: "road" });
     expect(availableAction(sim.grid, sim.getState(), a, sim.tuning.inventory.capacity)).toBe("switch");
 
     let events = sim.step(new Map([["a", press]]));
@@ -89,18 +93,18 @@ describe("lights in the simulation", () => {
     walk(sim, "a", toFirstSwitch);
     sim.step(new Map([["a", press]]));
     expect(sim.getState().lightsOn).toBe(false);
-    // Second switch at (1,5): back west along row 3, down the west column.
+    // Second switch at (7,3): up the west column, then east along row 3.
     walk(sim, "a", [
-      { moveX: -1, moveY: 0 }, // (6,3)
-      { moveX: -1, moveY: 0 }, // (5,3)
-      { moveX: -1, moveY: 0 }, // (4,3)
-      { moveX: -1, moveY: 0 }, // (3,3)
-      { moveX: -1, moveY: 0 }, // (2,3)
-      { moveX: -1, moveY: 0 }, // (1,3) stairs, stays on the road layer
-      { moveX: 0, moveY: 1 }, // (1,4)
-      { moveX: 0, moveY: 1 }, // (1,5)
+      { moveX: 0, moveY: -1 }, // (1,4)
+      { moveX: 0, moveY: -1 }, // (1,3) stairs, stays on the road layer
+      { moveX: 1, moveY: 0 }, // (2,3)
+      { moveX: 1, moveY: 0 }, // (3,3)
+      { moveX: 1, moveY: 0 }, // (4,3)
+      { moveX: 1, moveY: 0 }, // (5,3)
+      { moveX: 1, moveY: 0 }, // (6,3)
+      { moveX: 1, moveY: 0 }, // (7,3)
     ]);
-    expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 1, y: 5, layer: "road" });
+    expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 7, y: 3, layer: "road" });
     sim.step(new Map([["a", press]]));
     expect(sim.getState().lightsOn).toBe(true);
     expect(Object.values(sim.getState().switches).every((s) => s.used)).toBe(true);

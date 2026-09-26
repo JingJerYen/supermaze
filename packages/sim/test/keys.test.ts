@@ -38,36 +38,36 @@ describe("keys in the simulation", () => {
 
   it("does not hand out keys before the round starts", () => {
     const sim = new Simulation({ seed: 3, map: TINY_MAP, participants: two, tuning: NO_FREEZE });
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]);
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }]);
     expect(sim.getState().players["a"]!.keyId).toBeNull();
   });
 
   it("binds a key to the first player who steps on it and scores it once", () => {
     // Put one key right next to a's spawn so we can walk onto it deterministically.
-    const map = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }] } };
+    const map = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 5, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 1, map, participants: [two[0]!], tuning: NO_FREEZE });
     sim.start();
     const keyId = Object.keys(sim.getState().keys)[0]!;
-    // a spawns at (2,3); north is (2,2) = the stairs tile holding the key.
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }]);
+    // a spawns at (2,4); south is (2,5) = the stairs tile holding the key.
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }]);
     const a = sim.getState().players["a"]!;
     expect(a.keyId).toBe(keyId);
     expect(a.score).toBe(sim.tuning.scoring.keyFound);
     expect(sim.getState().keys[keyId]!.ownerId).toBe("a");
 
     // Walking away and back does not score again or change ownership.
-    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: -1 }]);
+    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: 1 }]);
     expect(sim.getState().players["a"]!.score).toBe(sim.tuning.scoring.keyFound);
   });
 
   it("never lets a player hold two keys", () => {
     const map = {
       ...TINY_MAP,
-      spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }, { x: 1, y: 2, layer: "road" as const }] },
+      spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 5, layer: "road" as const }, { x: 1, y: 5, layer: "road" as const }] },
     };
     const sim = new Simulation({ seed: 1, map, participants: two, tuning: NO_FREEZE });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: -1, moveY: 0 }]); // onto (2,2) then (1,2)
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: -1, moveY: 0 }]); // onto (2,5) then (1,5)
     const owned = Object.values(sim.getState().keys).filter((k) => k.ownerId === "a");
     expect(owned).toHaveLength(1);
     expect(Object.values(sim.getState().keys).some((k) => k.ownerId === null)).toBe(true);
@@ -77,7 +77,7 @@ describe("keys in the simulation", () => {
     const run = () => {
       const sim = new Simulation({ seed: 77, map: TINY_MAP, participants: two, tuning: NO_FREEZE });
       sim.start();
-      for (let i = 0; i < 40; i++) sim.step(new Map([["a", { moveX: 1, moveY: 0 }], ["b", { moveX: 0, moveY: 1 }]]));
+      for (let i = 0; i < 40; i++) sim.step(new Map([["a", { moveX: 1, moveY: 0 }], ["b", { moveX: 0, moveY: -1 }]]));
       return sim.getState();
     };
     expect(run()).toEqual(run());
@@ -86,27 +86,27 @@ describe("keys in the simulation", () => {
 
 describe("tower climb", () => {
   function simWithKeyInHand() {
-    const map = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }] } };
+    const map = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 5, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 1, map, participants: [two[0]!], tuning: NO_FREEZE });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // pick up at (2,2)
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }]); // pick up at (2,5)
     return sim;
   }
 
   it("refuses to climb without a key or away from the tower", () => {
     const sim = new Simulation({ seed: 1, map: TINY_MAP, participants: [two[0]!], tuning: NO_FREEZE });
     sim.start();
-    sim.step(new Map([["a", { ...still, action: true }]])); // at entry (2,3) but no key
+    sim.step(new Map([["a", { ...still, action: true }]])); // at entry (2,4) but no key
     expect(sim.getState().players["a"]!.phase).toBe("maze");
 
-    const withKey = simWithKeyInHand(); // now standing on (2,2), not an entry tile
+    const withKey = simWithKeyInHand(); // now standing on (2,5), not an entry tile
     withKey.step(new Map([["a", { ...still, action: true }]]));
     expect(withKey.getState().players["a"]!.phase).toBe("maze");
   });
 
   it("climbs from an entry tile with a key, scores the placement and becomes immovable", () => {
     const sim = simWithKeyInHand();
-    walk(sim, "a", [{ moveX: 0, moveY: 1 }]); // back to entry (2,3)
+    walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // back to entry (2,4)
     const events = sim.step(new Map([["a", { ...still, action: true }]]));
     expect(events).toContainEqual({ type: "towerClimbed", tick: expect.any(Number), playerId: "a", arrival: 0 });
     // A one-player team completes on the spot, which also ends a one-player round.

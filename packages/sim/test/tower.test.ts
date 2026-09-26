@@ -6,14 +6,14 @@ import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 
 const press: PlayerInput = { moveX: 0, moveY: 0, action: true };
 
-/** Keys under the entry tiles so everyone can climb at once. */
+/** Keys under the first two spawn tiles (south and east entries) so everyone can climb at once. */
 const INSTANT: MapData = {
   ...TINY_MAP,
   spawns: {
     ...TINY_MAP.spawns,
     keys: [
-      { x: 2, y: 3, layer: "road" },
-      { x: 2, y: 5, layer: "road" },
+      { x: 2, y: 4, layer: "road" },
+      { x: 3, y: 3, layer: "road" },
     ],
   },
 };
@@ -22,14 +22,14 @@ describe("tower platform", () => {
   const grid = MapGrid.fromMapData(TINY_MAP);
 
   it("is the footprint plus a one-tile ring, and only exists on the towerTop layer", () => {
-    // Tower at (2,4): platform spans x 1..3, y 3..5.
-    expect(grid.isWalkable(2, 4, "towerTop")).toBe(true);
-    expect(grid.isWalkable(1, 3, "towerTop")).toBe(true);
-    expect(grid.isWalkable(3, 5, "towerTop")).toBe(true);
-    expect(grid.isWalkable(4, 4, "towerTop")).toBe(false);
-    expect(grid.isWalkable(2, 4, "road")).toBe(false);
+    // Tower at (2,3): platform spans x 1..3, y 2..4.
+    expect(grid.isWalkable(2, 3, "towerTop")).toBe(true);
+    expect(grid.isWalkable(1, 4, "towerTop")).toBe(true);
+    expect(grid.isWalkable(3, 2, "towerTop")).toBe(true);
+    expect(grid.isWalkable(4, 3, "towerTop")).toBe(false);
+    expect(grid.isWalkable(2, 3, "road")).toBe(false);
     expect(grid.platformTiles()).toHaveLength(9);
-    expect(grid.platformTiles()[0]).toEqual({ x: 2, y: 4, layer: "towerTop" });
+    expect(grid.platformTiles()[0]).toEqual({ x: 2, y: 3, layer: "towerTop" });
   });
 
   it("seats climbers on distinct platform tiles and lets them walk around but not off", () => {
@@ -68,11 +68,11 @@ describe("tower platform", () => {
     solo.step(new Map([["a", press]]));
     expect(solo.getState().status).toBe("running");
     const start = solo.getState().players["a"]!.mover.from;
-    expect(start).toEqual({ x: 2, y: 4, layer: "towerTop" });
+    expect(start).toEqual({ x: 2, y: 3, layer: "towerTop" });
     const n = Math.ceil(solo.tuning.tickRate / solo.tuning.movement.speedTilesPerSec);
-    // Walk east twice: (3,4) is the platform edge, (4,4) is off it.
+    // Walk east twice: (3,3) is the platform edge, (4,3) is off it.
     for (let i = 0; i < n * 4; i++) solo.step(new Map([["a", { moveX: 1, moveY: 0 }]]));
-    expect(solo.getState().players["a"]!.mover.from).toEqual({ x: 3, y: 4, layer: "towerTop" });
+    expect(solo.getState().players["a"]!.mover.from).toEqual({ x: 3, y: 3, layer: "towerTop" });
     expect(solo.getState().players["a"]!.mover.target).toBeNull();
     // Still counted as climbed and immune to maze interactions.
     expect(solo.getState().players["a"]!.phase).toBe("tower");

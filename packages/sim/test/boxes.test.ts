@@ -10,21 +10,21 @@ const one = [{ id: "a", teamId: "t1", controller: "human" as const }];
 /** Drive `id` one tile per direction, ending at rest. */
 
 /**
- * a spawns at (2,3). Row 1 is open road: (1,1)...(7,1). Boxes on (1,1),(3,1),(5,1),(7,1)
+ * a spawns at (2,4). Row 6 is open road: (1,6)...(7,6). Boxes on (1,6),(3,6),(5,6),(7,6)
  * plus far spares; with one player x 2 per participant = 2 boxes on the field.
  */
 const BOX_MAP: MapData = {
   ...TINY_MAP,
   spawns: {
     ...TINY_MAP.spawns,
-    keys: [{ x: 7, y: 6, layer: "road" }],
+    keys: [{ x: 7, y: 1, layer: "road" }],
     itemBoxes: [
-      { x: 2, y: 2, layer: "road" }, // the stairs tile north of a's spawn
-      { x: 2, y: 1, layer: "road" },
-      { x: 1, y: 1, layer: "road" },
-      { x: 4, y: 1, layer: "road" },
-      { x: 6, y: 1, layer: "road" },
+      { x: 2, y: 5, layer: "road" }, // the stairs tile south of a's spawn
+      { x: 2, y: 6, layer: "road" },
       { x: 1, y: 6, layer: "road" },
+      { x: 4, y: 6, layer: "road" },
+      { x: 6, y: 6, layer: "road" },
+      { x: 1, y: 1, layer: "road" },
     ],
   },
 };
@@ -41,19 +41,19 @@ describe("item boxes", () => {
   });
 
   it("opening a box gives one item and a replacement box appears the same tick", () => {
-    // Three candidates, two boxes: at least one box is on a's path (2,2)->(2,1), one candidate stays free for the replacement.
-    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    // Three candidates, two boxes: at least one box is on a's path (2,5)->(2,6), one candidate stays free for the replacement.
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 5, layer: "road" as const }, { x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 4, map, participants: one, tuning: NO_FREEZE });
     sim.start();
     const before = Object.keys(sim.getState().boxes).length;
 
     let opened = 0;
     let spawned = 0;
-    // Turn north (1 tick + delay), then up to two tiles of walking.
+    // Turn south (1 tick + delay), then up to two tiles of walking.
     const n = Math.ceil(sim.tuning.tickRate / sim.tuning.movement.speedTilesPerSec);
     const turn = Math.round(sim.tuning.movement.turnDelaySec * sim.tuning.tickRate) + 1;
     for (let i = 0; i < turn + n * 2; i++) {
-      const ev = sim.step(new Map([["a", { moveX: 0, moveY: -1 }]]));
+      const ev = sim.step(new Map([["a", { moveX: 0, moveY: 1 }]]));
       opened += ev.filter((e) => e.type === "boxOpened").length;
       spawned += ev.filter((e) => e.type === "boxSpawned").length;
       if (opened) break;
@@ -66,14 +66,14 @@ describe("item boxes", () => {
 
   it("a full bag cannot open a box; the box stays", () => {
     const tuning = tuningWith({ inventory: { capacity: 1 } });
-    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 5, layer: "road" as const }, { x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 4, map, participants: one, tuning });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]); // (2,2) then (2,1)
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }]); // (2,5) then (2,6)
     const a = sim.getState().players["a"]!;
     expect(a.items).toHaveLength(1);
     // One of the two walked tiles still holds a box (either the untouched one or a replacement).
-    const onPath = Object.values(sim.getState().boxes).filter((b) => b.pos.x === 2 && (b.pos.y === 1 || b.pos.y === 2));
+    const onPath = Object.values(sim.getState().boxes).filter((b) => b.pos.x === 2 && (b.pos.y === 6 || b.pos.y === 5));
     expect(onPath.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -81,10 +81,10 @@ describe("item boxes", () => {
     const tuning = tuningWith({
       itemBoxes: { perParticipant: 2, weights: { oneWayDoor: 0, obstacle: 0, hammer: 1, trap: 0, teleportNode: 0 } },
     });
-    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 5, layer: "road" as const }, { x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 9, map, participants: one, tuning });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]);
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }]);
     expect(sim.getState().players["a"]!.items.every((i) => i === "hammer")).toBe(true);
     expect(sim.getState().players["a"]!.items.length).toBeGreaterThan(0);
   });
@@ -92,15 +92,15 @@ describe("item boxes", () => {
   it("leftover items turn into flat score when climbing", () => {
     const map = {
       ...BOX_MAP,
-      // Exactly two candidates for two boxes, so (2,1) is guaranteed to hold one; no spare means no replacement, which must not crash.
-      spawns: { ...BOX_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }], itemBoxes: [{ x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] },
+      // Exactly two candidates for two boxes, so (2,6) is guaranteed to hold one; no spare means no replacement, which must not crash.
+      spawns: { ...BOX_MAP.spawns, keys: [{ x: 2, y: 5, layer: "road" as const }], itemBoxes: [{ x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] },
     };
     const sim = new Simulation({ seed: 4, map, participants: one, tuning: NO_FREEZE });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]); // key at (2,2), box at (2,1)
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }]); // key at (2,5), box at (2,6)
     const carried = sim.getState().players["a"]!.items.length;
     expect(carried).toBeGreaterThan(0);
-    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }]); // back to entry (2,3)
+    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]); // back to entry (2,4)
     sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]]));
     const a = sim.getState().players["a"]!;
     expect(a.phase).toBe("tower");
@@ -114,7 +114,7 @@ describe("item boxes", () => {
     const run = () => {
       const sim = new Simulation({ seed: 21, map: BOX_MAP, participants: one, tuning: NO_FREEZE });
       sim.start();
-      walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }, { moveX: -1, moveY: 0 }]);
+      walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }, { moveX: -1, moveY: 0 }]);
       return sim.getState();
     };
     expect(run()).toEqual(run());
@@ -124,15 +124,15 @@ describe("item boxes", () => {
 describe("using items", () => {
   it("consumes the oldest item first and frees a slot for the next box", () => {
     const tuning = tuningWith({ inventory: { capacity: 1 } });
-    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 5, layer: "road" as const }, { x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 4, map, participants: one, tuning });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // (2,2)
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // (2,1): bag may already be full
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }]); // (2,5)
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }]); // (2,6): bag may already be full
     const before = sim.getState().players["a"]!.items;
     expect(before).toHaveLength(1);
 
-    // Face a legal tile: (4,1) looking east at (5,1). (3,1) hosts a light switch, so not there.
+    // Face a legal tile: (4,6) looking east at (5,6). (3,6) hosts a light switch, so not there.
     walk(sim, "a", [{ moveX: 1, moveY: 0 }, { moveX: 1, moveY: 0 }]);
     const ev = sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]]));
     expect(ev).toContainEqual({ type: "itemUsed", tick: expect.any(Number), playerId: "a", item: before[0] });
@@ -140,7 +140,7 @@ describe("using items", () => {
     expect(sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]])).find((e) => e.type === "itemUsed")).toBeUndefined();
 
     // With the slot free, stepping onto a remaining box opens it.
-    walk(sim, "a", [{ moveX: -1, moveY: 0 }, { moveX: -1, moveY: 0 }, { moveX: -1, moveY: 0 }]); // (3,1), (2,1), (1,1)
+    walk(sim, "a", [{ moveX: -1, moveY: 0 }, { moveX: -1, moveY: 0 }, { moveX: -1, moveY: 0 }]); // (3,6), (2,6), (1,6)
     expect(sim.getState().players["a"]!.items.length).toBe(1);
   });
 
@@ -149,10 +149,10 @@ describe("using items", () => {
       inventory: { capacity: 3 },
       itemBoxes: { perParticipant: 2, weights: { oneWayDoor: 0, obstacle: 0, hammer: 1, trap: 0, teleportNode: 0 } },
     });
-    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 5, layer: "road" as const }, { x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] } };
     const sim = new Simulation({ seed: 4, map, participants: one, tuning });
     sim.start();
-    walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }, { moveX: 1, moveY: 0 }, { moveX: 1, moveY: 0 }]); // end at (4,1) facing east
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }, { moveX: 1, moveY: 0 }, { moveX: 1, moveY: 0 }]); // end at (4,6) facing east
     const items = sim.getState().players["a"]!.items;
     expect(items.length).toBeGreaterThanOrEqual(1);
     sim.step(new Map([["a", { moveX: 0, moveY: 0, action: true }]]));

@@ -10,14 +10,14 @@ const climb: PlayerInput = { ...still, action: true };
 
 /** Tower-entry tiles of TINY_MAP in spawn order, then a couple of far tiles for a 5th/6th player. */
 const ENTRY_TILES = [
-  { x: 2, y: 3, layer: "road" as const },
-  { x: 2, y: 5, layer: "road" as const },
-  { x: 1, y: 4, layer: "road" as const },
-  { x: 3, y: 4, layer: "road" as const },
+  { x: 2, y: 4, layer: "road" as const }, // south
+  { x: 3, y: 3, layer: "road" as const }, // east
+  { x: 1, y: 3, layer: "road" as const }, // west
+  { x: 2, y: 2, layer: "road" as const }, // north
 ];
 const EXTRA_TILES = [
-  { x: 7, y: 1, layer: "road" as const },
-  { x: 1, y: 6, layer: "road" as const },
+  { x: 7, y: 6, layer: "road" as const },
+  { x: 1, y: 1, layer: "road" as const },
 ];
 
 /**
