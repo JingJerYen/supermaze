@@ -1,5 +1,5 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
-import { availableAction } from "@supermaze/sim";
+import { availableAction, tileLabel } from "@supermaze/sim";
 import { teamColorIndex } from "../render/teamColors.js";
 
 /** Everything the HUD draws, derived from authoritative state; no rules live here. */
@@ -15,6 +15,10 @@ export interface HudModel {
   capacity: number;
   action: PlayerAction | null;
   onTower: boolean;
+  /** Board coordinate of the local player's tile, e.g. "C7"; null on the tower. */
+  myCoord: string | null;
+  /** Whether rosters may show everyone's coordinates (only the tower top sees the whole map). */
+  showCoords: boolean;
 }
 
 export interface TeamRow {
@@ -33,6 +37,8 @@ export interface PlayerRow {
   arrival: number | null;
   cpu: boolean;
   score: number;
+  /** Board coordinate while in the maze; null once on the tower. */
+  coord: string | null;
 }
 
 /** "A", "B", ... follow the same first-seen order as the 3D team colours. */
@@ -75,6 +81,8 @@ export function buildHudModel(
     capacity,
     action: me ? availableAction(grid, state.switches, state.nodes, me, capacity) : null,
     onTower: me?.phase === "tower",
+    myCoord: me && me.phase === "maze" ? tileLabel(me.mover.from.x, me.mover.from.y) : null,
+    showCoords: me?.phase === "tower",
   };
 }
 
@@ -88,5 +96,6 @@ function toRow(p: PlayerState, isMe: boolean): PlayerRow {
     arrival: p.towerArrival,
     cpu: p.controller === "cpu",
     score: p.score,
+    coord: p.phase === "maze" ? tileLabel(p.mover.from.x, p.mover.from.y) : null,
   };
 }

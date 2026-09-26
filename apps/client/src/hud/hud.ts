@@ -16,6 +16,8 @@ const CSS = `
 .hud-badge{font-size:10px;padding:2px 4px;border-radius:4px;background:rgba(255,255,255,.15);color:#ffe08a}
 .hud-badge.tower{color:#8bff7a}.hud-badge.cpu{color:#ff9f7a}
 .hud-score{font-size:12px;color:#c9d2e3;min-width:2.5em;text-align:right}
+.hud-coord{font-size:11px;color:#9be7ff;font-variant-numeric:tabular-nums}
+.hud-mycoord{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:clamp(16px,3vw,22px);font-weight:500;color:#9be7ff;text-shadow:0 1px 3px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
 .hud-clock{text-align:center;flex:none}
 .hud-time{font-size:clamp(34px,6vw,48px);font-weight:500;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
@@ -46,6 +48,7 @@ export class Hud {
   private readonly items: HTMLDivElement;
   private readonly toasts: HTMLDivElement;
   private readonly dark: HTMLDivElement;
+  private readonly myCoord: HTMLDivElement;
   private lastRosterKey = "";
 
   constructor(parent: HTMLElement) {
@@ -66,7 +69,8 @@ export class Hud {
     this.toasts = el("div", "hud-toasts");
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
-    this.root.append(top, this.items, this.toasts, this.dark);
+    this.myCoord = el("div", "hud-mycoord");
+    this.root.append(top, this.items, this.toasts, this.dark, this.myCoord);
     parent.appendChild(this.root);
   }
 
@@ -76,12 +80,14 @@ export class Hud {
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);
     this.sub.textContent = m.status === "finished" ? "回合結束" : `已登塔 ${m.climbed} / ${m.total}`;
 
-    // Rosters change rarely; rebuild only when their content changes.
-    const rosterKey = JSON.stringify([m.myTeam, m.otherTeams]);
+    this.myCoord.textContent = m.myCoord ? `你在 ${m.myCoord}` : "";
+
+    // Rosters change rarely (coordinates only shown on the tower); rebuild only when content changes.
+    const rosterKey = JSON.stringify([m.myTeam, m.otherTeams, m.showCoords]);
     if (rosterKey !== this.lastRosterKey) {
       this.lastRosterKey = rosterKey;
-      renderTeam(this.left, m.myTeam ? [m.myTeam] : [], true);
-      renderTeam(this.right, m.otherTeams, false);
+      renderTeam(this.left, m.myTeam ? [m.myTeam] : [], true, m.showCoords);
+      renderTeam(this.right, m.otherTeams, false, m.showCoords);
     }
 
     this.items.replaceChildren();
@@ -117,7 +123,7 @@ export class Hud {
   }
 }
 
-function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean): void {
+function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean, showCoords: boolean): void {
   container.replaceChildren();
   for (const team of teams) {
     const name = el("div", "hud-team-name");
@@ -134,6 +140,11 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean): vo
       if (p.onTower) badges.push(badge("tower", p.arrival === null ? "塔" : `第${p.arrival + 1}名`));
       else if (p.hasKey) badges.push(badge("", "鑰匙"));
       if (p.cpu) badges.push(badge("cpu", "CPU"));
+      if (showCoords && p.coord && !p.isMe) {
+        const c = el("span", "hud-coord");
+        c.textContent = p.coord;
+        badges.push(c);
+      }
       const score = el("span", "hud-score");
       score.textContent = String(p.score);
       if (mine) row.append(dot, label, ...badges, score);

@@ -7,6 +7,7 @@ export * from "./map/grid.js";
 export * from "./map/normalize.js";
 export * from "./map/validate.js";
 export * from "./map/transform.js";
+export * from "./map/coords.js";
 export * from "./movement.js";
 export * from "./events.js";
 export * from "./keys.js";

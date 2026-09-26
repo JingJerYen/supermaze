@@ -9,6 +9,7 @@ import { startLoop } from "./loop.js";
 import type { GameMode } from "./modes/mode.js";
 import { BoxViews } from "./render/boxes.js";
 import { FollowCamera } from "./render/camera.js";
+import { buildCoordLabels } from "./render/coordLabels.js";
 import { KeyViews } from "./render/keys.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
@@ -48,7 +49,7 @@ export class Match {
   ) {
     this.scene = createScene();
     this.mapMesh = buildMapMesh(mode.grid);
-    this.scene.add(this.mapMesh.group);
+    this.scene.add(this.mapMesh.group, buildCoordLabels(mode.grid));
     this.players = new PlayerViews(this.scene, mode.grid);
     this.keys = new KeyViews(this.scene, mode.grid);
     this.boxes = new BoxViews(this.scene, mode.grid);
