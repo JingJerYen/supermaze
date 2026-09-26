@@ -1,5 +1,5 @@
 import type { SnapshotMessage, WelcomeMessage } from "@supermaze/protocol";
-import { MapGrid, type MapData, type PlayerState } from "@supermaze/sim";
+import { MapGrid, availableAction, type MapData } from "@supermaze/sim";
 import { Connection } from "../net/connection.js";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import { formatSeconds, roundBanner } from "./roundHud.js";
@@ -77,20 +77,10 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
         key: me?.keyId ? "yes" : "no",
         score: me?.score ?? 0,
         tower: st?.towerArrivals.length ?? 0,
-        climb: me && canClimbClient(grid, me) ? "ready (E)" : "-",
+        lights: st ? (st.lightsOn ? "on" : "OFF") : "-",
+        action: (me && st && availableAction(grid, st.switches, me)) ?? "-",
       };
     },
     banner: () => banner ?? (buffer.latest() ? roundBanner(buffer.latest()!.state) : null),
   };
-}
-
-/** Mirror of Simulation.canClimb for HUD hints; the server remains the authority. */
-export function canClimbClient(grid: MapGrid, p: PlayerState): boolean {
-  return (
-    p.phase === "maze" &&
-    p.keyId !== null &&
-    p.mover.target === null &&
-    p.mover.from.layer === "road" &&
-    grid.isTowerEntry(p.mover.from.x, p.mover.from.y)
-  );
 }

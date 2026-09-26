@@ -23,6 +23,15 @@ export const CLIENT_TUNING = {
     /** Low base covering the whole footprint so the blocked tiles read as tower ground. */
     baseHeight: 0.3,
   },
+  dark: {
+    /** Residual ambient light when the map is dark; 0 is pitch black outside the circle. */
+    ambient: 0.04,
+    lampIntensity: 12,
+    /** Higher decay = sharper edge to the visible circle. */
+    lampDecay: 2,
+    /** Background colour while dark. */
+    clearColor: 0x05060a,
+  },
   render: {
     /** Cap the device pixel ratio to keep phones smooth. */
     maxPixelRatio: 2,

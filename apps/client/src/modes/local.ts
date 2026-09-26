@@ -42,7 +42,8 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
         layer: me?.mover.from.layer ?? "-",
         key: me?.keyId ? "yes" : "no",
         score: me?.score ?? 0,
-        climb: me && sim.canClimb(me) ? "ready (E)" : "-",
+        lights: st.lightsOn ? "on" : "OFF",
+        action: (me && sim.availableAction(me)) ?? "-",
       };
     },
     banner: () => roundBanner(sim.getState()),

@@ -33,7 +33,7 @@ Cell codes:
 | `=` | bridge over a road cell |
 | `T` | central tower footprint |
 | `K` `B` `L` | road cell that is a key / item-box / light-switch spawn candidate |
-| `k` `b` `l` | wall cell whose top is a key / item-box / light-switch spawn candidate |
+| `k` `b` | wall cell whose top is a key / item-box spawn candidate (switches are road-only) |
 
 Markers are authoring sugar: `normalizeMap` turns them into `spawns` entries and plain
 cells. An explicit `spawns` list is still accepted and may be mixed with markers.

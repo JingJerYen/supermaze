@@ -6,7 +6,7 @@ import type { MapData } from "../src/map/types.js";
 import { TINY_MAP } from "./fixtures.js";
 
 const still: PlayerInput = { moveX: 0, moveY: 0 };
-const climb: PlayerInput = { ...still, climb: true };
+const climb: PlayerInput = { ...still, action: true };
 
 /** Tower-entry tiles of TINY_MAP in spawn order, then a couple of far tiles for a 5th/6th player. */
 const ENTRY_TILES = [

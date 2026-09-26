@@ -90,6 +90,14 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
     }
   }
 
+  for (const t of candidates.lightSwitches) {
+    const key = tileKey(t.x, t.y, t.layer);
+    if (t.layer !== "road") errors.push(`light switch ${key} must be on the road layer`);
+    else if (!ALL_DIRS.some((d) => grid.kindAt(t.x + d.dx, t.y + d.dy) === "wall")) {
+      errors.push(`light switch ${key} touches no wall to hang on`);
+    }
+  }
+
   const switches = data.lightSwitchCount ?? 0;
   if (switches < tuning.lighting.switchCountMin) {
     errors.push(`lightSwitchCount ${switches} is below the minimum ${tuning.lighting.switchCountMin}`);

@@ -107,18 +107,18 @@ describe("tower climb", () => {
   it("refuses to climb without a key or away from the tower", () => {
     const sim = new Simulation({ seed: 1, map: TINY_MAP, participants: [two[0]!] });
     sim.start();
-    sim.step(new Map([["a", { ...still, climb: true }]])); // at entry (2,3) but no key
+    sim.step(new Map([["a", { ...still, action: true }]])); // at entry (2,3) but no key
     expect(sim.getState().players["a"]!.phase).toBe("maze");
 
     const withKey = simWithKeyInHand(); // now standing on (2,2), not an entry tile
-    withKey.step(new Map([["a", { ...still, climb: true }]]));
+    withKey.step(new Map([["a", { ...still, action: true }]]));
     expect(withKey.getState().players["a"]!.phase).toBe("maze");
   });
 
   it("climbs from an entry tile with a key, scores the placement and becomes immovable", () => {
     const sim = simWithKeyInHand();
     walk(sim, "a", [{ moveX: 0, moveY: 1 }]); // back to entry (2,3)
-    const events = sim.step(new Map([["a", { ...still, climb: true }]]));
+    const events = sim.step(new Map([["a", { ...still, action: true }]]));
     expect(events).toContainEqual({ type: "towerClimbed", tick: expect.any(Number), playerId: "a", arrival: 0 });
     // A one-player team completes on the spot, which also ends a one-player round.
     expect(events.map((e) => e.type)).toEqual(["towerClimbed", "teamCompleted", "roundEnded"]);

@@ -12,13 +12,13 @@ const MARKED: MapData = {
   ...LATTICE_BASE,
   rows: [
     "XXXXXXXXX",
-    "X..B.L.KX",
+    "X..B...KX",
     "X##k#.##X",
-    "XS.....BX",
+    "XS.B...LX",
     "X.###.##X",
-    "X.=..T..X",
+    "XL=..T..X",
     "X##.#.#.X",
-    "XK.L.B.BX",
+    "XK...B.BX",
     "XXXXXXXXX",
   ],
 };
@@ -36,8 +36,8 @@ describe("normalizeMap", () => {
     ]);
     expect(n.spawns.itemBoxes).toEqual(LATTICE_MAP.spawns!.itemBoxes);
     expect(n.spawns.lightSwitches).toEqual([
-      { x: 5, y: 1, layer: "road" },
-      { x: 3, y: 7, layer: "road" },
+      { x: 7, y: 3, layer: "road" },
+      { x: 1, y: 5, layer: "road" },
     ]);
   });
 

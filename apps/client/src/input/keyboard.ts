@@ -1,13 +1,13 @@
 import type { PlayerInput } from "@supermaze/sim";
 
-/** WASD / arrow keys -> movement intent; E or Space -> climb (edge-triggered). */
+/** WASD / arrow keys -> movement intent; E or Space -> context action (edge-triggered). */
 export class KeyboardInput {
   private readonly down = new Set<string>();
-  private climbPending = false;
+  private actionPending = false;
 
   constructor(target: Window = window) {
     target.addEventListener("keydown", (e) => {
-      if (!this.down.has(e.code) && (e.code === "KeyE" || e.code === "Space")) this.climbPending = true;
+      if (!this.down.has(e.code) && (e.code === "KeyE" || e.code === "Space")) this.actionPending = true;
       this.down.add(e.code);
       if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault();
     });
@@ -20,9 +20,9 @@ export class KeyboardInput {
     const moveX = (has("KeyD", "ArrowRight") ? 1 : 0) - (has("KeyA", "ArrowLeft") ? 1 : 0);
     const moveY = (has("KeyS", "ArrowDown") ? 1 : 0) - (has("KeyW", "ArrowUp") ? 1 : 0);
     const input: PlayerInput = { moveX, moveY };
-    if (this.climbPending) {
-      input.climb = true;
-      this.climbPending = false;
+    if (this.actionPending) {
+      input.action = true;
+      this.actionPending = false;
     }
     return input;
   }

@@ -1,14 +1,13 @@
 /**
- * On-screen "climb" button for touch play. Shown only while the local player is
- * allowed to climb, so it doubles as the visual cue that the key can be used.
+ * On-screen context-action button for touch play. Shown only while the local
+ * player can do something, with a label saying what (climb / switch).
  */
-export class ClimbButton {
+export class ActionButton {
   private readonly el: HTMLButtonElement;
   private pending = false;
 
-  constructor(parent: HTMLElement, label = "登塔") {
+  constructor(parent: HTMLElement) {
     this.el = document.createElement("button");
-    this.el.textContent = label;
     Object.assign(this.el.style, {
       position: "fixed",
       right: "max(24px, env(safe-area-inset-right))",
@@ -31,8 +30,14 @@ export class ClimbButton {
     parent.appendChild(this.el);
   }
 
-  setVisible(v: boolean): void {
-    this.el.style.display = v ? "block" : "none";
+  /** Show with a label, or hide with null. */
+  setAction(label: string | null): void {
+    if (label === null) {
+      this.el.style.display = "none";
+      return;
+    }
+    if (this.el.textContent !== label) this.el.textContent = label;
+    this.el.style.display = "block";
   }
 
   /** True once per press. */

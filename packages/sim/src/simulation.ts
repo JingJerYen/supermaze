@@ -1,5 +1,7 @@
+import { availableAction } from "./actions.js";
 import type { SimEvent } from "./events.js";
 import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys.js";
+import { createLightSwitches, usableSwitchAt, type LightSwitchState } from "./lighting.js";
 import { MapGrid } from "./map/grid.js";
 import { normalizeMap } from "./map/normalize.js";
 import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
@@ -14,8 +16,11 @@ import type { Controller, Participant, PlayerId, PlayerPhase, TeamId, Tick } fro
  * the simulation never sees raw keyboard or touch events.
  */
 export interface PlayerInput extends MoveIntent {
-  /** Ask to climb the tower this tick. Only honoured when standing at a tower entry with a key. */
-  climb?: boolean;
+  /**
+   * Press the context action this tick: climb the tower when standing at an
+   * entry with a key, or flip the light switch under the player. See `availableAction`.
+   */
+  action?: boolean;
 }
 
 export const NO_INPUT: PlayerInput = { moveX: 0, moveY: 0 };
@@ -51,6 +56,9 @@ export interface SimulationState {
   keys: Record<string, KeyState>;
   /** Player ids in the order they reached the tower top. */
   towerArrivals: PlayerId[];
+  /** Map-wide lighting (CLAUDE.md section 8). Starts lit. */
+  lightsOn: boolean;
+  switches: Record<string, LightSwitchState>;
   /** Per team: tick at which its 1st, 2nd, ... member climbed. */
   teamClimbTicks: Record<TeamId, Tick[]>;
   /** Set the moment the first team has every member on the tower. */
@@ -97,6 +105,8 @@ export class Simulation {
       players: {},
       keys: {},
       towerArrivals: [],
+      lightsOn: true,
+      switches: {},
       teamClimbTicks: {},
       winnerTeamId: null,
       result: null,
@@ -141,15 +151,20 @@ export class Simulation {
     this.state = { ...this.state, players };
   }
 
-  /** Begin the round: spawn exactly one key per participant (CLAUDE.md section 5). */
+  /**
+   * Begin the round: one key per participant (section 5) and the map's even
+   * number of one-shot light switches (section 8).
+   */
   start(): SimEvent[] {
     if (this.state.status !== "lobby") return [];
     const count = Object.keys(this.state.players).length * this.tuning.keys.perParticipant;
+    const switches = createLightSwitches(this.rng, this.grid, this.map.spawns.lightSwitches, this.map.lightSwitchCount);
     this.state = {
       ...this.state,
       status: "running",
       startTick: this.state.tick,
       endsAtTick: this.state.tick + this.timeLimitTicks,
+      switches,
     };
     this.spawnKeys(count);
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];
@@ -172,6 +187,8 @@ export class Simulation {
     const speed = this.tuning.movement.speedTilesPerSec / this.tuning.tickRate;
     const players: Record<PlayerId, PlayerState> = {};
     let keys = this.state.keys;
+    let switches = this.state.switches;
+    let lightsOn = this.state.lightsOn;
     const towerArrivals = [...this.state.towerArrivals];
     const teamClimbTicks: Record<TeamId, Tick[]> = { ...this.state.teamClimbTicks };
     let winnerTeamId = this.state.winnerTeamId;
@@ -197,14 +214,22 @@ export class Simulation {
             events.push({ type: "keyPickedUp", tick, playerId: id, keyId: key.id });
           }
         }
-        if (input.climb && this.canClimb(p)) {
-          const arrival = towerArrivals.length;
-          towerArrivals.push(id);
-          const table = this.tuning.scoring.towerPlacement;
-          const placementScore = table[Math.min(arrival, table.length - 1)] ?? 0;
-          p = { ...p, phase: "tower", towerArrival: arrival, score: p.score + placementScore };
-          teamClimbTicks[p.teamId] = [...(teamClimbTicks[p.teamId] ?? []), tick];
-          events.push({ type: "towerClimbed", tick, playerId: id, arrival });
+        if (input.action) {
+          const action = availableAction(this.grid, switches, p);
+          if (action === "climb") {
+            const arrival = towerArrivals.length;
+            towerArrivals.push(id);
+            const table = this.tuning.scoring.towerPlacement;
+            const placementScore = table[Math.min(arrival, table.length - 1)] ?? 0;
+            p = { ...p, phase: "tower", towerArrival: arrival, score: p.score + placementScore };
+            teamClimbTicks[p.teamId] = [...(teamClimbTicks[p.teamId] ?? []), tick];
+            events.push({ type: "towerClimbed", tick, playerId: id, arrival });
+          } else if (action === "switch") {
+            const sw = usableSwitchAt(switches, p.mover.from) as LightSwitchState;
+            switches = { ...switches, [sw.id]: { ...sw, used: true } };
+            lightsOn = !lightsOn;
+            events.push({ type: "lightsToggled", tick, playerId: id, switchId: sw.id, lightsOn });
+          }
         }
       }
 
@@ -223,7 +248,7 @@ export class Simulation {
       }
     }
 
-    let next: SimulationState = { ...this.state, tick, players, keys, towerArrivals, teamClimbTicks, winnerTeamId };
+    let next: SimulationState = { ...this.state, tick, players, keys, switches, lightsOn, towerArrivals, teamClimbTicks, winnerTeamId };
 
     if (next.status === "running") {
       const everyoneClimbed = Object.values(players).length > 0 && Object.values(players).every((p) => p.phase === "tower");
@@ -247,15 +272,9 @@ export class Simulation {
     return events;
   }
 
-  /** Standing still on a tower entry tile, in the maze, holding a key. */
-  canClimb(p: PlayerState): boolean {
-    return (
-      p.phase === "maze" &&
-      p.keyId !== null &&
-      p.mover.target === null &&
-      p.mover.from.layer === "road" &&
-      this.grid.isTowerEntry(p.mover.from.x, p.mover.from.y)
-    );
+  /** What the context action would do for `p` right now. */
+  availableAction(p: PlayerState) {
+    return availableAction(this.grid, this.state.switches, p);
   }
 
   getState(): Readonly<SimulationState> {

@@ -76,7 +76,7 @@ describe("validateMap", () => {
   it("rejects spawn tiles shared across kinds and odd or too few light switches", () => {
     const shared = {
       ...LATTICE_MAP,
-      spawns: { ...LATTICE_MAP.spawns, lightSwitches: [{ x: 7, y: 1, layer: "road" as const }, { x: 5, y: 1, layer: "road" as const }] },
+      spawns: { ...LATTICE_MAP.spawns, lightSwitches: [{ x: 7, y: 1, layer: "road" as const }, { x: 7, y: 3, layer: "road" as const }] },
     };
     expect(validateMap(shared).join("\n")).toMatch(/lightSwitches spawn 7,1,road collides with keys spawn/);
     expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 3 }).join("\n")).toMatch(/must be even/);

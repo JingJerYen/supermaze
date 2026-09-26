@@ -33,7 +33,10 @@ export const TINY_MAP: MapData = {
       { x: 4, y: 2, layer: "wallTop" },
     ],
     itemBoxes: [],
-    lightSwitches: [],
+    lightSwitches: [
+      { x: 3, y: 1, layer: "road" }, // wall (3,2) to the south
+      { x: 6, y: 3, layer: "road" }, // wall (5,3) to the west
+    ],
   },
 };
 
@@ -77,13 +80,13 @@ export const LATTICE_MAP: MapData = {
     ],
     itemBoxes: [
       { x: 3, y: 1, layer: "road" },
-      { x: 7, y: 3, layer: "road" },
+      { x: 3, y: 3, layer: "road" },
       { x: 5, y: 7, layer: "road" },
       { x: 7, y: 7, layer: "road" },
     ],
     lightSwitches: [
-      { x: 5, y: 1, layer: "road" },
-      { x: 3, y: 7, layer: "road" },
+      { x: 7, y: 3, layer: "road" }, // wall (7,2) to the north
+      { x: 1, y: 5, layer: "road" }, // wall (1,6) to the south
     ],
   },
 };

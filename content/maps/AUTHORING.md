@@ -40,7 +40,7 @@
 | `K` | 道路上的鑰匙候選（底下是 `.`） |
 | `k` | 牆頂上的鑰匙候選（底下是 `#`） |
 | `B` / `b` | 道具箱候選，道路 / 牆頂 |
-| `L` / `l` | 電燈開關候選，道路 / 牆頂 |
+| `L` | 電燈開關候選，只能在道路上，且四鄰至少一面牆（面板會掛在那面牆上） |
 
 ## 3. 版面規則（驗證器會檢查）
 
@@ -76,6 +76,8 @@ x=1 放鑰匙候選、x=3 放道具箱候選、x=5 放開關候選。牆頂候�
 | `lightSwitches` | `lightSwitchCount` | `lightSwitchCount`，建議多列讓每局位置不同 |
 
 限制：一格只能有一種標記；不能放在塔入口格（塔四周的道路格）；牆頂候選要能經樓梯走到。
+開關 `L` 只能放在道路上，而且旁邊要有牆；十字路口中央不行。面板會自動掛在北牆，沒有北牆
+就依東、西、南的順序找。
 橋面上的候選無法用字母表示，需要時改用座標列表並寫 `"layer": "wallTop"`。
 
 ## 6. 全局數字在哪裡
@@ -108,3 +110,5 @@ http://localhost:5173/?map=maze-01&players=6&seed=1&rot=0
 | `keys spawn 3,2,wallTop collides with itemBoxes spawn` | 兩個列表用了同一格 |
 | `... sits on a tower entry tile` | 候選放到塔入口格 |
 | `lightSwitchCount 3 must be even` / `below the minimum` | 開關數要偶數且至少 2 |
+| `light switch 5,3,road touches no wall to hang on` | 開關格旁邊沒有牆 |
+| `light switch ... must be on the road layer` | 開關不能放牆頂 |

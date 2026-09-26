@@ -16,8 +16,9 @@ export type SpawnKind = "keys" | "itemBoxes" | "lightSwitches";
 
 /**
  * Spawn-candidate markers drawn straight into the rows. Upper case marks a road
- * cell, lower case the top of a wall cell. They are authoring sugar: loading
- * turns them into `spawns` entries and plain `.` / `#` cells.
+ * cell, lower case the top of a wall cell. Light switches exist on the road
+ * layer only (they hang on an adjacent wall face), so there is no `l`. They are
+ * authoring sugar: loading turns them into `spawns` entries and plain cells.
  */
 export const SPAWN_MARKERS: Record<string, { kind: SpawnKind; base: "." | "#" }> = {
   K: { kind: "keys", base: "." },
@@ -25,7 +26,6 @@ export const SPAWN_MARKERS: Record<string, { kind: SpawnKind; base: "." | "#" }>
   B: { kind: "itemBoxes", base: "." },
   b: { kind: "itemBoxes", base: "#" },
   L: { kind: "lightSwitches", base: "." },
-  l: { kind: "lightSwitches", base: "#" },
 };
 
 export function cellKindFromCode(code: string): CellKind {

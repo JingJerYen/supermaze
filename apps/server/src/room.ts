@@ -89,6 +89,6 @@ function sanitizeInput(msg: unknown): PlayerInput {
   const m = (msg ?? {}) as Partial<InputMessage>;
   const clamp = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
   const input: PlayerInput = { moveX: clamp(m.moveX), moveY: clamp(m.moveY) };
-  if (m.climb === true) input.climb = true;
+  if (m.action === true) input.action = true;
   return input;
 }

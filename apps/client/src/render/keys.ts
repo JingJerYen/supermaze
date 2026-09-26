@@ -10,6 +10,11 @@ export class KeyViews {
 
   constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {}
 
+  /** Emissive markers would glow through the darkness, so switch them off while dark. */
+  setDark(dark: boolean): void {
+    this.mat.emissive.setHex(dark ? 0x000000 : 0x6b5200);
+  }
+
   update(keys: Record<string, KeyState>, timeSec: number): void {
     for (const k of Object.values(keys)) {
       if (k.ownerId !== null) {
