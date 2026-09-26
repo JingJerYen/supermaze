@@ -60,8 +60,8 @@ export const THEMES: Record<string, Theme> = {
     linesGlowInDark: false,
     wallPattern: "blocks",
     floorPattern: "slab",
-    growth: 0x7fa64a,
-    growthShare: 0.35,
+    growth: 0x74c447,
+    growthShare: 0.5,
     torchEvery: 9,
     torchFlame: 0xffa63a,
     towerStone: 0x9aa4b3,
@@ -168,7 +168,7 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0): THR
         }
       }
       speckle(ctx, size, shade(1.12), 70, 2.5, rnd);
-      if (growth) mossPatches(ctx, size, growth, rnd, 4);
+      if (growth) mossPatches(ctx, size, growth, rnd, 6);
       break;
     }
     case "slab": {
@@ -274,16 +274,20 @@ function speckle(ctx: CanvasRenderingContext2D, size: number, color: string, cou
   }
 }
 
-/** Moss: soft green blotches, mostly along the bottom and in mortar corners. */
+/** Moss: green blotches, mostly along the bottom and in mortar corners; a darker underlay makes them read from a distance. */
 function mossPatches(ctx: CanvasRenderingContext2D, size: number, color: number, rnd: () => number, count: number): void {
   const c = new THREE.Color(color);
   for (let i = 0; i < count; i++) {
     const cx = rnd() * size;
-    const cy = size * (0.55 + rnd() * 0.45);
-    for (let k = 0; k < 14; k++) {
-      ctx.fillStyle = `#${c.clone().multiplyScalar(0.85 + rnd() * 0.35).getHexString()}`;
+    const cy = size * (0.5 + rnd() * 0.5);
+    ctx.fillStyle = `#${c.clone().multiplyScalar(0.55).getHexString()}`;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 20 + rnd() * 12, 12 + rnd() * 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (let k = 0; k < 18; k++) {
+      ctx.fillStyle = `#${c.clone().multiplyScalar(0.8 + rnd() * 0.45).getHexString()}`;
       ctx.beginPath();
-      ctx.arc(cx + (rnd() - 0.5) * 40, cy + (rnd() - 0.5) * 24, 3 + rnd() * 5, 0, Math.PI * 2);
+      ctx.arc(cx + (rnd() - 0.5) * 48, cy + (rnd() - 0.5) * 28, 4 + rnd() * 6, 0, Math.PI * 2);
       ctx.fill();
     }
   }
