@@ -14,7 +14,7 @@ export interface Theme {
   plaza: number;
   /** Colour of the thin lines on wall-top edges and floor tile borders. */
   line: number;
-  /** Whether the lines stay visible while the map is dark (neon look). */
+  /** Whether the lines stay visible while the map is dark. */
   linesGlowInDark: boolean;
   /** Pattern painted on wall sides. */
   wallPattern: PatternKind;
@@ -22,7 +22,7 @@ export interface Theme {
   floorPattern: PatternKind;
 }
 
-export type PatternKind = "none" | "brick" | "slab" | "planks" | "hedge" | "ice" | "grid";
+export type PatternKind = "none" | "brick" | "slab" | "hedge" | "ice";
 
 export const THEMES: Record<string, Theme> = {
   stone: {
@@ -49,18 +49,6 @@ export const THEMES: Record<string, Theme> = {
     wallPattern: "hedge",
     floorPattern: "none",
   },
-  wood: {
-    id: "wood",
-    wallSide: 0xb98a55,
-    wallTop: 0x8a6238,
-    outerWall: 0x7a5630,
-    floor: 0xd2b184,
-    plaza: 0xc2a06e,
-    line: 0x5a3f22,
-    linesGlowInDark: false,
-    wallPattern: "planks",
-    floorPattern: "planks",
-  },
   ice: {
     id: "ice",
     wallSide: 0x9fd3f2,
@@ -72,18 +60,6 @@ export const THEMES: Record<string, Theme> = {
     linesGlowInDark: false,
     wallPattern: "ice",
     floorPattern: "ice",
-  },
-  neon: {
-    id: "neon",
-    wallSide: 0x2a2f3e,
-    wallTop: 0x3a4050,
-    outerWall: 0x22262f,
-    floor: 0x12151c,
-    plaza: 0x1b2030,
-    line: 0x4de3ff,
-    linesGlowInDark: true,
-    wallPattern: "none",
-    floorPattern: "grid",
   },
 };
 
@@ -136,22 +112,6 @@ export function patternTexture(kind: PatternKind, base: number): THREE.CanvasTex
       speckle(ctx, size, shade(1.06), 60);
       break;
     }
-    case "planks": {
-      const planks = 4;
-      const w = size / planks;
-      for (let i = 0; i < planks; i++) {
-        ctx.fillStyle = shade(i % 2 ? 0.94 : 1.02);
-        ctx.fillRect(i * w, 0, w, size);
-        ctx.strokeStyle = shade(0.7);
-        ctx.lineWidth = 2;
-        line(ctx, i * w + 1, 0, i * w + 1, size);
-        // A few grain strokes.
-        ctx.strokeStyle = shade(0.88);
-        ctx.lineWidth = 1;
-        for (let g = 0; g < 3; g++) line(ctx, i * w + 6 + g * 8, (g * 37) % size, i * w + 6 + g * 8, ((g * 37) % size) + 40);
-      }
-      break;
-    }
     case "hedge": {
       speckle(ctx, size, shade(0.8), 140, 5);
       speckle(ctx, size, shade(1.18), 90, 4);
@@ -164,12 +124,6 @@ export function patternTexture(kind: PatternKind, base: number): THREE.CanvasTex
       line(ctx, 10, 100, 60, 40);
       line(ctx, 60, 40, 118, 26);
       line(ctx, 60, 40, 70, 90);
-      break;
-    }
-    case "grid": {
-      ctx.strokeStyle = shade(1.6);
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, size - 2, size - 2);
       break;
     }
   }
