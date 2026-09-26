@@ -334,6 +334,7 @@ const SECTIONS: readonly StateSection[] = [
   "status",
   "startTick",
   "endsAtTick",
+  "freezeUntilTick",
   "keys",
   "towerArrivals",
   "lightsOn",

@@ -18,6 +18,12 @@ export interface Tuning {
      * count or as a fraction of team size. Undecided for uneven teams (CLAUDE.md 16).
      */
     timeoutClimbMetric: "count" | "ratio";
+    /**
+     * Start freeze (CLAUDE.md section 4): for this long after `start()` nobody can
+     * move or act. Ticks still advance and every schedule runs; the state's
+     * `freezeUntilTick` lets clients draw the 3-2-1 countdown.
+     */
+    startFreezeSec: number;
   };
 
   teams: {

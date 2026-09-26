@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import type { MapData } from "../src/map/types.js";
-import { TINY_MAP } from "./fixtures.js";
+import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 import { walk } from "./walk.js";
 
 const one = [{ id: "a", teamId: "t1", controller: "human" as const }];
@@ -29,11 +29,11 @@ const BOX_MAP: MapData = {
   },
 };
 
-const tuningWith = (patch: Partial<Tuning>): Tuning => ({ ...DEFAULT_TUNING, ...patch });
+const tuningWith = (patch: Partial<Tuning>): Tuning => ({ ...NO_FREEZE, ...patch });
 
 describe("item boxes", () => {
   it("spawns participants x perParticipant boxes on distinct candidate tiles", () => {
-    const sim = new Simulation({ seed: 4, map: BOX_MAP, participants: one });
+    const sim = new Simulation({ seed: 4, map: BOX_MAP, participants: one, tuning: NO_FREEZE });
     sim.start();
     const boxes = Object.values(sim.getState().boxes);
     expect(boxes).toHaveLength(1 * DEFAULT_TUNING.itemBoxes.perParticipant);
@@ -43,7 +43,7 @@ describe("item boxes", () => {
   it("opening a box gives one item and a replacement box appears the same tick", () => {
     // Three candidates, two boxes: at least one box is on a's path (2,2)->(2,1), one candidate stays free for the replacement.
     const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 2, layer: "road" as const }, { x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] } };
-    const sim = new Simulation({ seed: 4, map, participants: one });
+    const sim = new Simulation({ seed: 4, map, participants: one, tuning: NO_FREEZE });
     sim.start();
     const before = Object.keys(sim.getState().boxes).length;
 
@@ -95,7 +95,7 @@ describe("item boxes", () => {
       // Exactly two candidates for two boxes, so (2,1) is guaranteed to hold one; no spare means no replacement, which must not crash.
       spawns: { ...BOX_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }], itemBoxes: [{ x: 2, y: 1, layer: "road" as const }, { x: 1, y: 1, layer: "road" as const }] },
     };
-    const sim = new Simulation({ seed: 4, map, participants: one });
+    const sim = new Simulation({ seed: 4, map, participants: one, tuning: NO_FREEZE });
     sim.start();
     walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]); // key at (2,2), box at (2,1)
     const carried = sim.getState().players["a"]!.items.length;
@@ -112,7 +112,7 @@ describe("item boxes", () => {
 
   it("is deterministic", () => {
     const run = () => {
-      const sim = new Simulation({ seed: 21, map: BOX_MAP, participants: one });
+      const sim = new Simulation({ seed: 21, map: BOX_MAP, participants: one, tuning: NO_FREEZE });
       sim.start();
       walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }, { moveX: -1, moveY: 0 }]);
       return sim.getState();

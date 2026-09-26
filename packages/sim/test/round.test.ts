@@ -34,7 +34,7 @@ function instantMap(playerCount: number): MapData {
 
 function make(teams: Record<string, string>, tuning?: Partial<Tuning["round"]>, timeLimitSec?: number) {
   const participants = Object.entries(teams).map(([id, teamId]) => ({ id, teamId, controller: "human" as const }));
-  const t: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, ...tuning } };
+  const t: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, ...tuning } };
   const sim = new Simulation({ seed: 5, map: instantMap(participants.length), participants, tuning: t, timeLimitSec: timeLimitSec ?? 10 });
   sim.start();
   sim.step(new Map()); // everyone picks up the key under their feet

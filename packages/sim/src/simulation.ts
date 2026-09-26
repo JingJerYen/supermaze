@@ -65,6 +65,12 @@ export interface SimulationState {
   /** Tick the round started and the tick at which time runs out (exclusive). */
   startTick: Tick;
   endsAtTick: Tick;
+  /**
+   * Start freeze: until this tick nobody moves or acts (section 4). Set by
+   * `start()` from `round.startFreezeSec`; 0 in the lobby. Clients derive the
+   * opening countdown from it, so no event is needed when it ends.
+   */
+  freezeUntilTick: Tick;
   players: Record<PlayerId, PlayerState>;
   keys: Record<string, KeyState>;
   /** Player ids in the order they reached the tower top. */
@@ -127,6 +133,7 @@ export class Simulation {
       status: "lobby",
       startTick: 0,
       endsAtTick: 0,
+      freezeUntilTick: 0,
       players: {},
       keys: {},
       towerArrivals: [],
@@ -207,6 +214,7 @@ export class Simulation {
       status: "running",
       startTick: this.state.tick,
       endsAtTick: this.state.tick + this.timeLimitTicks,
+      freezeUntilTick: this.state.tick + Math.round(this.tuning.round.startFreezeSec * this.tuning.tickRate),
       switches,
       ghost: initialGhostState(this.state.tick, this.tuning),
     };
@@ -273,6 +281,8 @@ export class Simulation {
     const towerArrivals = [...this.state.towerArrivals];
     const teamClimbTicks: Record<TeamId, Tick[]> = { ...this.state.teamClimbTicks };
     let winnerTeamId = this.state.winnerTeamId;
+    // Start freeze (section 4): the world keeps ticking but no player moves, picks up or acts.
+    const startFrozen = this.state.status === "running" && tick < this.state.freezeUntilTick;
 
     // Ghost-tag schedule advances first so this tick's movement uses the right roles and speeds.
     let ghost = this.state.ghost;
@@ -294,6 +304,11 @@ export class Simulation {
     for (const id of Object.keys(this.state.players).sort()) {
       let p = this.state.players[id] as PlayerState;
       const input = inputs.get(id) ?? NO_INPUT;
+
+      if (startFrozen) {
+        work.players[id] = p;
+        continue;
+      }
 
       if (p.phase === "tower") {
         // On the platform the commander walks freely (section 5); nothing else applies up there.
@@ -320,7 +335,17 @@ export class Simulation {
           work.players[id] = p; // the action decision must see this player's current tile
           const action = availableAction(
             this.grid,
-            { switches: work.switches, nodes: work.nodes, placeables: work.placeables, players: work.players, boxes: work.boxes, keys: work.keys, ghost },
+            {
+              tick,
+              freezeUntilTick: this.state.freezeUntilTick,
+              switches: work.switches,
+              nodes: work.nodes,
+              placeables: work.placeables,
+              players: work.players,
+              boxes: work.boxes,
+              keys: work.keys,
+              ghost,
+            },
             p,
             this.tuning.inventory.capacity,
           );

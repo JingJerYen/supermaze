@@ -5,13 +5,16 @@ import type { MapGrid } from "./map/grid.js";
 import { nodeAt, type PlaceableState, type TeleportNodeState } from "./placeables.js";
 import type { PlayerState } from "./simulation.js";
 import type { TilePos } from "./map/types.js";
-import type { PlayerId } from "./types.js";
+import type { PlayerId, Tick } from "./types.js";
 
 /** What the single context action (E / on-screen button) would do right now. */
 export type PlayerAction = "climb" | "switch" | "pickUpNode" | "useItem";
 
 /** The slice of state the action decision reads. */
 export interface ActionContext {
+  tick: Tick;
+  /** Start freeze: no action is available before this tick (section 4). */
+  freezeUntilTick: Tick;
   switches: Record<string, LightSwitchState>;
   nodes: Record<string, TeleportNodeState>;
   placeables: Record<string, PlaceableState>;
@@ -24,11 +27,12 @@ export interface ActionContext {
 /**
  * Shared by the authoritative step and the client HUD, so what the button says
  * it will do is exactly what the server will do. The player must be standing
- * still in the maze. Priority: climb, light switch underfoot, pick up the
+ * still in the maze and the start freeze must be over. Priority: climb, light switch underfoot, pick up the
  * team's teleport node underfoot, then use the oldest carried item; the last
  * only when the item could really be used (a refused placement offers nothing).
  */
 export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerState, inventoryCapacity: number): PlayerAction | null {
+  if (ctx.tick < ctx.freezeUntilTick) return null;
   if (p.phase !== "maze" || p.mover.target !== null) return null;
   const at = p.mover.from;
   // A ghost's key and bag are locked for the chase; light switches stay usable (section 13).

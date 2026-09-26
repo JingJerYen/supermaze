@@ -4,7 +4,7 @@ import { deriveSwitchFacing } from "../src/lighting.js";
 import { DIRS, MapGrid } from "../src/map/grid.js";
 import { validateMap } from "../src/map/validate.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
-import { LATTICE_MAP } from "./fixtures.js";
+import { LATTICE_MAP, NO_FREEZE } from "./fixtures.js";
 import { walk } from "./walk.js";
 
 const grid = MapGrid.fromMapData(LATTICE_MAP);
@@ -43,7 +43,7 @@ describe("lights in the simulation", () => {
   const participants = [{ id: "a", teamId: "t1", controller: "human" as const }];
 
   it("starts lit with the map's number of unused switches, each facing a wall", () => {
-    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants });
+    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants, tuning: NO_FREEZE });
     sim.start();
     const st = sim.getState();
     expect(st.lightsOn).toBe(true);
@@ -64,7 +64,7 @@ describe("lights in the simulation", () => {
 
   it("a switch flips the lights once and then is spent", () => {
     // Both LATTICE switch candidates are used (count 2 of 2).
-    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants });
+    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants, tuning: NO_FREEZE });
     sim.start();
     walk(sim, "a", toFirstSwitch);
     const a = sim.getState().players["a"]!;
@@ -84,7 +84,7 @@ describe("lights in the simulation", () => {
   });
 
   it("the last of an even number of switches leaves the map lit", () => {
-    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants });
+    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants, tuning: NO_FREEZE });
     sim.start();
     walk(sim, "a", toFirstSwitch);
     sim.step(new Map([["a", press]]));

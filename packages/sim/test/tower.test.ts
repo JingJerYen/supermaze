@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MapGrid } from "../src/map/grid.js";
 import type { MapData } from "../src/map/types.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
-import { TINY_MAP } from "./fixtures.js";
+import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 
 const press: PlayerInput = { moveX: 0, moveY: 0, action: true };
 
@@ -36,6 +36,7 @@ describe("tower platform", () => {
     const sim = new Simulation({
       seed: 3,
       map: INSTANT,
+      tuning: NO_FREEZE,
       participants: [
         { id: "a", teamId: "A", controller: "human" },
         { id: "b", teamId: "B", controller: "human" },
@@ -56,6 +57,7 @@ describe("tower platform", () => {
     const solo = new Simulation({
       seed: 3,
       map: INSTANT,
+      tuning: NO_FREEZE,
       participants: [
         { id: "a", teamId: "A", controller: "human" },
         { id: "b", teamId: "A", controller: "human" }, // same team: round continues until both are up

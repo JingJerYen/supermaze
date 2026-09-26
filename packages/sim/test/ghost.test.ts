@@ -7,6 +7,7 @@ import { TINY_MAP } from "./fixtures.js";
 /** Short event timings so tests stay fast: 1 s idle, 1 s warning, 2 s active at 20 Hz. */
 const FAST: Tuning = {
   ...DEFAULT_TUNING,
+  round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 },
   ghostEvent: { ...DEFAULT_TUNING.ghostEvent, intervalSec: 1, warningSec: 1, durationSec: 2, caughtFreezeSec: 1, caughtProtectionSec: 1 },
 };
 const T = FAST.tickRate;

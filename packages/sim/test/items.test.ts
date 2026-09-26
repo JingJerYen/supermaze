@@ -11,8 +11,10 @@ const STEP_TICKS =
   1;
 
 
-const DEFAULT_TUNING: Tuning = BASE_TUNING;
-import { TINY_MAP } from "./fixtures.js";
+import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
+
+/** Tests here move on the first tick after start(); the start freeze has its own test file. */
+const DEFAULT_TUNING: Tuning = NO_FREEZE;
 import { walk, push } from "./walk.js";
 
 /**

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SeededRandom } from "../src/random/seeded.js";
 import { selectKeySpawns } from "../src/keys.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
-import { TINY_MAP } from "./fixtures.js";
+import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 import { walk } from "./walk.js";
 
 const two = [
@@ -28,7 +28,7 @@ describe("selectKeySpawns", () => {
 
 describe("keys in the simulation", () => {
   it("spawns exactly one key per participant when the round starts", () => {
-    const sim = new Simulation({ seed: 3, map: TINY_MAP, participants: two });
+    const sim = new Simulation({ seed: 3, map: TINY_MAP, participants: two, tuning: NO_FREEZE });
     expect(Object.keys(sim.getState().keys)).toHaveLength(0);
     const events = sim.start();
     expect(events).toEqual([{ type: "roundStarted", tick: 0, keyCount: 2 }]);
@@ -37,7 +37,7 @@ describe("keys in the simulation", () => {
   });
 
   it("does not hand out keys before the round starts", () => {
-    const sim = new Simulation({ seed: 3, map: TINY_MAP, participants: two });
+    const sim = new Simulation({ seed: 3, map: TINY_MAP, participants: two, tuning: NO_FREEZE });
     walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: 0, moveY: -1 }]);
     expect(sim.getState().players["a"]!.keyId).toBeNull();
   });
@@ -45,7 +45,7 @@ describe("keys in the simulation", () => {
   it("binds a key to the first player who steps on it and scores it once", () => {
     // Put one key right next to a's spawn so we can walk onto it deterministically.
     const map = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }] } };
-    const sim = new Simulation({ seed: 1, map, participants: [two[0]!] });
+    const sim = new Simulation({ seed: 1, map, participants: [two[0]!], tuning: NO_FREEZE });
     sim.start();
     const keyId = Object.keys(sim.getState().keys)[0]!;
     // a spawns at (2,3); north is (2,2) = the stairs tile holding the key.
@@ -65,7 +65,7 @@ describe("keys in the simulation", () => {
       ...TINY_MAP,
       spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }, { x: 1, y: 2, layer: "road" as const }] },
     };
-    const sim = new Simulation({ seed: 1, map, participants: two });
+    const sim = new Simulation({ seed: 1, map, participants: two, tuning: NO_FREEZE });
     sim.start();
     walk(sim, "a", [{ moveX: 0, moveY: -1 }, { moveX: -1, moveY: 0 }]); // onto (2,2) then (1,2)
     const owned = Object.values(sim.getState().keys).filter((k) => k.ownerId === "a");
@@ -75,7 +75,7 @@ describe("keys in the simulation", () => {
 
   it("is deterministic across two instances", () => {
     const run = () => {
-      const sim = new Simulation({ seed: 77, map: TINY_MAP, participants: two });
+      const sim = new Simulation({ seed: 77, map: TINY_MAP, participants: two, tuning: NO_FREEZE });
       sim.start();
       for (let i = 0; i < 40; i++) sim.step(new Map([["a", { moveX: 1, moveY: 0 }], ["b", { moveX: 0, moveY: 1 }]]));
       return sim.getState();
@@ -87,14 +87,14 @@ describe("keys in the simulation", () => {
 describe("tower climb", () => {
   function simWithKeyInHand() {
     const map = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 2, y: 2, layer: "road" as const }] } };
-    const sim = new Simulation({ seed: 1, map, participants: [two[0]!] });
+    const sim = new Simulation({ seed: 1, map, participants: [two[0]!], tuning: NO_FREEZE });
     sim.start();
     walk(sim, "a", [{ moveX: 0, moveY: -1 }]); // pick up at (2,2)
     return sim;
   }
 
   it("refuses to climb without a key or away from the tower", () => {
-    const sim = new Simulation({ seed: 1, map: TINY_MAP, participants: [two[0]!] });
+    const sim = new Simulation({ seed: 1, map: TINY_MAP, participants: [two[0]!], tuning: NO_FREEZE });
     sim.start();
     sim.step(new Map([["a", { ...still, action: true }]])); // at entry (2,3) but no key
     expect(sim.getState().players["a"]!.phase).toBe("maze");

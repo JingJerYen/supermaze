@@ -1,4 +1,11 @@
 import type { MapData } from "../src/map/types.js";
+import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
+
+/**
+ * Defaults without the start freeze, so a test can move or act on the first
+ * tick after `start()`. The freeze itself is covered by startFreeze.test.ts.
+ */
+export const NO_FREEZE: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 } };
 
 /**
  *   012345678
