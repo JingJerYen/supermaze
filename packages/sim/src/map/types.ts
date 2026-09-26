@@ -26,10 +26,27 @@ export interface MapData {
   supportedParticipants: number[];
   /** Row-major cell codes. All rows must have the same length. */
   rows: string[];
-  /** Legal, author-verified spawn points for dynamic objects. Unused in phase 0. */
+  /**
+   * Chebyshev distance from the tower footprint within which the one-tile-wide
+   * corridor rule is waived (the plaza around the tower). Default 0.
+   */
+  plazaRadius?: number;
+  /** Quarter turns clockwise applied to the authored map; set by rotateMap. */
+  rotation?: 0 | 1 | 2 | 3;
+  /**
+   * Author-verified candidate tiles for dynamic objects. Each round draws from
+   * these with the round seed:
+   *   keys          -> participants x tuning.keys.perParticipant
+   *   itemBoxes     -> participants x tuning.itemBoxes.perParticipant, and every
+   *                    replacement box is drawn from the still-free candidates
+   *   lightSwitches -> exactly `lightSwitchCount`
+   * The three lists must not share tiles with each other or with tower entries.
+   */
   spawns: {
     keys: TilePos[];
     itemBoxes: TilePos[];
     lightSwitches: TilePos[];
   };
+  /** Light switches placed per round. Even and at least tuning.lighting.switchCountMin. */
+  lightSwitchCount: number;
 }

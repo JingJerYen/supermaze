@@ -12,7 +12,7 @@ import type { GameMode } from "./mode.js";
  * instead of leaving a blank page. Phase 0 assumes the client already has the
  * same map file the server loaded; map delivery is a phase-2 topic.
  */
-export function createOnlineMode(map: MapData, endpoint: string): GameMode {
+export function createOnlineMode(map: MapData, endpoint: string, currentRotation: number): GameMode {
   const grid = MapGrid.fromMapData(map);
   let welcome: WelcomeMessage | null = null;
   let buffer = new SnapshotBuffer(50);
@@ -22,6 +22,14 @@ export function createOnlineMode(map: MapData, endpoint: string): GameMode {
 
   const conn = new Connection(endpoint, {
     onWelcome(m) {
+      if (m.rotation !== currentRotation) {
+        // The server picked another orientation: reload with the matching ?rot so the
+        // scene is rebuilt from the same map the server is simulating.
+        const url = new URL(location.href);
+        url.searchParams.set("rot", String(m.rotation));
+        location.replace(url.toString());
+        return;
+      }
       welcome = m;
       buffer = new SnapshotBuffer(1000 / m.tickRate);
       status = "online";

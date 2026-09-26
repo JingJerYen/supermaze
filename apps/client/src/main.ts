@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { MapData } from "@supermaze/sim";
-import testMap from "../../../content/maps/test-01.json";
+import { rotateMap, type MapData, type QuarterTurns } from "@supermaze/sim";
+import mazeMap from "../../../content/maps/maze-01.json";
 import { DebugOverlay } from "./debug.js";
 import { InputSource } from "./input/index.js";
 import { startLoop } from "./loop.js";
@@ -19,9 +19,17 @@ if (!root) throw new Error("#app not found");
 // `?online` joins the server; default is a local single-player simulation.
 const params = new URLSearchParams(location.search);
 const endpoint = params.get("server") ?? `ws://${location.hostname}:2567`;
+// Sandbox URL parameters (see README): ?rot=0..3 map orientation, ?players=N pretend
+// participant count (idle CPUs), ?seed=N reproducible spawn draw. Online play takes the
+// server's rotation and seed instead.
+const rot = (Number(params.get("rot") ?? 0) % 4) as QuarterTurns;
+const map = rotateMap(mazeMap as MapData, rot);
 const mode = params.has("online")
-  ? createOnlineMode(testMap as MapData, endpoint)
-  : createLocalMode(testMap as MapData);
+  ? createOnlineMode(map, endpoint, rot)
+  : createLocalMode(map, {
+      players: Number(params.get("players") ?? 1),
+      seed: Number(params.get("seed") ?? 1),
+    });
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));

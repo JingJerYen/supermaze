@@ -8,7 +8,7 @@ import {
   type SnapshotMessage,
   type WelcomeMessage,
 } from "@supermaze/protocol";
-import { DEFAULT_TUNING, NO_INPUT, Simulation, type MapData, type PlayerInput } from "@supermaze/sim";
+import { DEFAULT_TUNING, NO_INPUT, Simulation, rotateMap, type MapData, type PlayerInput, type QuarterTurns } from "@supermaze/sim";
 import { loadMap } from "./mapLoader.js";
 
 /**
@@ -25,8 +25,10 @@ export class MazeRoom extends Room {
   private nextTeam = 0;
 
   override async onCreate(options: { mapId?: string }): Promise<void> {
-    this.map = await loadMap(options.mapId ?? "test-01");
-    this.sim = new Simulation({ seed: Date.now() >>> 0, map: this.map, participants: [] });
+    const seed = Date.now() >>> 0;
+    // Rotation is part of the reproducible round setup: same seed, same orientation.
+    this.map = rotateMap(await loadMap(options.mapId ?? "maze-01"), (seed % 4) as QuarterTurns);
+    this.sim = new Simulation({ seed, map: this.map, participants: [] });
 
     this.onMessage<InputMessage>(C2S.input, (client, msg) => {
       this.latestInputs.set(client.sessionId, sanitizeInput(msg));
@@ -48,6 +50,7 @@ export class MazeRoom extends Room {
       protocolVersion: PROTOCOL_VERSION,
       playerId: client.sessionId,
       mapId: this.map.id,
+      rotation: this.map.rotation ?? 0,
       tickRate: this.sim.tuning.tickRate,
     };
     client.send(S2C.welcome, welcome);

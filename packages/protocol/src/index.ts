@@ -33,6 +33,8 @@ export interface WelcomeMessage {
   protocolVersion: number;
   playerId: string;
   mapId: string;
+  /** Quarter turns clockwise the server applied to the authored map. */
+  rotation: 0 | 1 | 2 | 3;
   tickRate: number;
 }
 

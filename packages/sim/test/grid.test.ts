@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DIRS, MapGrid } from "../src/map/grid.js";
 import { validateMap } from "../src/map/validate.js";
-import { TINY_MAP } from "./fixtures.js";
+import { LATTICE_MAP, TINY_MAP } from "./fixtures.js";
 
 const grid = MapGrid.fromMapData(TINY_MAP);
 
@@ -45,8 +45,21 @@ describe("MapGrid.tryMove", () => {
 });
 
 describe("validateMap", () => {
-  it("accepts the tiny fixture", () => {
-    expect(validateMap(TINY_MAP)).toEqual([]);
+  it("accepts the lattice fixture", () => {
+    expect(validateMap(LATTICE_MAP)).toEqual([]);
+  });
+
+  it("rejects corridors wider than one tile and walls thicker than one tile", () => {
+    // TINY_MAP has open 2x2 road areas (e.g. rows 1-2 at x=6..7) and a 2x2 wall block nowhere, so only the corridor message appears.
+    const msgs = validateMap(TINY_MAP).join("\n");
+    expect(msgs).toMatch(/corridor wider than one tile/);
+    const thick = { ...LATTICE_MAP, rows: LATTICE_MAP.rows.map((r, y) => (y === 3 ? "XS#.....X" : r)) };
+    expect(validateMap(thick).join("\n")).toMatch(/wall thicker than one tile/);
+  });
+
+  it("waives the width rule inside the tower plaza", () => {
+    const plaza = { ...TINY_MAP, plazaRadius: 99 };
+    expect(validateMap(plaza).join("\n")).not.toMatch(/corridor wider/);
   });
 
   it("rejects ragged rows", () => {
@@ -55,9 +68,20 @@ describe("validateMap", () => {
 
   it("rejects key spawns that are unreachable or too few", () => {
     const tooFew = { ...TINY_MAP, supportedParticipants: [4] };
-    expect(validateMap(tooFew).join("\n")).toMatch(/only 3 key spawns/);
+    expect(validateMap(tooFew).join("\n")).toMatch(/only 3 keys spawns/);
     const onWall = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 3, y: 2, layer: "road" as const }] } };
     expect(validateMap(onWall).join("\n")).toMatch(/not walkable/);
+  });
+
+  it("rejects spawn tiles shared across kinds and odd or too few light switches", () => {
+    const shared = {
+      ...LATTICE_MAP,
+      spawns: { ...LATTICE_MAP.spawns, lightSwitches: [{ x: 7, y: 1, layer: "road" as const }, { x: 5, y: 1, layer: "road" as const }] },
+    };
+    expect(validateMap(shared).join("\n")).toMatch(/lightSwitches spawn 7,1,road collides with keys spawn/);
+    expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 3 }).join("\n")).toMatch(/must be even/);
+    expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 0 }).join("\n")).toMatch(/below the minimum/);
+    expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 4 }).join("\n")).toMatch(/only 2 lightSwitches spawns but 4/);
   });
 
   it("rejects stairs without a wall", () => {
