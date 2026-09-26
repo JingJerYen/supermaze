@@ -14,6 +14,7 @@ import { FollowCamera } from "./render/camera.js";
 import { KeyViews } from "./render/keys.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
+import { themeFor } from "./render/themes.js";
 import { PlaceableViews } from "./render/placeables.js";
 import { PlayerViews } from "./render/players.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
@@ -60,7 +61,7 @@ export class Match {
     private readonly mode: GameMode,
   ) {
     this.scene = createScene();
-    this.mapMesh = buildMapMesh(mode.grid);
+    this.mapMesh = buildMapMesh(mode.grid, themeFor(mode.theme), mode.plazaRadius);
     this.scene.add(this.mapMesh.group);
     this.players = new PlayerViews(this.scene, mode.grid);
     this.keys = new KeyViews(this.scene, mode.grid);
@@ -105,6 +106,7 @@ export class Match {
       this.switches.update(s.to.switches, now / 1000);
       const dark = !s.to.lightsOn;
       this.lighting.setDark(dark);
+      this.mapMesh.setDark(dark);
       this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : CLIENT_TUNING.render.clearColor);
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);

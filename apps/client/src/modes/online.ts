@@ -12,6 +12,8 @@ import type { GameMode } from "./mode.js";
 export class OnlineMatchMode implements GameMode {
   readonly label = "online";
   readonly grid: MapGrid;
+  readonly theme: string | undefined;
+  readonly plazaRadius: number;
   private buffer: SnapshotBuffer;
   private current: SimulationState | null = null;
   rttMs = 0;
@@ -27,6 +29,8 @@ export class OnlineMatchMode implements GameMode {
     private readonly send: (input: PlayerInput) => void,
   ) {
     this.grid = MapGrid.fromMapData(map);
+    this.theme = map.theme;
+    this.plazaRadius = map.plazaRadius ?? 0;
     this.buffer = new SnapshotBuffer(1000 / tickRate);
   }
 

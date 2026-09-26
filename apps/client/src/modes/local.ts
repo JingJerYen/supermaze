@@ -25,6 +25,8 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
   return {
     label: "local",
     grid: sim.grid,
+    theme: map.theme,
+    plazaRadius: map.plazaRadius ?? 0,
     tickRate: DEFAULT_TUNING.tickRate,
     localPlayerId: () => id,
     tick(input) {

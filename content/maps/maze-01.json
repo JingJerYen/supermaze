@@ -1,6 +1,7 @@
 {
   "id": "maze-01",
   "name": "Maze 01",
+  "theme": "stone",
   "supportedParticipants": [
     2,
     3,

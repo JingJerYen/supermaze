@@ -5,6 +5,9 @@ import type { ResultsActions } from "../hud/results.js";
 export interface GameMode {
   label: string;
   grid: MapGrid;
+  /** Visual theme id from the map file; undefined means the default. */
+  theme: string | undefined;
+  plazaRadius: number;
   tickRate: number;
   localPlayerId(): string | null;
   /** Called at the fixed tick rate with the current intent. */

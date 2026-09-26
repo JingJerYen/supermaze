@@ -42,6 +42,8 @@ export interface MapData {
   plazaRadius?: number;
   /** Quarter turns clockwise applied to the authored map; set by rotateMap. */
   rotation?: 0 | 1 | 2 | 3;
+  /** Visual theme id for walls and floors (client-side table); default "stone". */
+  theme?: string;
   /**
    * Author-verified candidate tiles for dynamic objects. Each round draws from
    * these with the round seed:
