@@ -26,5 +26,14 @@ export function diffToasts(prev: SimulationState | null, next: SimulationState, 
     }
   }
   if (prev.winnerTeamId === null && next.winnerTeamId !== null) out.push("有隊伍全員登頂");
+  if (prev.ghost.phase !== next.ghost.phase) {
+    if (next.ghost.phase === "active") out.push("鬼抓人開始");
+    if (next.ghost.phase === "idle" && prev.ghost.phase === "active") out.push("鬼抓人結束");
+  }
+  if (meId) {
+    const a = prev.players[meId];
+    const b = next.players[meId];
+    if (a && b && b.protectedUntilTick > a.protectedUntilTick) out.push("被鬼抓到了，道具全失");
+  }
   return out;
 }

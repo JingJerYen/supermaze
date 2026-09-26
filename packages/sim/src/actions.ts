@@ -1,3 +1,4 @@
+import { isGhost, type GhostState } from "./ghost.js";
 import { canUseOldestItem, placementContextOf } from "./items.js";
 import { usableSwitchAt, type LightSwitchState } from "./lighting.js";
 import type { MapGrid } from "./map/grid.js";
@@ -17,6 +18,7 @@ export interface ActionContext {
   players: Record<PlayerId, PlayerState>;
   boxes: Record<string, { pos: TilePos }>;
   keys: Record<string, { pos: TilePos; ownerId: PlayerId | null }>;
+  ghost: GhostState;
 }
 
 /**
@@ -29,6 +31,8 @@ export interface ActionContext {
 export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerState, inventoryCapacity: number): PlayerAction | null {
   if (p.phase !== "maze" || p.mover.target !== null) return null;
   const at = p.mover.from;
+  // A ghost's key and bag are locked for the chase; light switches stay usable (section 13).
+  if (isGhost(ctx.ghost, p)) return usableSwitchAt(ctx.switches, at) ? "switch" : null;
   if (at.layer === "road" && p.keyId !== null && grid.isTowerEntry(at.x, at.y)) return "climb";
   if (usableSwitchAt(ctx.switches, at)) return "switch";
   const node = nodeAt(ctx.nodes, at);

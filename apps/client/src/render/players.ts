@@ -10,7 +10,13 @@ export class PlayerViews {
   constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {}
 
   /** Draw every player in `to`, blending from its state in `from` when present. */
-  update(from: Record<string, PlayerState>, to: Record<string, PlayerState>, alpha: number, tick: number, dtSec: number): void {
+  update(
+    from: Record<string, PlayerState>,
+    to: Record<string, PlayerState>,
+    alpha: number,
+    tick: number,
+    dtSec: number,
+  ): void {
     for (const [id, p] of Object.entries(to)) {
       const view = this.views.get(id) ?? this.create(id, p.teamId);
       let prev: MoverState = from[id]?.mover ?? p.mover;

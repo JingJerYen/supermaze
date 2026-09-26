@@ -1,13 +1,14 @@
 import { availableAction } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState } from "./boxes.js";
 import type { SimEvent } from "./events.js";
+import { initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
 import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys.js";
 import { createLightSwitches, usableSwitchAt, type LightSwitchState } from "./lighting.js";
 import { MapGrid } from "./map/grid.js";
 import { normalizeMap } from "./map/normalize.js";
 import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
-import { createMover, sameTile, stepMover, type MoveIntent, type MoverState } from "./movement.js";
+import { createMover, moverPosition, sameTile, stepMover, type MoveIntent, type MoverState } from "./movement.js";
 import { nodeAt, placeableAt, placeableMoveFilter, type PlaceableState, type TeleportNodeState } from "./placeables.js";
 import { SeededRandom } from "./random/seeded.js";
 import { decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
@@ -52,6 +53,8 @@ export interface PlayerState extends Participant {
   frozenUntilTick: Tick;
   /** Node the player just arrived on by teleport; no bounce-back until they step off it. */
   teleportImmunity: string | null;
+  /** Cannot be caught by a ghost until this tick (covers the post-catch freeze and protection). */
+  protectedUntilTick: Tick;
 }
 
 export type RoundStatus = "lobby" | "running" | "finished";
@@ -75,6 +78,8 @@ export interface SimulationState {
   placeables: Record<string, PlaceableState>;
   /** Quantum teleport endpoints on the floor (section 10.5). */
   nodes: Record<string, TeleportNodeState>;
+  /** Periodic ghost-tag event (section 13). */
+  ghost: GhostState;
   /** Per team: tick at which its 1st, 2nd, ... member climbed. */
   teamClimbTicks: Record<TeamId, Tick[]>;
   /** Set the moment the first team has every member on the tower. */
@@ -130,6 +135,7 @@ export class Simulation {
       boxes: {},
       placeables: {},
       nodes: {},
+      ghost: { phase: "idle", teamId: null, phaseEndsAtTick: 0, counts: {}, lastTeamId: null },
       teamClimbTicks: {},
       winnerTeamId: null,
       result: null,
@@ -158,6 +164,7 @@ export class Simulation {
       items: [],
       frozenUntilTick: 0,
       teleportImmunity: null,
+      protectedUntilTick: 0,
     };
     this.state = { ...this.state, players: { ...this.state.players, [p.id]: player } };
     // Keep "keys == participants" if someone joins after the round started (dev-only path;
@@ -201,6 +208,7 @@ export class Simulation {
       startTick: this.state.tick,
       endsAtTick: this.state.tick + this.timeLimitTicks,
       switches,
+      ghost: initialGhostState(this.state.tick, this.tuning),
     };
     this.spawnKeys(count);
     this.spawnBoxes(Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
@@ -266,6 +274,14 @@ export class Simulation {
     const teamClimbTicks: Record<TeamId, Tick[]> = { ...this.state.teamClimbTicks };
     let winnerTeamId = this.state.winnerTeamId;
 
+    // Ghost-tag schedule advances first so this tick's movement uses the right roles and speeds.
+    let ghost = this.state.ghost;
+    if (this.state.status === "running") {
+      const g = stepGhost(ghost, this.state.players, tick, this.tuning);
+      ghost = g.ghost;
+      work.events.push(...g.events);
+    }
+
     // Placeables time out first so nothing acts on a stale one this tick (section 9).
     for (const pl of Object.values(work.placeables)) {
       if (pl.expiresAtTick <= tick) {
@@ -285,9 +301,11 @@ export class Simulation {
         continue;
       }
 
+      const ghostly = isGhost(ghost, p);
       if (tick >= p.frozenUntilTick) {
         const before = p.mover.from;
-        p = { ...p, mover: stepMover(p.mover, input, this.grid, speed, placeableMoveFilter(work.placeables), turnTicks) };
+        const mySpeed = ghostly ? speed * this.tuning.ghostEvent.speedMultiplier : speed;
+        p = { ...p, mover: stepMover(p.mover, input, this.grid, mySpeed, placeableMoveFilter(work.placeables), turnTicks) };
         if (!sameTile(before, p.mover.from)) p = this.onArrive(work, p, tick);
       }
       if (p.teleportImmunity && !sameTile(p.mover.from, work.nodes[p.teleportImmunity]?.pos ?? p.mover.from)) {
@@ -295,13 +313,14 @@ export class Simulation {
       }
 
       if (this.state.status === "running") {
-        p = this.pickUps(work, p, id, tick);
+        // Ghosts cannot collect anything while the chase is on (section 13).
+        if (!ghostly) p = this.pickUps(work, p, id, tick);
 
         if (input.action) {
           work.players[id] = p; // the action decision must see this player's current tile
           const action = availableAction(
             this.grid,
-            { switches: work.switches, nodes: work.nodes, placeables: work.placeables, players: work.players, boxes: work.boxes, keys: work.keys },
+            { switches: work.switches, nodes: work.nodes, placeables: work.placeables, players: work.players, boxes: work.boxes, keys: work.keys, ghost },
             p,
             this.tuning.inventory.capacity,
           );
@@ -342,6 +361,33 @@ export class Simulation {
 
     const players = work.players;
 
+    // Catches: a ghost overlapping an unprotected runner freezes them and empties their bag.
+    if (ghost.phase === "active" && this.state.status === "running") {
+      const radius = this.tuning.ghostEvent.catchRadiusTiles;
+      const ghosts = Object.values(players).filter((p) => isGhost(ghost, p)).sort((a, b) => a.id.localeCompare(b.id));
+      for (const g of ghosts) {
+        const gp = moverPosition(g.mover);
+        for (const r of Object.values(players).sort((a, b) => a.id.localeCompare(b.id))) {
+          if (r.teamId === g.teamId || r.phase !== "maze" || tick < r.protectedUntilTick) continue;
+          if (r.mover.from.layer !== g.mover.from.layer) continue;
+          const rp = moverPosition(r.mover);
+          if (Math.hypot(rp.x - gp.x, rp.y - gp.y) > radius) continue;
+          const frozenUntilTick = tick + Math.round(this.tuning.ghostEvent.caughtFreezeSec * this.tuning.tickRate);
+          const protectedUntilTick = frozenUntilTick + Math.round(this.tuning.ghostEvent.caughtProtectionSec * this.tuning.tickRate);
+          players[r.id] = {
+            ...r,
+            items: [], // everything carried is lost, teleport nodes included; the key is kept
+            frozenUntilTick,
+            protectedUntilTick,
+            mover: { ...r.mover, target: null, progress: 0 },
+          };
+          const scorer = players[g.id] as PlayerState;
+          players[g.id] = { ...scorer, score: scorer.score + this.tuning.scoring.ghostCatch };
+          work.events.push({ type: "playerCaught", tick, ghostId: g.id, runnerId: r.id, frozenUntilTick });
+        }
+      }
+    }
+
     // Team completion: every member on the tower. The first complete team wins (CLAUDE.md section 3).
     if (this.state.status === "running") {
       const previous = teamProgress(this.state.players, this.state.teamClimbTicks);
@@ -370,6 +416,7 @@ export class Simulation {
       lightsOn: work.lightsOn,
       placeables: work.placeables,
       nodes: work.nodes,
+      ghost,
       towerArrivals,
       teamClimbTicks,
       winnerTeamId,
@@ -452,6 +499,11 @@ export class Simulation {
   /** What the context action would do for `p` right now. */
   availableAction(p: PlayerState) {
     return availableAction(this.grid, this.state, p, this.tuning.inventory.capacity);
+  }
+
+  /** Whether `p` is currently a ghost. */
+  isGhost(p: PlayerState): boolean {
+    return isGhost(this.state.ghost, p);
   }
 
   getState(): Readonly<SimulationState> {
