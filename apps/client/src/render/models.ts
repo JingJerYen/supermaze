@@ -15,11 +15,13 @@ export interface ModelSpec {
   rotationYDeg?: number;
 }
 
-export type ModelName = "key" | "box";
+export type ModelName = "key" | "box" | "ghost";
 
 export const MODEL_MANIFEST: Record<ModelName, ModelSpec> = {
   key: { file: "key.glb", fitSize: 0.6 },
   box: { file: "box.glb", fitSize: 0.6 },
+  /** Replaces a player's character while they are a ghost (section 13). */
+  ghost: { file: "ghost.glb", fitSize: 0.95 },
 };
 
 const MODELS_BASE = "/models/";

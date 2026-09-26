@@ -80,6 +80,12 @@ export const CLIENT_TUNING = {
     bobHz: 1.1,
     opacity: 0.95,
   },
+  ghostModel: {
+    /** How high the ghost model floats above the tile, world units, plus a slow bob. */
+    hover: 0.12,
+    bobAmp: 0.05,
+    bobHz: 0.7,
+  },
   keyBeam: {
     /** World units above the key. */
     height: 3.5,

@@ -3,6 +3,7 @@ import { moverPosition, type Dir, type MapGrid, type MoverState } from "@superma
 import { characters, type CharacterRig } from "./characters.js";
 import { tileElevation } from "./elevation.js";
 import { HammerSwing } from "./hammerSwing.js";
+import { models } from "./models.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
 export const PLAYER_HEIGHT = 0.9;
@@ -34,6 +35,10 @@ export class PlayerView {
   /** "This is you" arrow above the head; only the local player's view has one. */
   private marker: THREE.Mesh | null = null;
   private markerTime = 0;
+  /** The normal body (rig or box) and the ghost model that stands in for it during a chase. */
+  private readonly body = new THREE.Group();
+  private ghost: THREE.Object3D | null = null;
+  private ghostTime = 0;
 
   constructor(playerId: string, color: number) {
     this.color = color;
@@ -48,10 +53,10 @@ export class PlayerView {
     this.disc.position.y = 0.015;
     this.mesh.add(this.disc);
 
-    this.mesh.add(this.hammer.root);
+    this.mesh.add(this.hammer.root, this.body);
     this.rig = characters.createRig(playerId, PLAYER_HEIGHT);
     if (this.rig) {
-      this.mesh.add(this.rig.root);
+      this.body.add(this.rig.root);
       this.rig.mixer.addEventListener("finished", (e) => {
         if (e.action !== this.oneShot) return;
         this.oneShot = null;
@@ -63,7 +68,7 @@ export class PlayerView {
       body.position.y = PLAYER_HEIGHT / 2;
       const nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.16), new THREE.MeshLambertMaterial({ color: 0xffffff }));
       nose.position.set(0, PLAYER_HEIGHT / 2 + 0.2, 0.38);
-      this.mesh.add(body, nose);
+      this.body.add(body, nose);
     }
   }
 
@@ -84,6 +89,26 @@ export class PlayerView {
       this.markerTime += dtSec;
       this.marker.position.y = t.height + t.length / 2 + Math.sin(this.markerTime * t.bobHz * Math.PI * 2) * t.bobAmp;
     }
+    if (this.ghost?.visible) {
+      const g = CLIENT_TUNING.ghostModel;
+      this.ghostTime += dtSec;
+      this.ghost.position.y = g.hover + Math.sin(this.ghostTime * g.bobHz * Math.PI * 2) * g.bobAmp;
+    }
+  }
+
+  /**
+   * Ghost look during a chase: the ghost.glb model floats in place of the
+   * character. Without the file the character is left untouched (no tinting;
+   * CLAUDE.md section 13).
+   */
+  setGhost(on: boolean): void {
+    if (on && !this.ghost) {
+      this.ghost = models.instantiate("ghost");
+      if (this.ghost) this.mesh.add(this.ghost);
+    }
+    if (!this.ghost) return;
+    this.ghost.visible = on;
+    this.body.visible = !on;
   }
 
   /**

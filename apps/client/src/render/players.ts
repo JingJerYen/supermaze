@@ -4,6 +4,8 @@ import { climbPhase, climbTotalSec, faceOf, type Face } from "./climbSequence.js
 import { PlayerView } from "./playerView.js";
 import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
 
+const EMPTY: ReadonlySet<string> = new Set();
+
 /** Owns one PlayerView per player id, creating and removing them as snapshots change. */
 export class PlayerViews {
   private readonly views = new Map<string, PlayerView>();
@@ -36,6 +38,7 @@ export class PlayerViews {
     tick: number,
     dtSec: number,
     meId: string | null = null,
+    ghostIds: ReadonlySet<string> = EMPTY,
   ): void {
     const newTick = tick !== this.lastTick;
     this.lastTick = tick;
@@ -71,6 +74,7 @@ export class PlayerViews {
       view.setFacing(p.mover.facing);
       view.setFrozen(p.frozenUntilTick > tick);
       view.setSelfMarker(id === meId && p.phase === "maze");
+      view.setGhost(ghostIds.has(id));
     }
     for (const [id, view] of this.views) {
       if (!to[id]) {

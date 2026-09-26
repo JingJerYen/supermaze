@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEFAULT_TUNING, type SimulationState } from "@supermaze/sim";
+import { DEFAULT_TUNING, isGhost, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
 import { Hud } from "./hud/hud.js";
 import { Minimap } from "./hud/minimap.js";
@@ -102,7 +102,8 @@ export class Match {
     const s = this.mode.sample(now, alpha);
     const meId = this.mode.localPlayerId();
     if (s) {
-      this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt, meId);
+      const ghostIds = new Set(Object.values(s.to.players).filter((p) => isGhost(s.to.ghost, p)).map((p) => p.id));
+      this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt, meId, ghostIds);
       this.keys.update(s.to.keys, now / 1000);
       this.boxes.update(s.to.boxes, now / 1000);
       this.placeables.update(s.to.placeables, s.to.nodes, now / 1000);
