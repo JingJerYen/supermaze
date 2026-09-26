@@ -323,8 +323,8 @@ export function runeTexture(color: number): THREE.CanvasTexture {
   ctx.lineWidth = 6;
   ctx.lineCap = "round";
   const rnd = seeded(color);
-  for (let g = 0; g < 6; g++) {
-    const cy = 40 + g * 78;
+  for (let g = 0; g < 2; g++) {
+    const cy = 128 + g * 220;
     ctx.beginPath();
     ctx.moveTo(64, cy - 22);
     ctx.lineTo(44, cy);

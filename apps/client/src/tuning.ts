@@ -28,8 +28,8 @@ export const CLIENT_TUNING = {
   tower: {
     /** Height of the slender shaft, world units (1 unit = 1 tile). */
     shaftHeight: 12,
-    /** Shaft footprint side length; the map footprint can be wider than this. */
-    shaftWidth: 1.2,
+    /** Distance across the octagonal shaft between opposite flat faces, tiles. */
+    shaftWidth: 1.6,
     /** Platform overhang per side. Must equal the sim's PLATFORM_RING (1 tile) so the walkable tiles match the slab. */
     platformOverhang: 1,
     platformThickness: 0.35,

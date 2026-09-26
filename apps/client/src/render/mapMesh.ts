@@ -278,20 +278,56 @@ function buildTower(grid: MapGrid, theme: Theme): {
 
   const shaftBottom = t.baseHeight * 2.6;
   const shaftH = t.shaftHeight - t.baseHeight * 1.6;
-  const shaft = new THREE.Mesh(new THREE.BoxGeometry(t.shaftWidth, shaftH, t.shaftWidth), shaftMat);
+
+  // Octagonal stacked-stone shaft. Flat faces point N/E/S/W at exactly shaftWidth/2
+  // from the centre (thetaStart offsets the corners), so doors, runes and the
+  // ascent strips sit flush on a face. The block texture repeats so each course of
+  // stone is about half a tile tall instead of being stretched over the whole height.
+  const faceDist = t.shaftWidth / 2;
+  const radius = faceDist / Math.cos(Math.PI / 8);
+  const shaftGeo = new THREE.CylinderGeometry(radius, radius * 1.04, shaftH, 8, 1, false, Math.PI / 8);
+  const shaftTex = stoneTex ? stoneTex.clone() : null;
+  if (shaftTex) {
+    shaftTex.repeat.set(4, Math.round(shaftH));
+    shaftTex.needsUpdate = true;
+    shaftMat.map = shaftTex;
+    shaftMat.needsUpdate = true;
+  }
+  const shaft = new THREE.Mesh(shaftGeo, shaftMat);
   shaft.position.set(cx, shaftBottom + shaftH / 2, cy);
 
-  // Rune strips: one unlit glowing plane per shaft face.
+  // Stone string courses every three tiles, and a heavier ring under the platform.
+  const bandMat = new THREE.MeshLambertMaterial({ color: theme.towerStone, map: patternTexture("slab", theme.towerStone) });
+  for (let h = 3; h < shaftH - 0.5; h += 3) {
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.09, radius + 0.09, 0.18, 8, 1, false, Math.PI / 8), bandMat);
+    band.position.set(cx, shaftBottom + h, cy);
+    tower.add(band);
+  }
+  const corbel = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.22, radius + 0.04, 0.4, 8, 1, false, Math.PI / 8), bandMat);
+  corbel.position.set(cx, shaftBottom + shaftH - 0.2, cy);
+  tower.add(corbel);
+
+  // Narrow slit windows on the four faces at two heights, and one small rune plaque near the top.
+  const slitMat = new THREE.MeshBasicMaterial({ color: 0x0b0f18 });
+  const slitGeo = new THREE.PlaneGeometry(0.12, 0.7);
   const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(theme.towerRune), transparent: true, depthWrite: false });
-  const runeGeo = new THREE.PlaneGeometry(t.shaftWidth * 0.6, shaftH * 0.7);
+  const runeGeo = new THREE.PlaneGeometry(0.34, 1.1);
   for (const [dx, dz, yaw] of [
     [0, 1, 0],
     [0, -1, Math.PI],
     [1, 0, Math.PI / 2],
     [-1, 0, -Math.PI / 2],
   ] as const) {
+    const fx = cx + dx * (faceDist + 0.01);
+    const fz = cy + dz * (faceDist + 0.01);
+    for (const h of [shaftH * 0.3, shaftH * 0.62]) {
+      const slit = new THREE.Mesh(slitGeo, slitMat);
+      slit.position.set(fx, shaftBottom + h, fz);
+      slit.rotation.y = yaw;
+      tower.add(slit);
+    }
     const r = new THREE.Mesh(runeGeo, runeMat);
-    r.position.set(cx + dx * (t.shaftWidth / 2 + 0.01), shaftBottom + shaftH / 2, cy + dz * (t.shaftWidth / 2 + 0.01));
+    r.position.set(fx, shaftBottom + shaftH - 1.2, fz);
     r.rotation.y = yaw;
     tower.add(r);
   }
