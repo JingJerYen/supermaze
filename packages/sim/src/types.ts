@@ -15,6 +15,8 @@ export interface Participant {
   id: PlayerId;
   teamId: TeamId;
   controller: Controller;
+  /** Display name chosen by the player; purely cosmetic. */
+  name?: string;
 }
 
 /** Where a player is in the round. `tower` is permanent for the rest of the round. */

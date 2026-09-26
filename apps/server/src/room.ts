@@ -53,11 +53,16 @@ export class MazeRoom extends Room {
     this.setSimulationInterval(() => this.tick(), 1000 / this.sim.tuning.tickRate);
   }
 
-  override onJoin(client: Client): void {
+  override onJoin(client: Client, options?: { name?: unknown }): void {
     // Dev behaviour until the lobby exists: alternate players between the two teams
     // and start the round as soon as the first player is in. Late joiners get a key
     // spawned for them so keys == participants still holds.
-    this.sim.addPlayer({ id: client.sessionId, teamId: `t${this.nextTeam++ % 2}`, controller: "human" });
+    this.sim.addPlayer({
+      id: client.sessionId,
+      teamId: `t${this.nextTeam++ % 2}`,
+      controller: "human",
+      name: sanitizeName(options?.name),
+    });
     if (this.sim.getState().status === "lobby") this.sim.start();
     const welcome: WelcomeMessage = {
       protocolVersion: PROTOCOL_VERSION,
@@ -135,6 +140,12 @@ const SECTIONS: readonly StateSection[] = [
   "winnerTeamId",
   "result",
 ];
+
+/** Display names are cosmetic but still untrusted: trim, cap the length, never empty. */
+function sanitizeName(raw: unknown): string {
+  const s = typeof raw === "string" ? raw.replace(/[\u0000-\u001f]/g, "").trim() : "";
+  return (s || "玩家").slice(0, 12);
+}
 
 /** Never trust client numbers: clamp to the unit square and drop NaN. */
 function sanitizeInput(msg: unknown): PlayerInput {

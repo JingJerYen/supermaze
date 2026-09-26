@@ -29,8 +29,16 @@ export class DebugOverlay {
       pointerEvents: "none",
       whiteSpace: "pre",
       zIndex: "10",
+      display: "none",
     } satisfies Partial<CSSStyleDeclaration>);
     parent.appendChild(this.el);
+    // Developer panel: hidden by default, F3 toggles it.
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "F3") {
+        e.preventDefault();
+        this.el.style.display = this.el.style.display === "none" ? "block" : "none";
+      }
+    });
 
     this.bannerEl = document.createElement("div");
     Object.assign(this.bannerEl.style, {

@@ -20,7 +20,11 @@ export interface ConnectionEvents {
 export class Connection {
   private room: Room | null = null;
 
-  constructor(private readonly endpoint: string, private readonly events: ConnectionEvents) {}
+  constructor(
+    private readonly endpoint: string,
+    private readonly events: ConnectionEvents,
+    private readonly name: string,
+  ) {}
 
   async connect(): Promise<void> {
     const client = new Client(this.endpoint);
@@ -32,7 +36,7 @@ export class Connection {
         safeRemove(TOKEN_KEY);
       }
     }
-    if (!this.room) this.room = await client.joinOrCreate(ROOM_NAME);
+    if (!this.room) this.room = await client.joinOrCreate(ROOM_NAME, { name: this.name });
     safeSet(TOKEN_KEY, this.room.reconnectionToken);
 
     this.room.onMessage<WelcomeMessage>(S2C.welcome, (m) => this.events.onWelcome(m));

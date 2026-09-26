@@ -1,6 +1,9 @@
 import * as THREE from "three";
-import { DEFAULT_TUNING, availableAction, rotateMap, type QuarterTurns } from "@supermaze/sim";
+import { DEFAULT_TUNING, rotateMap, type QuarterTurns, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
+import { Hud } from "./hud/hud.js";
+import { buildHudModel } from "./hud/model.js";
+import { diffToasts } from "./hud/toasts.js";
 import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
 import { InputSource } from "./input/index.js";
 import { startLoop } from "./loop.js";
@@ -29,12 +32,28 @@ const endpoint = params.get("server") ?? `ws://${location.hostname}:2567`;
 // server's rotation and seed instead.
 const rot = (Number(params.get("rot") ?? 0) % 4) as QuarterTurns;
 const map = rotateMap(loadMapById(params.get("map") ?? DEFAULT_MAP_ID), rot);
+const playerName = resolveName(params.get("name"));
 const mode = params.has("online")
-  ? createOnlineMode(map, endpoint, rot)
+  ? createOnlineMode(map, endpoint, rot, playerName)
   : createLocalMode(map, {
       players: Number(params.get("players") ?? 1),
       seed: Number(params.get("seed") ?? 1),
+      name: playerName,
     });
+
+/** ?name= wins, else the last name used in this browser, else ask once. */
+function resolveName(fromUrl: string | null): string {
+  const KEY = "supermaze.name";
+  let name = fromUrl?.trim() || "";
+  try {
+    if (!name) name = localStorage.getItem(KEY) ?? "";
+    if (!name) name = (window.prompt("你的暱稱？") ?? "").trim();
+    if (name) localStorage.setItem(KEY, name);
+  } catch {
+    /* storage unavailable */
+  }
+  return (name || "玩家").slice(0, 12);
+}
 
 // Real models (if any) must be in hand before the first key or box is created.
 await models.load();
@@ -53,11 +72,11 @@ const boxes = new BoxViews(scene, mode.grid);
 const placeables = new PlaceableViews(scene, mode.grid);
 const switches = new SwitchViews(scene, mode.grid);
 const lighting = new SceneLighting(scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
-const ACTION_LABEL: Record<string, string> = { climb: "登塔", switch: "開關", pickUpNode: "收回傳送點", useItem: "使用道具" };
-const ITEM_LABEL: Record<string, string> = { oneWayDoor: "單向門", obstacle: "障礙物", hammer: "鐵鎚", trap: "陷阱", teleportNode: "傳送點" };
 const follow = new FollowCamera(window.innerWidth / window.innerHeight, mode.grid.width, mode.grid.height);
 const input = new InputSource(root);
 const debug = new DebugOverlay(root);
+const hud = new Hud(root);
+let lastToastState: SimulationState | null = null;
 
 window.addEventListener("resize", () => {
   follow.resize(window.innerWidth / window.innerHeight);
@@ -86,11 +105,13 @@ startLoop(
       const dark = !s.to.lightsOn;
       lighting.setDark(dark);
       scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : CLIENT_TUNING.render.clearColor);
-      const me = meId ? s.to.players[meId] : undefined;
-      const action = me ? availableAction(mode.grid, s.to.switches, s.to.nodes, me, DEFAULT_TUNING.inventory.capacity) : null;
-      const label =
-        action === "useItem" && me ? `用${ITEM_LABEL[me.items[0] ?? ""] ?? me.items[0] ?? ""}` : action ? (ACTION_LABEL[action] ?? action) : null;
-      input.actionButton.setAction(label);
+      const model = buildHudModel(s.to, meId, mode.grid, mode.tickRate, DEFAULT_TUNING.inventory.capacity);
+      hud.update(model);
+      input.actionButton.setAction(hud.actionLabel(model));
+      if (lastToastState !== s.to) {
+        for (const t of diffToasts(lastToastState, s.to, meId)) hud.toast(t);
+        lastToastState = s.to;
+      }
     }
     const mePos = meId ? players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;

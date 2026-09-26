@@ -44,4 +44,6 @@ Several tabs or devices on the LAN join the same room.
 
 Sandbox URL parameters (`http://localhost:5173/?...`): `players=N` pretends N participants
 (idle CPUs) so keys and boxes are drawn as in a real round; `seed=N` fixes the draw;
-`rot=0..3` picks the map orientation; `online` joins the server instead.
+`rot=0..3` picks the map orientation; `map=<id>` picks a map; `name=<nick>` sets your
+display name (otherwise remembered from last time, or asked once); `online` joins the
+server instead. Press F3 in game for the developer status panel.

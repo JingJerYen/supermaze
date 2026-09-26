@@ -12,7 +12,7 @@ import type { GameMode } from "./mode.js";
  * instead of leaving a blank page. Phase 0 assumes the client already has the
  * same map file the server loaded; map delivery is a phase-2 topic.
  */
-export function createOnlineMode(map: MapData, endpoint: string, currentRotation: number): GameMode {
+export function createOnlineMode(map: MapData, endpoint: string, currentRotation: number, name: string): GameMode {
   const grid = MapGrid.fromMapData(map);
   let welcome: WelcomeMessage | null = null;
   let buffer = new SnapshotBuffer(50);
@@ -53,7 +53,7 @@ export function createOnlineMode(map: MapData, endpoint: string, currentRotation
       status = `left (${code})`;
       banner = `已離開房間（代碼 ${code}）。重新整理頁面可重連。`;
     },
-  });
+  }, name);
 
   conn.connect().catch((e: unknown) => {
     status = "error";

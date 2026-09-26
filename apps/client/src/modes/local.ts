@@ -3,7 +3,7 @@ import { formatSeconds, roundBanner } from "./roundHud.js";
 import type { GameMode } from "./mode.js";
 
 /** Single-player: the simulation runs inside the page. Same code the server runs. */
-export function createLocalMode(map: MapData, options: { players?: number; seed?: number } = {}): GameMode {
+export function createLocalMode(map: MapData, options: { players?: number; seed?: number; name?: string } = {}): GameMode {
   const id = "local";
   // Extra participants are idle CPUs (no behaviour yet); they only make the round
   // spawn as many keys and boxes as a real match with that many players would.
@@ -12,11 +12,12 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
     id: `cpu${i + 1}`,
     teamId: i % 2 === 0 ? "t2" : "t1",
     controller: "cpu" as const,
+    name: `CPU ${i + 1}`,
   }));
   const sim = new Simulation({
     seed: options.seed ?? 1,
     map,
-    participants: [{ id, teamId: "t1", controller: "human" }, ...idle],
+    participants: [{ id, teamId: "t1", controller: "human", name: options.name ?? "你" }, ...idle],
   });
   sim.start();
   let prev: SimulationState = sim.getState();
