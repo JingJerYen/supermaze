@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { DEFAULT_TUNING, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
 import { Hud } from "./hud/hud.js";
+import { Minimap } from "./hud/minimap.js";
 import { ResultsPanel } from "./hud/results.js";
 import { buildHudModel } from "./hud/model.js";
 import { diffToasts } from "./hud/toasts.js";
@@ -30,6 +31,7 @@ export class Match {
   private readonly input: InputSource;
   private readonly hud: Hud;
   private readonly results: ResultsPanel;
+  private readonly minimap: Minimap;
   private readonly debug: DebugOverlay;
   private readonly players: PlayerViews;
   private readonly keys: KeyViews;
@@ -62,6 +64,7 @@ export class Match {
     this.debug = new DebugOverlay(root);
     this.hud = new Hud(root);
     this.results = new ResultsPanel(root);
+    this.minimap = new Minimap(root, mode.grid);
 
     this.onResize = () => {
       this.follow.resize(window.innerWidth / window.innerHeight);
@@ -102,6 +105,7 @@ export class Match {
         this.lastToastState = s.to;
       }
       this.results.update(s.to, meId, this.mode.results());
+      this.minimap.update(s.to, meId);
     }
 
     const mePos = meId ? this.players.position(meId) : null;
@@ -125,6 +129,7 @@ export class Match {
     window.removeEventListener("resize", this.onResize);
     this.hud.dispose();
     this.results.dispose();
+    this.minimap.dispose();
     this.debug.dispose();
     this.input.dispose();
     this.renderer.clear();

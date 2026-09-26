@@ -30,7 +30,7 @@ const CSS = `
 .hud-toasts{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 84px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
 @keyframes hud-fade{0%{opacity:0;transform:translateY(-6px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
-.hud-dark{position:absolute;right:max(20px,env(safe-area-inset-right));bottom:calc(max(14px,env(safe-area-inset-bottom)) + 96px);font-size:12px;color:#c9d2e3;display:none}
+.hud-dark{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:12px;color:#c9d2e3;display:none}
 .hud-dark.on{display:block}
 `;
 
@@ -70,7 +70,7 @@ export class Hud {
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
     this.myCoord = el("div", "hud-mycoord");
-    this.root.append(top, this.items, this.toasts, this.dark, this.myCoord);
+    this.root.append(top, this.items, this.toasts, this.dark);
     parent.appendChild(this.root);
   }
 
@@ -80,7 +80,6 @@ export class Hud {
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);
     this.sub.textContent = m.status === "finished" ? "回合結束" : `已登塔 ${m.climbed} / ${m.total}`;
 
-    this.myCoord.textContent = m.myCoord ? `你在 ${m.myCoord}` : "";
 
     // Rosters change rarely (coordinates only shown on the tower); rebuild only when content changes.
     const rosterKey = JSON.stringify([m.myTeam, m.otherTeams, m.showCoords]);
