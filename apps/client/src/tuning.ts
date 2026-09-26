@@ -58,15 +58,16 @@ export const CLIENT_TUNING = {
     height: 2.2,
     opacity: 0.4,
   },
-  stick: {
-    /** Drag distance before a direction registers, px. */
-    deadZonePx: 10,
-    /** Drag distance for full magnitude, px. */
-    fullRangePx: 60,
-    /** How far the knob may visually leave the centre, px. */
-    knobRangePx: 44,
-    baseSizePx: 110,
-    knobSizePx: 48,
+  dpad: {
+    /** Side length of the whole cross, px; each arm is a third of it. */
+    sizePx: 150,
+    /** Distance from the bottom-left screen corner (or the safe area), px. */
+    marginPx: 18,
+    /** Radius around the hub where a press registers no direction, px. */
+    deadZonePx: 14,
+    /** Pad opacity on touch devices, and on desktop where the keyboard is primary. */
+    opacity: 0.9,
+    opacityDesktop: 0.45,
   },
   keyBeam: {
     /** World units above the key. */
