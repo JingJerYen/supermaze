@@ -3,6 +3,7 @@ import type { MapGrid, MoverState, PlayerState } from "@supermaze/sim";
 import { climbPhase, climbTotalSec, faceOf, type Face } from "./climbSequence.js";
 import { PlayerView } from "./playerView.js";
 import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
+import { CLIENT_TUNING } from "../tuning.js";
 
 const EMPTY: ReadonlySet<string> = new Set();
 
@@ -82,6 +83,7 @@ export class PlayerViews {
         this.views.delete(id);
       }
     }
+    separate(this.views, to);
   }
 
   position(id: string): THREE.Vector3 | null {
@@ -93,6 +95,51 @@ export class PlayerViews {
     this.scene.add(view.mesh);
     this.views.set(id, view);
     return view;
+  }
+}
+
+/**
+ * Visual-only separation: characters standing on or walking through each other
+ * are pushed apart on screen, growing smoothly from nothing at `radius` to half
+ * the radius each when exactly overlapping, so nobody pops. Recomputed from the
+ * interpolated positions every frame; the simulation is untouched.
+ */
+function separate(views: Map<string, PlayerView>, to: Record<string, PlayerState>): void {
+  const R = CLIENT_TUNING.separation.radius;
+  const ids = Object.keys(to)
+    .filter((id) => to[id]!.phase === "maze" && views.get(id)?.mesh.visible)
+    .sort();
+  if (ids.length < 2) return;
+  const push = new Map<string, { x: number; z: number }>();
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = views.get(ids[i]!)!.mesh.position;
+      const b = views.get(ids[j]!)!.mesh.position;
+      let dx = b.x - a.x;
+      let dz = b.z - a.z;
+      const d = Math.hypot(dx, b.y - a.y, dz);
+      if (d >= R) continue;
+      if (Math.hypot(dx, dz) < 1e-4) {
+        dx = 1; // exactly on top of each other (spawn): split along x, lower id to the west
+        dz = 0;
+      } else {
+        const h = Math.hypot(dx, dz);
+        dx /= h;
+        dz /= h;
+      }
+      const s = (R - d) / 2;
+      const pa = push.get(ids[i]!) ?? { x: 0, z: 0 };
+      const pb = push.get(ids[j]!) ?? { x: 0, z: 0 };
+      pa.x -= dx * s; pa.z -= dz * s;
+      pb.x += dx * s; pb.z += dz * s;
+      push.set(ids[i]!, pa);
+      push.set(ids[j]!, pb);
+    }
+  }
+  for (const [id, p] of push) {
+    const pos = views.get(id)!.mesh.position;
+    pos.x += p.x;
+    pos.z += p.z;
   }
 }
 

@@ -80,6 +80,14 @@ export const CLIENT_TUNING = {
     bobHz: 1.1,
     opacity: 0.95,
   },
+  separation: {
+    /**
+     * Purely visual: characters closer than this (tiles) are nudged apart on
+     * screen so models do not clip through each other. The simulation lets
+     * players overlap; this never moves anyone's real position.
+     */
+    radius: 0.45,
+  },
   ghostModel: {
     /** How high the ghost model floats above the tile, world units, plus a slow bob. */
     hover: 0.12,
