@@ -20,7 +20,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 const params = new URLSearchParams(location.search);
 const dprOverride = Number(params.get("dpr"));
 renderer.setPixelRatio(dprOverride > 0 ? dprOverride : Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(root.clientWidth || window.innerWidth, root.clientHeight || window.innerHeight);
 root.appendChild(renderer.domElement);
 
 fullscreenOnFirstTouch();
@@ -39,8 +39,17 @@ if (params.has("local")) {
   });
   new Match(root, renderer, mode);
 } else {
-  const endpoint = params.get("server") ?? `ws://${location.hostname}:2567`;
+  const endpoint = params.get("server") ?? rememberedServer() ?? `ws://${location.hostname}:2567`;
   void new Session(root, renderer, endpoint, playerName).start();
+}
+
+/** The server last typed on the home screen, if any. */
+function rememberedServer(): string | null {
+  try {
+    return localStorage.getItem("supermaze.server");
+  } catch {
+    return null;
+  }
 }
 
 /** ?name= wins, else the last name used in this browser, else a default the home screen lets you edit. */

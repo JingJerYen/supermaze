@@ -56,6 +56,7 @@ export class Session {
   }
 
   async start(): Promise<void> {
+    this.ui.setServer(this.conn.getEndpoint());
     this.ui.showConnecting("嘗試接回上一場...");
     if (await this.conn.tryReconnect()) {
       this.startPing();
@@ -84,6 +85,16 @@ export class Session {
   }
 
   private async join(req: JoinRequest): Promise<void> {
+    if (req.server) {
+      const url = normalizeServerUrl(req.server);
+      this.conn.setEndpoint(url);
+      this.ui.setServer(url);
+      try {
+        localStorage.setItem("supermaze.server", url);
+      } catch {
+        /* storage unavailable */
+      }
+    }
     this.ui.showConnecting();
     try {
       await this.conn.connect(req);
@@ -155,4 +166,15 @@ export class Session {
     if (this.pingTimer !== null) clearInterval(this.pingTimer);
     this.pingTimer = null;
   }
+}
+
+/**
+ * Accept what people paste: a bare host, an http(s) URL (as printed by
+ * cloudflared) or a ws(s) URL. An https page may only use wss.
+ */
+export function normalizeServerUrl(raw: string): string {
+  let url = raw.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(url)) url = url.replace(/^http/i, "ws");
+  else if (!/^wss?:\/\//i.test(url)) url = `${location.protocol === "https:" ? "wss" : "ws"}://${url}`;
+  return url;
 }

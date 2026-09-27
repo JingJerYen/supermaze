@@ -54,6 +54,7 @@ export class Match {
     }
   };
   private lastFrame = performance.now();
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -72,7 +73,8 @@ export class Match {
     this.placeables = new PlaceableViews(this.scene, mode.grid);
     this.switches = new SwitchViews(this.scene, mode.grid);
     this.lighting = new SceneLighting(this.scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles, theme);
-    this.follow = new FollowCamera(window.innerWidth, window.innerHeight, mode.grid.width, mode.grid.height);
+    const size0 = viewportSize(root);
+    this.follow = new FollowCamera(size0.w, size0.h, mode.grid.width, mode.grid.height);
     this.input = new InputSource(root);
     this.debug = new DebugOverlay(root);
     this.hud = new Hud(root);
@@ -80,10 +82,17 @@ export class Match {
     this.minimap = new Minimap(root, mode.grid);
 
     this.onResize = () => {
-      this.follow.resize(window.innerWidth, window.innerHeight);
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      const { w, h } = viewportSize(root);
+      this.follow.resize(w, h);
+      renderer.setSize(w, h);
     };
+    // Browsers differ in which of these fire on rotation, fullscreen or a collapsing URL bar.
     window.addEventListener("resize", this.onResize);
+    window.addEventListener("orientationchange", this.onResize);
+    window.visualViewport?.addEventListener("resize", this.onResize);
+    this.resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(this.onResize) : null;
+    this.resizeObserver?.observe(root);
+    this.onResize();
     window.addEventListener("keydown", this.onDebugKey);
 
     this.stopLoop = startLoop(
@@ -162,6 +171,9 @@ export class Match {
   dispose(): void {
     this.stopLoop();
     window.removeEventListener("resize", this.onResize);
+    window.removeEventListener("orientationchange", this.onResize);
+    window.visualViewport?.removeEventListener("resize", this.onResize);
+    this.resizeObserver?.disconnect();
     window.removeEventListener("keydown", this.onDebugKey);
     this.hud.dispose();
     this.results.dispose();
@@ -176,4 +188,10 @@ export class Match {
 function jsHeapMB(): string {
   const m = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
   return m ? `${(m.usedJSHeapSize / 1048576).toFixed(0)} MB` : "-";
+}
+
+/** The play area's own size; window.inner* lags or lies on some mobile browsers during rotation. */
+function viewportSize(root: HTMLElement): { w: number; h: number } {
+  const r = root.getBoundingClientRect();
+  return { w: Math.max(1, Math.round(r.width || window.innerWidth)), h: Math.max(1, Math.round(r.height || window.innerHeight)) };
 }

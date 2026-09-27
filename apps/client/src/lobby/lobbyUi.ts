@@ -43,6 +43,7 @@ export class LobbyUi {
   private readonly root: HTMLDivElement;
   private readonly card: HTMLDivElement;
   private meId: string | null = null;
+  private server = "";
   private lastMsg: LobbyMessage | null = null;
   private tickTimer: number | null = null;
 
@@ -70,12 +71,18 @@ export class LobbyUi {
     this.stopTicking();
   }
 
+  /** Prefill for the server field on the home screen. */
+  setServer(url: string): void {
+    this.server = url;
+  }
+
   showHome(defaultName: string, error?: string): void {
     this.stopTicking();
     this.show();
     this.card.innerHTML = `
       <h1>Super Maze</h1>
       <div class="lb-row"><label class="lb-muted">暱稱</label><input id="lb-name" maxlength="12" placeholder="你的暱稱" /></div>
+      <div class="lb-row"><label class="lb-muted">伺服器</label><input id="lb-server" placeholder="wss://…" style="flex:1;min-width:12em" /></div>
       <div class="lb-row">
         <button class="primary" id="lb-quick">快速配對</button>
         <button id="lb-create">建立私人房</button>
@@ -93,8 +100,11 @@ export class LobbyUi {
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
     nameEl.value = defaultName;
     const name = () => nameEl.value.trim() || defaultName;
-    this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name() }));
-    this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name() }));
+    const serverEl = this.card.querySelector<HTMLInputElement>("#lb-server")!;
+    serverEl.value = this.server;
+    const server = () => serverEl.value.trim();
+    this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), server: server() }));
+    this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), server: server() }));
     this.card.querySelector("#lb-local")!.addEventListener("click", () => {
       const cpus = Number(this.card.querySelector<HTMLSelectElement>("#lb-cpus")!.value) || 1;
       this.handlers.onLocal(name(), cpus);
@@ -105,7 +115,7 @@ export class LobbyUi {
         this.card.querySelector("#lb-home-notice")!.textContent = "請輸入四碼房間代碼";
         return;
       }
-      this.handlers.onJoin({ kind: "join", name: name(), code });
+      this.handlers.onJoin({ kind: "join", name: name(), code, server: server() });
     });
   }
 

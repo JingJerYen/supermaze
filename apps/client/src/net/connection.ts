@@ -25,10 +25,14 @@ export interface ConnectionEvents {
   onLeave(code: number): void;
 }
 
-export type JoinRequest =
+export type JoinRequest = (
   | { kind: "quick"; name: string }
   | { kind: "create"; name: string }
-  | { kind: "join"; name: string; code: string };
+  | { kind: "join"; name: string; code: string }
+) & {
+  /** Server typed on the home screen; empty keeps the current endpoint. */
+  server?: string;
+};
 
 /**
  * Thin wrapper over the Colyseus SDK. A stored reconnection token is tried
@@ -38,7 +42,19 @@ export type JoinRequest =
 export class Connection {
   private room: Room | null = null;
 
-  constructor(private readonly endpoint: string, private readonly events: ConnectionEvents) {}
+  constructor(
+    private endpoint: string,
+    private readonly events: ConnectionEvents,
+  ) {}
+
+  /** Server to use for the next connect; a stored reconnection also goes there. */
+  setEndpoint(url: string): void {
+    this.endpoint = url;
+  }
+
+  getEndpoint(): string {
+    return this.endpoint;
+  }
 
   /** True when a stored token got us back into a room. */
   async tryReconnect(): Promise<boolean> {
