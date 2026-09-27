@@ -319,7 +319,8 @@ export class Simulation {
       const ghostly = isGhost(ghost, p);
       if (tick >= p.frozenUntilTick) {
         const before = p.mover.from;
-        const mySpeed = ghostly ? speed * this.tuning.ghostEvent.speedMultiplier : speed;
+        const base = p.controller === "cpu" ? speed * this.tuning.cpu.speedMultiplier : speed;
+        const mySpeed = ghostly ? base * this.tuning.ghostEvent.speedMultiplier : base;
         p = { ...p, mover: stepMover(p.mover, input, this.grid, mySpeed, placeableMoveFilter(work.placeables), turnTicks) };
         if (!sameTile(before, p.mover.from)) p = this.onArrive(work, p, tick);
       }

@@ -92,6 +92,26 @@ describe("CpuController", () => {
     expect(blind.getState().players["c"]!.keyId).toBeNull();
   });
 
+  it("walks slower than a human by cpu.speedMultiplier", () => {
+    const tuning: Tuning = { ...NO_FREEZE, cpu: { ...DEFAULT_TUNING.cpu, speedMultiplier: 0.5 } };
+    const sim = new Simulation({
+      seed: 1,
+      map: TINY_MAP,
+      participants: [
+        { id: "h", teamId: "A", controller: "human" },
+        { id: "c", teamId: "B", controller: "cpu" },
+      ],
+      tuning,
+    });
+    sim.start();
+    // Both spawn facing south with open road to the south: h at (2,4) -> (2,5); c at (3,3) -> (3,4). Push south 6 ticks.
+    const south: PlayerInput = { moveX: 0, moveY: 1 };
+    for (let i = 0; i < 6; i++) sim.step(new Map([["h", south], ["c", south]]));
+    const h = sim.getState().players["h"]!.mover;
+    const c = sim.getState().players["c"]!.mover;
+    expect(h.progress + (h.from.y - 4)).toBeCloseTo(2 * (c.progress + (c.from.y - 3)), 5);
+  });
+
   it("wanders when its goal is unreachable", () => {
     // No tower at all: no doors to walk to once the key is in hand, so it roams.
     const map: MapData = {

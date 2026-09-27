@@ -81,6 +81,7 @@ export const DEFAULT_TUNING: Tuning = {
     visionTiles: 5,
     pauseMinSec: 0.4,
     pauseMaxSec: 1.5,
+    speedMultiplier: 0.75,
   },
 
   scoring: {

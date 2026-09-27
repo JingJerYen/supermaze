@@ -113,6 +113,8 @@ export interface Tuning {
     /** Pause after reaching a wander target or picking something up, seconds; drawn uniformly. */
     pauseMinSec: number;
     pauseMaxSec: number;
+    /** Walking speed of cpu-controlled players relative to humans. Stacks with the ghost multiplier. */
+    speedMultiplier: number;
   };
 
   scoring: {
