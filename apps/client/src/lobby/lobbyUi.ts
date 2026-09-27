@@ -11,6 +11,7 @@ const CSS = `
 .lb button{height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;padding:0 16px;font-size:15px;cursor:pointer}
 .lb button.primary{background:#ffd23f;color:#412402;border-color:#ffd23f;font-weight:500}
 .lb button:disabled{opacity:.4;cursor:default}
+.lb select{height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;padding:0 10px;font-size:15px}
 .lb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
 .lb-muted{font-size:13px;color:#c9d2e3}
 .lb-big{font-size:22px;font-weight:500;letter-spacing:2px}
@@ -27,6 +28,8 @@ const CSS = `
 
 export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
+  /** Single player against `cpus` CPU opponents, run inside the page. */
+  onLocal(name: string, cpus: number): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   onStart(): void;
@@ -81,12 +84,21 @@ export class LobbyUi {
         <input id="lb-code" maxlength="4" placeholder="房間代碼" style="width:9em;text-transform:uppercase" />
         <button id="lb-join">加入私人房</button>
       </div>
+      <div class="lb-row" style="margin-top:14px;border-top:1px solid rgba(255,255,255,.15);padding-top:14px">
+        <button id="lb-local">單機對戰</button>
+        <label class="lb-muted">CPU</label>
+        <select id="lb-cpus">${[1, 2, 3, 4].map((n) => `<option value="${n}">${n} 人</option>`).join("")}</select>
+      </div>
       <div class="lb-notice ${error ? "lb-error" : ""}" id="lb-home-notice">${error ?? "同一個伺服器上的朋友輸入四碼代碼就能加入你的私人房"}</div>`;
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
     nameEl.value = defaultName;
     const name = () => nameEl.value.trim() || defaultName;
     this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name() }));
     this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name() }));
+    this.card.querySelector("#lb-local")!.addEventListener("click", () => {
+      const cpus = Number(this.card.querySelector<HTMLSelectElement>("#lb-cpus")!.value) || 1;
+      this.handlers.onLocal(name(), cpus);
+    });
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {
       const code = this.card.querySelector<HTMLInputElement>("#lb-code")!.value.trim().toUpperCase();
       if (code.length !== 4) {

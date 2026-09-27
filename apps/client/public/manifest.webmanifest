@@ -2,7 +2,7 @@
   "name": "Super Maze",
   "short_name": "Super Maze",
   "description": "競速型走迷宮遊戲",
-  "start_url": "./?local",
+  "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",

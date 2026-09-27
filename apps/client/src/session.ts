@@ -1,9 +1,10 @@
 import type * as THREE from "three";
 import type { LobbyMessage, MatchStartedMessage } from "@supermaze/protocol";
-import { rotateMap } from "@supermaze/sim";
+import { rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { LobbyUi } from "./lobby/lobbyUi.js";
-import { loadMapById } from "./maps.js";
+import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
+import { createLocalMode } from "./modes/local.js";
 import { OnlineMatchMode } from "./modes/online.js";
 import { Connection, type JoinRequest } from "./net/connection.js";
 
@@ -29,6 +30,7 @@ export class Session {
   ) {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
+      onLocal: (name, cpus) => this.playLocal(name, cpus),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
       onStart: () => this.conn.requestStart(),
@@ -60,6 +62,25 @@ export class Session {
       return; // lobby / matchStarted / full will arrive and drive the UI
     }
     this.ui.showHome(this.defaultName);
+  }
+
+  /** Single player in the page: no socket involved; the results screen leads back here. */
+  private playLocal(name: string, cpus: number): void {
+    this.teardownMatch();
+    this.ui.hide();
+    const seed = Date.now() >>> 0;
+    const map = rotateMap(loadMapById(DEFAULT_MAP_ID), (seed % 4) as QuarterTurns);
+    const mode = createLocalMode(map, {
+      players: cpus + 1,
+      seed,
+      name,
+      onAgain: () => this.playLocal(name, cpus),
+      onHome: () => {
+        this.teardownMatch();
+        this.ui.showHome(name);
+      },
+    });
+    this.match = new Match(this.root, this.renderer, mode);
   }
 
   private async join(req: JoinRequest): Promise<void> {

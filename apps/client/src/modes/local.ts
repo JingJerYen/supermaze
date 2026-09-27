@@ -3,7 +3,17 @@ import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
 
 /** Single-player: the simulation runs inside the page. Same code the server runs. */
-export function createLocalMode(map: MapData, options: { players?: number; seed?: number; name?: string } = {}): GameMode {
+export interface LocalOptions {
+  /** Participants including you; the rest are CPUs split across the two teams. */
+  players?: number;
+  seed?: number;
+  name?: string;
+  /** Result-screen actions; default to reloading the page and going to the site root. */
+  onAgain?: () => void;
+  onHome?: () => void;
+}
+
+export function createLocalMode(map: MapData, options: LocalOptions = {}): GameMode {
   const id = "local";
   // Extra participants are CPU opponents driven by the sim's CpuController (the
   // same one the server uses for dropped players).
@@ -61,8 +71,8 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
     results: () => ({
       endsAt: null,
       buttons: [
-        { label: "再玩一次", primary: true, run: () => location.reload() },
-        { label: "回首頁", run: () => (location.href = location.pathname) },
+        { label: "再玩一次", primary: true, run: options.onAgain ?? (() => location.reload()) },
+        { label: "回首頁", run: options.onHome ?? (() => (location.href = location.pathname)) },
       ],
     }),
   };
