@@ -19,6 +19,7 @@ import {
 import {
   DEFAULT_TUNING,
   NO_INPUT,
+  CpuController,
   Simulation,
   rotateMap,
   type MapData,
@@ -62,6 +63,8 @@ export class MazeRoom extends Room {
   private baseMap!: MapData;
   private map: MapData | null = null;
   private sim: Simulation | null = null;
+  /** Drives cpu-controlled players (dropped humans) with the sim's own CPU. */
+  private cpu: CpuController | null = null;
   private readonly latestInputs = new Map<string, PlayerInput>();
   private readonly lastSent = new Map<StateSection, string>();
   private countdownTimer: { clear(): void } | null = null;
@@ -258,6 +261,7 @@ export class MazeRoom extends Room {
         .map((p) => ({ id: p.id, teamId: p.teamId, controller: "human" as const, name: p.name })),
     });
     this.sim.start();
+    this.cpu = new CpuController(this.sim, seed + 1);
     this.lastSent.clear();
     this.latestInputs.clear();
     this.broadcastLobby();
@@ -281,7 +285,7 @@ export class MazeRoom extends Room {
     if (!sim) return;
     const frame = new Map<string, PlayerInput>();
     for (const [id, p] of Object.entries(sim.getState().players)) {
-      frame.set(id, p.controller === "human" ? (this.latestInputs.get(id) ?? NO_INPUT) : NO_INPUT);
+      frame.set(id, p.controller === "human" ? (this.latestInputs.get(id) ?? NO_INPUT) : (this.cpu?.input(id) ?? NO_INPUT));
     }
     sim.step(frame);
     this.broadcast(S2C.snapshot, this.deltaSnapshot(sim.getState()));
@@ -300,6 +304,7 @@ export class MazeRoom extends Room {
     this.resultsTimer = null;
     this.resultsEndAt = null;
     this.sim = null;
+    this.cpu = null;
     this.map = null;
     for (const [id, p] of [...this.lobby.entries()]) {
       if (!p.connected) this.lobby.delete(id);

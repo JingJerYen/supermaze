@@ -1,12 +1,12 @@
-import { DEFAULT_TUNING, Simulation, type MapData, type SimulationState } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, Simulation, type MapData, type SimulationState } from "@supermaze/sim";
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
 
 /** Single-player: the simulation runs inside the page. Same code the server runs. */
 export function createLocalMode(map: MapData, options: { players?: number; seed?: number; name?: string } = {}): GameMode {
   const id = "local";
-  // Extra participants are idle CPUs (no behaviour yet); they only make the round
-  // spawn as many keys and boxes as a real match with that many players would.
+  // Extra participants are CPU opponents driven by the sim's CpuController (the
+  // same one the server uses for dropped players).
   const players = Math.max(1, Math.min(options.players ?? 1, DEFAULT_TUNING.round.maxParticipants));
   const idle = Array.from({ length: players - 1 }, (_, i) => ({
     id: `cpu${i + 1}`,
@@ -20,6 +20,7 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
     participants: [{ id, teamId: "t1", controller: "human", name: options.name ?? "你" }, ...idle],
   });
   sim.start();
+  const cpu = new CpuController(sim, (options.seed ?? 1) + 1);
   let prev: SimulationState = sim.getState();
 
   return {
@@ -32,7 +33,9 @@ export function createLocalMode(map: MapData, options: { players?: number; seed?
     localPlayerId: () => id,
     tick(input) {
       prev = sim.getState();
-      sim.step(new Map([[id, input]]));
+      const inputs = cpu.inputs();
+      inputs.set(id, input);
+      sim.step(inputs);
     },
     sample(_now, alpha) {
       return { from: prev, to: sim.getState(), alpha };
