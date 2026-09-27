@@ -24,7 +24,7 @@ export const MODEL_MANIFEST: Record<ModelName, ModelSpec> = {
   ghost: { file: "ghost.glb", fitSize: 0.95 },
 };
 
-const MODELS_BASE = "/models/";
+const MODELS_BASE = `${import.meta.env.BASE_URL}models/`;
 
 export class ModelLibrary {
   private readonly templates = new Map<ModelName, THREE.Object3D>();

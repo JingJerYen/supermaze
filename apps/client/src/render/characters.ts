@@ -23,7 +23,7 @@ const NAMES = [
   "character-female-e",
   "character-female-f",
 ];
-const BASE = "/models/characters/";
+const BASE = `${import.meta.env.BASE_URL}models/characters/`;
 
 interface Loaded {
   scene: THREE.Object3D;
