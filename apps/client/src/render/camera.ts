@@ -21,20 +21,36 @@ export class FollowCamera {
   private mapW = 1;
   private mapH = 1;
 
-  constructor(aspect: number, mapW: number, mapH: number) {
+  constructor(widthPx: number, heightPx: number, mapW: number, mapH: number) {
     const { fovDeg, height, distance } = CLIENT_TUNING.camera;
-    this.camera = new THREE.PerspectiveCamera(fovDeg, aspect, 0.1, 400);
+    this.camera = new THREE.PerspectiveCamera(fovDeg, widthPx / heightPx, 0.1, 400);
     this.offset = new THREE.Vector3(0, height, distance);
+    this.fit(widthPx, heightPx);
     this.camera.position.copy(this.offset);
     this.camera.lookAt(0, 0, 0);
     this.followQuat.copy(this.camera.quaternion);
     this.setMapSize(mapW, mapH);
   }
 
-  resize(aspect: number): void {
-    this.camera.aspect = aspect;
-    this.camera.updateProjectionMatrix();
+  resize(widthPx: number, heightPx: number): void {
+    this.fit(widthPx, heightPx);
     this.setMapSize(this.mapW, this.mapH);
+  }
+
+  /**
+   * Field of view and follow distance for the viewport. The vertical FOV is capped so
+   * the horizontal FOV never exceeds `horizontalFovDeg` (wide phones would otherwise
+   * show a tiny scene), and short viewports pull the camera in.
+   */
+  private fit(widthPx: number, heightPx: number): void {
+    const t = CLIENT_TUNING.camera;
+    const aspect = widthPx / heightPx;
+    const fromHorizontal = 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(t.horizontalFovDeg / 2)) / aspect));
+    this.camera.aspect = aspect;
+    this.camera.fov = Math.min(t.fovDeg, fromHorizontal);
+    this.camera.updateProjectionMatrix();
+    const zoom = heightPx < t.shortScreenMaxPx ? t.shortScreenZoom : 1;
+    this.offset.set(0, t.height * zoom, t.distance * zoom);
   }
 
   setMode(mode: CameraMode): void {

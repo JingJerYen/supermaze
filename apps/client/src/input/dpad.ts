@@ -52,8 +52,9 @@ export class DpadInput {
 
     this.root = document.createElement("div");
     this.root.className = "dpad";
-    this.root.style.setProperty("--dpad-size", `${t.sizePx}px`);
-    this.root.style.setProperty("--dpad-pad", `${t.marginPx}px`);
+    // On the document root so other overlays (the minimap) can stay clear of the pad.
+    document.documentElement.style.setProperty("--dpad-size", `min(${t.sizePx}px, ${t.maxHeightVh}vh)`);
+    document.documentElement.style.setProperty("--dpad-pad", `${t.marginPx}px`);
     this.root.style.setProperty("--dpad-opacity", String(t.opacity));
     this.root.style.setProperty("--dpad-opacity-desktop", String(t.opacityDesktop));
     const hub = document.createElement("div");

@@ -21,7 +21,16 @@ export const CLIENT_TUNING = {
     height: 8,
     /** Horizontal distance behind the focus point. */
     distance: 9,
+    /** Vertical field of view on tall-ish screens (16:10 desktop). */
     fovDeg: 45,
+    /**
+     * Wide screens keep this horizontal field of view instead, so a landscape phone
+     * does not spread the same vertical slice over a huge width and shrink everything.
+     */
+    horizontalFovDeg: 72,
+    /** On short viewports (CSS px) the camera moves closer by this factor. */
+    shortScreenMaxPx: 520,
+    shortScreenZoom: 0.8,
     /** Exponential follow smoothing per second. Higher = snappier, lower = floatier. */
     followLerpPerSec: 10,
   },
@@ -59,8 +68,9 @@ export const CLIENT_TUNING = {
     opacity: 0.4,
   },
   dpad: {
-    /** Side length of the whole cross, px; each arm is a third of it. */
+    /** Side length of the whole cross, px, capped at a share of the viewport height; each arm is a third of it. */
     sizePx: 150,
+    maxHeightVh: 38,
     /** Distance from the bottom-left screen corner (or the safe area), px. */
     marginPx: 18,
     /** Radius around the hub where a press registers no direction, px. */

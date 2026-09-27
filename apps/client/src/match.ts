@@ -72,7 +72,7 @@ export class Match {
     this.placeables = new PlaceableViews(this.scene, mode.grid);
     this.switches = new SwitchViews(this.scene, mode.grid);
     this.lighting = new SceneLighting(this.scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles, theme);
-    this.follow = new FollowCamera(window.innerWidth / window.innerHeight, mode.grid.width, mode.grid.height);
+    this.follow = new FollowCamera(window.innerWidth, window.innerHeight, mode.grid.width, mode.grid.height);
     this.input = new InputSource(root);
     this.debug = new DebugOverlay(root);
     this.hud = new Hud(root);
@@ -80,7 +80,7 @@ export class Match {
     this.minimap = new Minimap(root, mode.grid);
 
     this.onResize = () => {
-      this.follow.resize(window.innerWidth / window.innerHeight);
+      this.follow.resize(window.innerWidth, window.innerHeight);
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener("resize", this.onResize);

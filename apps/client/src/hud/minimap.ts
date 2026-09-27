@@ -1,11 +1,10 @@
 import type { MapGrid, SimulationState } from "@supermaze/sim";
 import { TEAM_COLORS, teamColorIndex } from "../render/teamColors.js";
 import { towerGeometry } from "../render/mapMesh.js";
-import { CLIENT_TUNING } from "../tuning.js";
 
 const CSS = `
-.mm{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:var(--mm-bottom);background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:4px;pointer-events:none}
-.mm canvas{display:block;image-rendering:pixelated}
+.mm{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(max(var(--dpad-pad,18px),env(safe-area-inset-bottom)) + var(--dpad-size,150px) + 10px);background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:4px;pointer-events:none}
+.mm canvas{display:block;image-rendering:pixelated;width:min(150px,26vh);height:auto}
 `;
 
 /**
@@ -27,15 +26,12 @@ export class Minimap {
     document.head.appendChild(style);
     this.wrap = document.createElement("div");
     this.wrap.className = "mm";
-    // Sits just above the d-pad, whatever size the pad is tuned to.
-    const d = CLIENT_TUNING.dpad;
-    this.wrap.style.setProperty("--mm-bottom", `calc(max(${d.marginPx}px, env(safe-area-inset-bottom)) + ${d.sizePx + 12}px)`);
     this.canvas = document.createElement("canvas");
     this.cell = Math.max(3, Math.floor(150 / Math.max(grid.width, grid.height)));
     this.canvas.width = grid.width * this.cell * 2;
     this.canvas.height = grid.height * this.cell * 2;
-    this.canvas.style.width = `${grid.width * this.cell}px`;
-    this.canvas.style.height = `${grid.height * this.cell}px`;
+    // CSS scales the canvas down on short screens (see .mm canvas); the aspect ratio comes from the buffer.
+    this.canvas.style.aspectRatio = `${grid.width} / ${grid.height}`;
     this.ctx = this.canvas.getContext("2d")!;
     this.ctx.scale(2, 2);
     const tg = towerGeometry(grid);
