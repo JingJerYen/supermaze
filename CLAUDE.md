@@ -405,7 +405,7 @@
 - 隊伍記號的種類、數量上限與存在時間。
 - 鬼抓人事件的正式數值是否維持試玩值（間隔 90 秒、預告 20 秒、持續 20 秒、A 隊先當鬼已定）。
 - 鬼是否需要移速以外的能力，以及事件結束後是否有保護期。
-- 伺服器託管與部署方式。客戶端（含單機沙盒）已可由 `.github/workflows/pages.yml` 在推上 main 時自動部署到 GitHub Pages（需在 repo 設定啟用 Pages，來源選 GitHub Actions），網址為 `https://<帳號>.github.io/supermaze/?local&players=4`；Vite 的 `base` 由 `BASE_PATH` 決定，模型路徑跟著 `import.meta.env.BASE_URL`。連線版的 Node／Colyseus 伺服器不能放在 Pages，需另找主機並以 `?server=wss://…` 指定；頁面是 https 時必須用 wss。
+- 伺服器託管與部署方式。客戶端（含單機沙盒）已可由 `.github/workflows/pages.yml` 在推上 main 時自動部署到 GitHub Pages（需在 repo 設定啟用 Pages，來源選 GitHub Actions），網址為 `https://<帳號>.github.io/supermaze/?local&players=4`；Vite 的 `base` 由 `BASE_PATH` 決定，模型路徑跟著 `import.meta.env.BASE_URL`；改用自訂網域時把 repo 變數 `PAGES_BASE_PATH` 設為 `/`。連線版的 Node／Colyseus 伺服器不能放在 Pages，需另找主機並以 `?server=wss://…` 指定；頁面是 https 時必須用 wss。
 
 ## 17. 技術架構決策
 

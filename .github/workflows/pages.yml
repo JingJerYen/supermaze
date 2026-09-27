@@ -26,8 +26,10 @@ jobs:
       - run: npm test -w @supermaze/sim
       - run: npm run build:client
         env:
-          # Pages serves the site under /<repo>/, so assets must be built for that prefix.
-          BASE_PATH: /${{ github.event.repository.name }}/
+          # Pages serves the site under /<repo>/ by default. With a custom domain the site
+          # is at the root: set the repository variable PAGES_BASE_PATH to "/" (Settings ->
+          # Secrets and variables -> Actions -> Variables).
+          BASE_PATH: ${{ vars.PAGES_BASE_PATH || format('/{0}/', github.event.repository.name) }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/client/dist
