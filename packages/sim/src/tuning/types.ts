@@ -104,6 +104,17 @@ export interface Tuning {
     catchRadiusTiles: number;
   };
 
+  cpu: {
+    /**
+     * How far a CPU notices keys and runners, tiles (straight-line, any layer),
+     * standing in for what a human sees on screen. Beyond it the CPU explores.
+     */
+    visionTiles: number;
+    /** Pause after reaching a wander target or picking something up, seconds; drawn uniformly. */
+    pauseMinSec: number;
+    pauseMaxSec: number;
+  };
+
   scoring: {
     /** Score by tower-top arrival order; index 0 is first. Beyond the array length use the last value. */
     towerPlacement: number[];

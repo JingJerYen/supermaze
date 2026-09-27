@@ -77,6 +77,12 @@ export const DEFAULT_TUNING: Tuning = {
     catchRadiusTiles: 0.6,
   },
 
+  cpu: {
+    visionTiles: 5,
+    pauseMinSec: 0.4,
+    pauseMaxSec: 1.5,
+  },
+
   scoring: {
     towerPlacement: [100, 80, 65, 50, 40, 30, 20, 10],
     keyFound: 30,

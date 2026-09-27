@@ -1,7 +1,7 @@
 import { isGhost } from "../ghost.js";
 import { tileKey } from "../map/grid.js";
 import type { TilePos } from "../map/types.js";
-import { sameTile } from "../movement.js";
+import { moverPosition, sameTile } from "../movement.js";
 import { placeableMoveFilter, sameDir } from "../placeables.js";
 import { SeededRandom } from "../random/seeded.js";
 import { NO_INPUT, type PlayerInput, type PlayerState, type Simulation, type SimulationState } from "../simulation.js";
@@ -16,6 +16,13 @@ interface Memory {
   wander: TilePos | null;
   /** Consecutive ticks spent standing while trying to move; a few is a turn, more is stuck. */
   standing: number;
+  /** Keys this CPU has noticed; it only goes for those, like a player who has seen one. */
+  seenKeys: Set<string>;
+  /** Tiles walked over, so exploration prefers new ground. */
+  visited: Set<string>;
+  /** No input until this tick: thinking time after reaching somewhere or picking something up. */
+  pauseUntil: Tick;
+  hadKey: boolean;
 }
 
 /** Paths are recomputed at least this often so moving targets and new obstacles are noticed. */
@@ -24,12 +31,13 @@ const STUCK_TICKS = 8;
 
 /**
  * Minimal CPU (CLAUDE.md section 18: the smallest slice of phase 5, pulled
- * forward so the sandbox has opponents). Fetch the nearest key, walk to the
- * nearest tower door, turn to it and climb; as a ghost chase the nearest
- * catchable runner; with nothing to do, wander. Never uses items; picks up
- * whatever it walks over. The same class drives the sandbox's CPUs and the
- * server's takeover of dropped players, and is deterministic for a given
- * simulation and seed.
+ * forward so the sandbox has opponents). It has no map knowledge a player lacks:
+ * it notices keys and runners only within `cpu.visionTiles`, explores unvisited
+ * ground otherwise, and pauses briefly after reaching somewhere. With a key it
+ * walks to the nearest tower door, turns to it and climbs; as a ghost it chases
+ * the nearest runner it can see. Never uses items; picks up whatever it walks
+ * over. The same class drives the sandbox's CPUs and the server's takeover of
+ * dropped players, and is deterministic for a given simulation and seed.
  */
 export class CpuController {
   private readonly rng: SeededRandom;
@@ -64,12 +72,21 @@ export class CpuController {
     const anchor = p.mover.target ?? p.mover.from;
     let mem = this.memory.get(id);
     if (!mem) {
-      mem = { goal: "", path: [], plannedAt: -1, wander: null, standing: 0 };
+      mem = { goal: "", path: [], plannedAt: -1, wander: null, standing: 0, seenKeys: new Set(), visited: new Set(), pauseUntil: 0, hadKey: false };
       this.memory.set(id, mem);
     }
+    mem.visited.add(tileKey(p.mover.from.x, p.mover.from.y, p.mover.from.layer));
+    this.notice(state, p, mem);
+    const ghostly = isGhost(state.ghost, p);
+
+    // Picking up the key is a moment to look around before heading back.
+    const hasKey = p.keyId !== null;
+    if (hasKey && !mem.hadKey) this.pause(mem, tick);
+    mem.hadKey = hasKey;
+    if (tick < mem.pauseUntil && !ghostly) return NO_INPUT;
 
     // On a door tile with the key: turn toward the door, then climb (section 5).
-    if (p.keyId !== null && p.mover.target === null && !isGhost(state.ghost, p) && anchor.layer === "road") {
+    if (hasKey && p.mover.target === null && !ghostly && anchor.layer === "road") {
       const door = grid.doorDir(anchor.x, anchor.y);
       if (door) {
         if (sameDir(door, p.mover.facing)) return { moveX: 0, moveY: 0, action: true };
@@ -85,7 +102,7 @@ export class CpuController {
     }
 
     while (mem.path.length > 0 && sameTile(mem.path[0] as TilePos, anchor)) mem.path.shift();
-    const { goal, isGoal } = this.chooseGoal(state, p, anchor, mem);
+    const { goal, isGoal } = this.chooseGoal(state, p, anchor, mem, tick);
     const next = mem.path[0];
     const adjacent = !!next && Math.abs(next.x - anchor.x) + Math.abs(next.y - anchor.y) === 1;
     if (stuck || goal !== mem.goal || tick - mem.plannedAt >= REPLAN_TICKS || !adjacent) {
@@ -97,7 +114,7 @@ export class CpuController {
       } else {
         // Goal unreachable: drift somewhere else until the situation changes.
         mem.wander = null;
-        const w = this.wanderGoal(anchor, mem);
+        const w = this.wanderGoal(anchor, mem, tick);
         mem.goal = w.goal;
         mem.path = shortestPath(grid, anchor, w.isGoal, placeableMoveFilter(state.placeables)) ?? [];
       }
@@ -107,33 +124,61 @@ export class CpuController {
     return { moveX: Math.sign(step.x - anchor.x), moveY: Math.sign(step.y - anchor.y) };
   }
 
-  private chooseGoal(state: SimulationState, p: PlayerState, anchor: TilePos, mem: Memory): { goal: string; isGoal: (t: TilePos) => boolean } {
+  /** Remember unowned keys within sight. Sight is a straight-line radius: the camera shows over walls. */
+  private notice(state: SimulationState, p: PlayerState, mem: Memory): void {
+    const me = moverPosition(p.mover);
+    const r = this.sim.tuning.cpu.visionTiles;
+    for (const k of Object.values(state.keys)) {
+      if (k.ownerId === null && Math.hypot(k.pos.x - me.x, k.pos.y - me.y) <= r) mem.seenKeys.add(k.id);
+    }
+  }
+
+  private pause(mem: Memory, tick: Tick): void {
+    const { pauseMinSec, pauseMaxSec, } = this.sim.tuning.cpu;
+    const sec = pauseMinSec + this.rng.next() * Math.max(0, pauseMaxSec - pauseMinSec);
+    mem.pauseUntil = tick + Math.round(sec * this.sim.tuning.tickRate);
+  }
+
+  private chooseGoal(state: SimulationState, p: PlayerState, anchor: TilePos, mem: Memory, tick: Tick): { goal: string; isGoal: (t: TilePos) => boolean } {
+    const r = this.sim.tuning.cpu.visionTiles;
+    const me = moverPosition(p.mover);
     if (isGhost(state.ghost, p)) {
-      const tick = state.tick + 1;
       const runners = Object.values(state.players)
-        .filter((r) => r.teamId !== p.teamId && r.phase === "maze" && tick >= r.protectedUntilTick)
-        .map((r) => r.mover.target ?? r.mover.from);
-      if (runners.length > 0) return { goal: "chase", isGoal: (t) => runners.some((r) => sameTile(r, t)) };
+        .filter((o) => o.teamId !== p.teamId && o.phase === "maze" && tick >= o.protectedUntilTick)
+        .filter((o) => {
+          const q = moverPosition(o.mover);
+          return Math.hypot(q.x - me.x, q.y - me.y) <= r;
+        })
+        .map((o) => o.mover.target ?? o.mover.from);
+      if (runners.length > 0) return { goal: "chase", isGoal: (t) => runners.some((q) => sameTile(q, t)) };
     } else if (p.keyId === null) {
       const keys = Object.values(state.keys)
-        .filter((k) => k.ownerId === null)
+        .filter((k) => k.ownerId === null && mem.seenKeys.has(k.id))
         .map((k) => k.pos);
       if (keys.length > 0) return { goal: "key", isGoal: (t) => keys.some((k) => sameTile(k, t)) };
     } else {
       const doors = this.sim.grid.doorTiles();
       if (doors.length > 0) return { goal: "door", isGoal: (t) => doors.some((d) => sameTile(d, t)) };
     }
-    return this.wanderGoal(anchor, mem);
+    return this.wanderGoal(anchor, mem, tick);
   }
 
-  /** A random reachable tile, kept until reached; the pool is every tile reachable from the tower. */
-  private wanderGoal(anchor: TilePos, mem: Memory): { goal: string; isGoal: (t: TilePos) => boolean } {
+  /**
+   * Explore: a random tile not yet visited (any reachable tile once everything
+   * has been seen), kept until reached, then a short pause before the next.
+   */
+  private wanderGoal(anchor: TilePos, mem: Memory, tick: Tick): { goal: string; isGoal: (t: TilePos) => boolean } {
     if (!this.wanderPool) {
       const spawn = this.sim.grid.spawnTiles()[0] ?? anchor;
       this.wanderPool = tilesFromKeys(this.sim.grid.reachableFrom(spawn)).sort((a, b) => a.layer.localeCompare(b.layer) || a.y - b.y || a.x - b.x);
     }
-    if (!mem.wander || sameTile(mem.wander, anchor)) {
-      const pool = this.wanderPool;
+    if (mem.wander && sameTile(mem.wander, anchor)) {
+      mem.wander = null;
+      this.pause(mem, tick);
+    }
+    if (!mem.wander) {
+      const fresh = this.wanderPool.filter((t) => !mem.visited.has(tileKey(t.x, t.y, t.layer)));
+      const pool = fresh.length > 0 ? fresh : this.wanderPool;
       mem.wander = pool.length > 0 ? (pool[Math.floor(this.rng.next() * pool.length)] as TilePos) : anchor;
     }
     const target = mem.wander;

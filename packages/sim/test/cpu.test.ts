@@ -39,12 +39,13 @@ describe("CpuController", () => {
   const cpuOnly = [{ id: "c", teamId: "A", controller: "cpu" as const }];
 
   it("fetches a key, returns to a door, faces it and climbs", () => {
-    // One key far away at (7,6); the CPU must cross the map and come back.
+    // One key far away at (7,6), out of sight from the spawn: the CPU must explore, find it and come back.
     const map: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 6, layer: "road" }] } };
-    const sim = new Simulation({ seed: 4, map, participants: cpuOnly, tuning: NO_FREEZE });
+    const tuning: Tuning = { ...NO_FREEZE, cpu: { ...DEFAULT_TUNING.cpu, visionTiles: 2 } };
+    const sim = new Simulation({ seed: 4, map, participants: cpuOnly, tuning });
     sim.start();
     const cpu = new CpuController(sim, 4);
-    const events = run(sim, cpu, 20 * 30);
+    const events = run(sim, cpu, 20 * 60);
     expect(events.map((e) => e.type)).toContain("keyPickedUp");
     expect(events.map((e) => e.type)).toContain("towerClimbed");
     expect(sim.getState().players["c"]!.phase).toBe("tower");
@@ -68,8 +69,27 @@ describe("CpuController", () => {
     sim.start();
     const cpu = new CpuController(sim, 2);
     expect(cpu.input("c")).toEqual({ moveX: 0, moveY: 0 }); // already on the key: no reason to move
-    run(sim, cpu, 5);
+    run(sim, cpu, 5 + Math.ceil(DEFAULT_TUNING.cpu.pauseMaxSec * DEFAULT_TUNING.tickRate)); // a think pause follows the pickup
     expect(sim.getState().players["c"]!.phase).toBe("tower");
+  });
+
+  it("ignores keys it has not seen and goes for one once it is in sight", () => {
+    // Key at (7,6); with vision 0 nothing is ever noticed, with vision 20 it is noticed at once.
+    const map: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: [{ x: 7, y: 6, layer: "road" }] } };
+    const blind = new Simulation({ seed: 5, map, participants: cpuOnly, tuning: { ...NO_FREEZE, cpu: { ...DEFAULT_TUNING.cpu, visionTiles: 0 } } });
+    blind.start();
+    const blindCpu = new CpuController(blind, 5);
+    const sharp = new Simulation({ seed: 5, map, participants: cpuOnly, tuning: { ...NO_FREEZE, cpu: { ...DEFAULT_TUNING.cpu, visionTiles: 20 } } });
+    sharp.start();
+    const sharpCpu = new CpuController(sharp, 5);
+    // The sharp one heads east/south toward the key straight away; the blind one picks a random explore target.
+    const firstSharp = sharpCpu.input("c");
+    expect(firstSharp.moveX !== 0 || firstSharp.moveY !== 0).toBe(true);
+    run(sharp, sharpCpu, 20 * 6);
+    expect(sharp.getState().players["c"]!.keyId).not.toBeNull();
+    run(blind, blindCpu, 20 * 6);
+    // Not a guarantee in general, but for this seed the blind CPU has not stumbled onto the far corner yet.
+    expect(blind.getState().players["c"]!.keyId).toBeNull();
   });
 
   it("wanders when its goal is unreachable", () => {
