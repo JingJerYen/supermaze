@@ -1,0 +1,13 @@
+# Render blueprint: a free web service running the game server from apps/server/Dockerfile.
+# Free instances sleep after ~15 minutes without traffic and take a while to wake.
+# Connect the client with ?server=wss://<service>.onrender.com
+services:
+  - type: web
+    name: supermaze-server
+    runtime: docker
+    plan: free
+    dockerfilePath: apps/server/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: "2567"
