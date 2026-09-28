@@ -59,7 +59,7 @@ export function buildMapMesh(
   const floorMat = lambert(theme.floor, patternTexture(theme.floorPattern, theme.floor));
   const plazaMat = lambert(theme.plaza, patternTexture(theme.floorPattern, theme.plaza));
   const sideMat = lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide));
-  // A second side material with moss / frost / flowers, used on a share of inner walls to break repetition.
+  // A second side material with moss, used on a share of inner walls to break repetition.
   const sideGrowthMat = theme.growth
     ? lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide, theme.growth))
     : sideMat;

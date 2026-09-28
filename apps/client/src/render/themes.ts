@@ -26,7 +26,7 @@ export interface Theme {
   linesGlowInDark: boolean;
   wallPattern: PatternKind;
   floorPattern: PatternKind;
-  /** Accent colour used by the pattern's "growth" (moss, frost, flowers); 0 disables it. */
+  /** Accent colour used by the pattern's "growth" (moss); 0 disables it. */
   growth: number;
   /** Share of inner walls that get the growth variant of the side texture (0..1). */
   growthShare: number;
@@ -40,7 +40,7 @@ export interface Theme {
   towerCrystal: number;
 }
 
-export type PatternKind = "none" | "blocks" | "slab" | "hedge" | "ice";
+export type PatternKind = "none" | "blocks" | "slab";
 
 export const THEMES: Record<string, Theme> = {
   stone: {
@@ -68,56 +68,6 @@ export const THEMES: Record<string, Theme> = {
     towerRune: 0x5be6ff,
     towerCrystal: 0x8ff3ff,
   },
-  garden: {
-    id: "garden",
-    sky: 0x9fd0ef,
-    hemiSky: 0xe9f4ff,
-    hemiGround: 0x4f6a3a,
-    hemiIntensity: 1.05,
-    sunColor: 0xfff4d6,
-    sunIntensity: 1.35,
-    wallSide: 0x3f7d3a,
-    wallTop: 0x6fb35f,
-    outerWall: 0x34682f,
-    floor: 0xb59a5d,
-    plaza: 0x9a9a8c,
-    line: 0x6b5a33,
-    linesGlowInDark: false,
-    wallPattern: "hedge",
-    floorPattern: "none",
-    growth: 0xff7fb3,
-    growthShare: 0.3,
-    torchEvery: 0,
-    torchFlame: 0xffa63a,
-    towerStone: 0xc9c3b0,
-    towerRune: 0xffe27a,
-    towerCrystal: 0xfff0a0,
-  },
-  ice: {
-    id: "ice",
-    sky: 0x6f8fb0,
-    hemiSky: 0xe4f3ff,
-    hemiGround: 0x5a7590,
-    hemiIntensity: 1.1,
-    sunColor: 0xeaf6ff,
-    sunIntensity: 1.2,
-    wallSide: 0x9fd3f2,
-    wallTop: 0xe6f6ff,
-    outerWall: 0x7fb9dd,
-    floor: 0xbfd3e0,
-    plaza: 0xa9bfd0,
-    line: 0xffffff,
-    linesGlowInDark: false,
-    wallPattern: "ice",
-    floorPattern: "ice",
-    growth: 0xffffff,
-    growthShare: 0.4,
-    torchEvery: 0,
-    torchFlame: 0x9be7ff,
-    towerStone: 0xb9dcef,
-    towerRune: 0x7ff0ff,
-    towerCrystal: 0xd8fbff,
-  },
 };
 
 export const DEFAULT_THEME_ID = "stone";
@@ -130,7 +80,7 @@ const textureCache = new Map<string, THREE.CanvasTexture | null>();
 
 /**
  * Tileable 256 px pattern in shades of `base`; null for "none" so the plain
- * colour is used. `growth` > 0 adds moss / frost / flowers to the pattern.
+ * colour is used. `growth` > 0 adds moss to the pattern.
  */
 export function patternTexture(kind: PatternKind, base: number, growth = 0): THREE.CanvasTexture | null {
   if (kind === "none") return null;
@@ -181,22 +131,6 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0): THR
       ctx.lineWidth = 2;
       crack(ctx, rnd, size);
       if (growth) mossPatches(ctx, size, growth, rnd, 2);
-      break;
-    }
-    case "hedge": {
-      speckle(ctx, size, shade(0.75), 420, 9, rnd);
-      speckle(ctx, size, shade(1.2), 260, 7, rnd);
-      speckle(ctx, size, shade(1.45), 90, 4, rnd);
-      if (growth) flowers(ctx, size, growth, rnd, 8);
-      break;
-    }
-    case "ice": {
-      speckle(ctx, size, shade(1.1), 60, 10, rnd);
-      ctx.strokeStyle = shade(1.3);
-      ctx.lineWidth = 3;
-      crack(ctx, rnd, size);
-      crack(ctx, rnd, size);
-      if (growth) speckle(ctx, size, `#${new THREE.Color(growth).getHexString()}`, 40, 3, rnd);
       break;
     }
   }
@@ -290,25 +224,6 @@ function mossPatches(ctx: CanvasRenderingContext2D, size: number, color: number,
       ctx.arc(cx + (rnd() - 0.5) * 48, cy + (rnd() - 0.5) * 28, 4 + rnd() * 6, 0, Math.PI * 2);
       ctx.fill();
     }
-  }
-}
-
-function flowers(ctx: CanvasRenderingContext2D, size: number, color: number, rnd: () => number, count: number): void {
-  const c = `#${new THREE.Color(color).getHexString()}`;
-  for (let i = 0; i < count; i++) {
-    const x = rnd() * size;
-    const y = rnd() * size;
-    ctx.fillStyle = c;
-    for (let p = 0; p < 5; p++) {
-      const a = (p / 5) * Math.PI * 2;
-      ctx.beginPath();
-      ctx.arc(x + Math.cos(a) * 4, y + Math.sin(a) * 4, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = "#fff3a0";
-    ctx.beginPath();
-    ctx.arc(x, y, 2, 0, Math.PI * 2);
-    ctx.fill();
   }
 }
 
