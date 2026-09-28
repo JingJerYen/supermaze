@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEFAULT_TUNING, isGhost, type SimulationState } from "@supermaze/sim";
+import { DEFAULT_TUNING, NO_INPUT, isGhost, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
 import { Hud } from "./hud/hud.js";
 import { Minimap } from "./hud/minimap.js";
@@ -34,11 +34,13 @@ import { CLIENT_TUNING } from "./tuning.js";
 export class Match {
   private readonly scene: THREE.Scene;
   private readonly follow: FollowCamera;
-  private readonly input: InputSource;
+  /** Null in a rules demo: nobody plays it, so there are no controls, scoreboard, minimap or exit button. */
+  private readonly input: InputSource | null;
   private readonly hud: Hud;
-  private readonly results: ResultsPanel;
-  private readonly minimap: Minimap;
-  private readonly system: SystemButtons;
+  private readonly results: ResultsPanel | null;
+  private readonly minimap: Minimap | null;
+  private readonly system: SystemButtons | null;
+  private readonly demo: boolean;
   private readonly debug: DebugOverlay;
   private readonly players: PlayerViews;
   private readonly keys: KeyViews;
@@ -65,7 +67,9 @@ export class Match {
     private readonly root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
     private readonly mode: GameMode,
+    options: { demo?: boolean } = {},
   ) {
+    this.demo = options.demo === true;
     this.scene = createScene();
     const theme = themeFor(mode.theme);
     this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
@@ -80,12 +84,13 @@ export class Match {
     this.lighting = new SceneLighting(this.scene, DEFAULT_TUNING.lighting.darkRadiusMazeTiles, theme);
     const size0 = viewportSize(root);
     this.follow = new FollowCamera(size0.w, size0.h, mode.grid.width, mode.grid.height);
-    this.input = new InputSource(root);
+    this.input = this.demo ? null : new InputSource(root);
     this.debug = new DebugOverlay(root);
     this.hud = new Hud(root);
-    this.results = new ResultsPanel(root);
-    this.minimap = new Minimap(root, mode.grid);
-    this.system = new SystemButtons(root, mode.exit ? () => mode.exit?.() : null);
+    this.hud.setDemo(this.demo);
+    this.results = this.demo ? null : new ResultsPanel(root);
+    this.minimap = this.demo ? null : new Minimap(root, mode.grid);
+    this.system = this.demo ? null : new SystemButtons(root, mode.exit ? () => mode.exit?.() : null);
 
     this.onResize = () => {
       const { w, h } = viewportSize(root);
@@ -103,7 +108,7 @@ export class Match {
 
     this.stopLoop = startLoop(
       mode.tickRate,
-      () => mode.tick(this.input.read()),
+      () => mode.tick(this.input?.read() ?? NO_INPUT),
       (alpha) => this.render(alpha),
     );
   }
@@ -136,16 +141,16 @@ export class Match {
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
-      this.input.actionButton.setAction(this.hud.actionLabel(model));
-      this.input.discardButton.setVisible(model.canDiscard);
+      this.input?.actionButton.setAction(this.hud.actionLabel(model));
+      this.input?.discardButton.setVisible(model.canDiscard);
       if (this.lastToastState !== s.to) {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t.text, t.big);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);
-        for (const c of diffSounds(this.lastToastState, s.to, meId)) sfx.play(c.name, c.volume);
+        if (!this.demo) for (const c of diffSounds(this.lastToastState, s.to, meId)) sfx.play(c.name, c.volume);
         this.lastToastState = s.to;
       }
-      this.results.update(s.to, meId, this.mode.results());
-      this.minimap.update(s.to, meId);
+      this.results?.update(s.to, meId, this.mode.results());
+      this.minimap?.update(s.to, meId);
     }
 
     const mePos = meId ? this.players.position(meId) : null;
@@ -185,11 +190,11 @@ export class Match {
     this.resizeObserver?.disconnect();
     window.removeEventListener("keydown", this.onDebugKey);
     this.hud.dispose();
-    this.results.dispose();
-    this.minimap.dispose();
-    this.system.dispose();
+    this.results?.dispose();
+    this.minimap?.dispose();
+    this.system?.dispose();
     this.debug.dispose();
-    this.input.dispose();
+    this.input?.dispose();
     this.renderer.clear();
   }
 }

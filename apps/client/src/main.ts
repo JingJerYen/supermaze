@@ -7,6 +7,7 @@ import { characters } from "./render/characters.js";
 import { models } from "./render/models.js";
 import { sfx } from "./audio/sfx.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
+import { RulesScreen } from "./rules/rulesScreen.js";
 import { Session } from "./session.js";
 import { CLIENT_TUNING } from "./tuning.js";
 
@@ -31,7 +32,10 @@ sfx.init();
 // otherwise the online flow starts at the home screen.
 const playerName = resolveName(params.get("name"));
 
-if (params.has("local")) {
+if (params.has("rules")) {
+  // ?rules opens the rules cards directly (handy while authoring scenes).
+  new RulesScreen(root, renderer, () => (location.href = location.pathname));
+} else if (params.has("local")) {
   const rot = (Number(params.get("rot") ?? 0) % 4) as QuarterTurns;
   const map = rotateMap(loadMapById(params.get("map") ?? DEFAULT_MAP_ID), rot);
   const mode = createLocalMode(map, {

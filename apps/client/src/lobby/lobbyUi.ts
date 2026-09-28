@@ -32,6 +32,8 @@ export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
   /** Single player against `cpus` CPU opponents, run inside the page. */
   onLocal(name: string, cpus: number, difficulty: "easy" | "hard"): void;
+  /** Open the rules cards. */
+  onRules(): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   /** Private-room host: two teams or everyone for themselves. */
@@ -85,7 +87,7 @@ export class LobbyUi {
     this.stopTicking();
     this.show();
     this.card.innerHTML = `
-      <h1>Super Maze</h1>
+      <div class="lb-head"><h1 style="margin:0">Super Maze</h1><button id="lb-rules">遊戲規則</button></div>
       <div class="lb-row"><label class="lb-muted">暱稱</label><input id="lb-name" maxlength="12" placeholder="你的暱稱" /></div>
       <div class="lb-row"><label class="lb-muted">伺服器</label><input id="lb-server" placeholder="wss://…" style="flex:1;min-width:12em" /></div>
       <div class="lb-row">
@@ -112,6 +114,7 @@ export class LobbyUi {
     const server = () => serverEl.value.trim();
     this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), server: server() }));
     this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), server: server() }));
+    this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => {
       const cpus = Number(this.card.querySelector<HTMLSelectElement>("#lb-cpus")!.value) || 1;
       const level = this.card.querySelector<HTMLSelectElement>("#lb-cpu-level")!.value === "hard" ? "hard" : "easy";

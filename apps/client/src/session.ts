@@ -7,6 +7,7 @@ import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
 import { OnlineMatchMode } from "./modes/online.js";
 import { Connection, type JoinRequest } from "./net/connection.js";
+import { RulesScreen } from "./rules/rulesScreen.js";
 
 /**
  * Online flow: home -> room lobby -> match -> results -> lobby, on one socket.
@@ -17,6 +18,7 @@ export class Session {
   private readonly conn: Connection;
   private meId: string | null = null;
   private match: Match | null = null;
+  private rules: RulesScreen | null = null;
   private matchMode: OnlineMatchMode | null = null;
   private pendingStart: MatchStartedMessage | null = null;
   private lastLobby: LobbyMessage | null = null;
@@ -31,6 +33,7 @@ export class Session {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
       onLocal: (name, cpus, difficulty) => this.playLocal(name, cpus, difficulty),
+      onRules: () => this.showRules(),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
       onSetTeamMode: (mode) => this.conn.setTeamMode(mode),
@@ -64,6 +67,17 @@ export class Session {
       return; // lobby / matchStarted / full will arrive and drive the UI
     }
     this.ui.showHome(this.defaultName);
+  }
+
+  /** Rules cards over demo scenes; closing returns to the home screen. */
+  private showRules(): void {
+    this.teardownMatch();
+    this.ui.hide();
+    this.rules = new RulesScreen(this.root, this.renderer, () => {
+      this.rules?.dispose();
+      this.rules = null;
+      this.ui.showHome(this.defaultName);
+    });
   }
 
   /** Single player in the page: no socket involved; the results screen leads back here. */

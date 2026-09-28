@@ -7,6 +7,8 @@ const CSS = `
 .hud{position:fixed;inset:0;pointer-events:none;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#fff;
   --pad:max(12px,env(safe-area-inset-left));}
 .hud *{box-sizing:border-box}
+.hud.demo .hud-team,.hud.demo .hud-time,.hud.demo .hud-sub,.hud.demo .hud-go,.hud.demo .hud-mycoord{display:none}
+.hud.demo .hud-items{right:max(24px,env(safe-area-inset-right))}
 .hud-top{position:absolute;top:max(10px,env(safe-area-inset-top));left:var(--pad);right:max(12px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hud-team{display:flex;flex-direction:column;gap:5px;min-width:0}
 .hud-team.right{align-items:flex-end}
@@ -163,6 +165,14 @@ export class Hud {
         }
       }, 900);
     }
+  }
+
+  /**
+   * Rules demos keep what explains the scene (bag, ghost banner, toasts, score
+   * pop-ups) and drop what belongs to a real round (rosters, clock, 3-2-1).
+   */
+  setDemo(on: boolean): void {
+    this.root.classList.toggle("demo", on);
   }
 
   /** Label for the single context button, or null to hide it. */
