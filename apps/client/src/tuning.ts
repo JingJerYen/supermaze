@@ -126,11 +126,17 @@ export const CLIENT_TUNING = {
   },
   separation: {
     /**
-     * Purely visual: characters closer than this (tiles) are nudged apart on
-     * screen so models do not clip through each other. The simulation lets
-     * players overlap; this never moves anyone's real position.
+     * Purely visual: characters closer than `radius` (tiles) are spread out on
+     * screen so models do not hide each other. The simulation lets players
+     * overlap; this never moves anyone's real position.
      */
     radius: 0.45,
+    /** Gap aimed for between neighbours in a group, tiles. */
+    spacing: 0.45,
+    /** Largest ring radius for three or more, tiles: keeps a crowd inside its tile, off the walls. */
+    maxRing: 0.3,
+    /** How fast the offsets settle, per second. */
+    easePerSec: 12,
   },
   ghostModel: {
     /** How high the ghost model floats above the tile, world units, plus a slow bob. */

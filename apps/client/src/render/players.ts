@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { MapGrid, MoverState, PlayerState } from "@supermaze/sim";
 import { climbPhase, climbTotalSec, faceOf, type Face } from "./climbSequence.js";
 import { PlayerView } from "./playerView.js";
+import { spreadTargets } from "./spread.js";
 import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
@@ -10,6 +11,8 @@ const EMPTY: ReadonlySet<string> = new Set();
 /** Owns one PlayerView per player id, creating and removing them as snapshots change. */
 export class PlayerViews {
   private readonly views = new Map<string, PlayerView>();
+  /** Eased on-screen offset of each player from the separation pass. */
+  private readonly spread = new Map<string, { x: number; z: number }>();
   private lastTick = -1;
   /** Climbs being animated: where the player stood, which face, and when it began. */
   private readonly climbs = new Map<string, { face: Face; from: { x: number; y: number }; startTick: number }>();
@@ -85,7 +88,7 @@ export class PlayerViews {
         this.views.delete(id);
       }
     }
-    separate(this.views, to);
+    separate(this.views, to, this.spread, dtSec);
   }
 
   position(id: string): THREE.Vector3 | null {
@@ -101,48 +104,31 @@ export class PlayerViews {
 }
 
 /**
- * Visual-only separation: characters standing on or walking through each other
- * are pushed apart on screen, growing smoothly from nothing at `radius` to half
- * the radius each when exactly overlapping, so nobody pops. Recomputed from the
- * interpolated positions every frame; the simulation is untouched.
+ * Visual-only separation: the offsets from `spreadTargets`, eased over time so
+ * joining, leaving and passing by never pop. The simulation is never touched.
  */
-function separate(views: Map<string, PlayerView>, to: Record<string, PlayerState>): void {
-  const R = CLIENT_TUNING.separation.radius;
-  const ids = Object.keys(to)
-    .filter((id) => to[id]!.phase === "maze" && views.get(id)?.mesh.visible)
-    .sort();
-  if (ids.length < 2) return;
-  const push = new Map<string, { x: number; z: number }>();
-  for (let i = 0; i < ids.length; i++) {
-    for (let j = i + 1; j < ids.length; j++) {
-      const a = views.get(ids[i]!)!.mesh.position;
-      const b = views.get(ids[j]!)!.mesh.position;
-      let dx = b.x - a.x;
-      let dz = b.z - a.z;
-      const d = Math.hypot(dx, b.y - a.y, dz);
-      if (d >= R) continue;
-      if (Math.hypot(dx, dz) < 1e-4) {
-        dx = 1; // exactly on top of each other (spawn): split along x, lower id to the west
-        dz = 0;
-      } else {
-        const h = Math.hypot(dx, dz);
-        dx /= h;
-        dz /= h;
-      }
-      const s = (R - d) / 2;
-      const pa = push.get(ids[i]!) ?? { x: 0, z: 0 };
-      const pb = push.get(ids[j]!) ?? { x: 0, z: 0 };
-      pa.x -= dx * s; pa.z -= dz * s;
-      pb.x += dx * s; pb.z += dz * s;
-      push.set(ids[i]!, pa);
-      push.set(ids[j]!, pb);
-    }
-  }
-  for (const [id, p] of push) {
+function separate(views: Map<string, PlayerView>, to: Record<string, PlayerState>, eased: Map<string, { x: number; z: number }>, dtSec: number): void {
+  const t = CLIENT_TUNING.separation;
+  const ids = Object.keys(to).filter((id) => to[id]!.phase === "maze" && views.get(id)?.mesh.visible);
+  const target = spreadTargets(
+    ids.map((id) => {
+      const p = views.get(id)!.mesh.position;
+      return { id, x: p.x, y: p.y, z: p.z };
+    }),
+    t,
+  );
+  const k = 1 - Math.exp(-t.easePerSec * dtSec);
+  for (const id of ids) {
+    const want = target.get(id) ?? { x: 0, z: 0 };
+    const now = eased.get(id) ?? { x: 0, z: 0 };
+    now.x += (want.x - now.x) * k;
+    now.z += (want.z - now.z) * k;
+    eased.set(id, now);
     const pos = views.get(id)!.mesh.position;
-    pos.x += p.x;
-    pos.z += p.z;
+    pos.x += now.x;
+    pos.z += now.z;
   }
+  for (const id of eased.keys()) if (!ids.includes(id)) eased.delete(id);
 }
 
 /** Play short animations for things that happened between two consecutive states. */
