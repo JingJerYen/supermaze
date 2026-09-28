@@ -26,6 +26,7 @@ export const TINY_MAP: MapData = {
   name: "tiny",
   supportedParticipants: [1],
   lightSwitchCount: 2,
+  timeLimitSec: 600,
   rows: [
     "XXXXXXXXX",
     "X.......X",
@@ -85,6 +86,7 @@ export const LATTICE_MAP: MapData = {
   name: "lattice",
   supportedParticipants: [2],
   lightSwitchCount: 2,
+  timeLimitSec: 600,
   rows: [
     "XXXXXXXXX",
     "X.......X",

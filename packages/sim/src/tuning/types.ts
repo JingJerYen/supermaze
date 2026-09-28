@@ -8,8 +8,11 @@ export interface Tuning {
   tickRate: number;
 
   round: {
-    /** Hard upper bound for a round, seconds. Formula-based adjustment is a phase-1 topic. */
-    timeLimitSec: number;
+    /**
+     * Seconds added to the map's own `timeLimitSec` for every participant beyond
+     * the second (CPUs included). The base length is map data, not tuning.
+     */
+    extraSecPerParticipant: number;
     /** Counts every participant, human or CPU. Solo play is 1 human + 1 CPU = 2. */
     minParticipants: number;
     maxParticipants: number;

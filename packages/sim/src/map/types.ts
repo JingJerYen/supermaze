@@ -62,6 +62,11 @@ export interface MapData {
   /** Light switches placed per round. Even and at least tuning.lighting.switchCountMin. */
   lightSwitchCount: number;
   /**
+   * Round length in seconds for two participants, chosen by the map's author.
+   * Every participant beyond the second adds tuning.round.extraSecPerParticipant.
+   */
+  timeLimitSec: number;
+  /**
    * Doors, obstacles and traps present from the start of every round and never
    * timing out; only a hammer removes them (a trap also goes when it fires).
    * Usually drawn as markers in `rows` (O/o obstacle, A/a trap, ^ v < > door);

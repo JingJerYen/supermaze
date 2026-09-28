@@ -159,6 +159,31 @@ describe("round end by timeout", () => {
   });
 });
 
+describe("round length", () => {
+  const players = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, teamId: i % 2 ? "B" : "A", controller: "human" as const }));
+  const lengthFor = (n: number, timeLimitSec?: number) =>
+    new Simulation({ seed: 1, map: { ...TINY_MAP, timeLimitSec: 180 }, participants: players(n), ...(timeLimitSec ? { timeLimitSec } : {}) }).remainingSec();
+
+  it("is the map's own time for two, plus 30 s per extra participant", () => {
+    expect(DEFAULT_TUNING.round.extraSecPerParticipant).toBe(30);
+    expect(lengthFor(1)).toBe(180);
+    expect(lengthFor(2)).toBe(180);
+    expect(lengthFor(3)).toBe(210);
+    expect(lengthFor(6)).toBe(300);
+  });
+
+  it("a developer override wins", () => {
+    expect(lengthFor(6, 45)).toBe(45);
+  });
+
+  it("is fixed when the round starts", () => {
+    const sim = new Simulation({ seed: 1, map: { ...instantMap(4), timeLimitSec: 180 }, participants: players(4) });
+    sim.start();
+    const st = sim.getState();
+    expect(st.endsAtTick - st.startTick).toBe((180 + 60) * DEFAULT_TUNING.tickRate);
+  });
+});
+
 describe("solo mode: everyone for themselves", () => {
   function solo(ids: string[], timeLimitSec = 10) {
     const participants = ids.map((id) => ({ id, teamId: "whatever", controller: "human" as const }));

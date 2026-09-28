@@ -22,6 +22,7 @@ const BIG: MapData = {
   name: "big tower",
   supportedParticipants: [1],
   lightSwitchCount: 2,
+  timeLimitSec: 600,
   rows: ["XXXXXXXXX", "X.......X", "X.......X", "X..TTT..X", "X..TTT..X", "X..TTT..X", "X.......X", "X.#...#.X", "XXXXXXXXX"],
   spawns: {
     keys: [{ x: 4, y: 6, layer: "road" }], // under the first spawn (south door)

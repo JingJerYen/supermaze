@@ -130,6 +130,9 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
     errors.push(`lightSwitchCount ${switches} is below the minimum ${tuning.lighting.switchCountMin}`);
   }
   if (switches % 2 !== 0) errors.push(`lightSwitchCount ${switches} must be even so the map ends lit`);
+  if (typeof data.timeLimitSec !== "number" || !Number.isFinite(data.timeLimitSec) || data.timeLimitSec < 30 || data.timeLimitSec > 3600) {
+    errors.push(`timeLimitSec is required: the round length in seconds for two participants, 30 to 3600 (got ${String(data.timeLimitSec)})`);
+  }
 
   return errors;
 }

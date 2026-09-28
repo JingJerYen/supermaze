@@ -40,7 +40,10 @@ export interface SimulationOptions {
   map: MapData;
   participants: Participant[];
   tuning?: Tuning;
-  /** Developer override of the round length, seconds. Defaults to tuning.round.timeLimitSec. */
+  /**
+   * Developer override of the round length, seconds. Default: the map's
+   * `timeLimitSec` plus `round.extraSecPerParticipant` per participant beyond two.
+   */
   timeLimitSec?: number;
   /** Two equal teams (default) or everyone for themselves; see `TeamMode`. */
   teamMode?: TeamMode;
@@ -121,7 +124,7 @@ export class Simulation {
   private state: SimulationState;
   private readonly spawns: TilePos[];
   private spawnCursor = 0;
-  private readonly timeLimitTicks: number;
+  private readonly timeLimitOverrideSec: number | undefined;
   private readonly teamMode: TeamMode;
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
@@ -142,8 +145,7 @@ export class Simulation {
       this.spawns = [{ ...road, layer: "road" }];
     }
 
-    const limitSec = options.timeLimitSec ?? this.tuning.round.timeLimitSec;
-    this.timeLimitTicks = Math.max(1, Math.round(limitSec * this.tuning.tickRate));
+    this.timeLimitOverrideSec = options.timeLimitSec;
 
     this.teamMode = options.teamMode ?? "teams";
     this.state = {
@@ -169,9 +171,16 @@ export class Simulation {
     for (const p of options.participants) this.addPlayer(p);
   }
 
+  /** Round length for the current number of participants, in ticks. Fixed once the round starts. */
+  private timeLimitTicks(): number {
+    const extra = Math.max(0, Object.keys(this.state.players).length - 2) * this.tuning.round.extraSecPerParticipant;
+    const sec = this.timeLimitOverrideSec ?? this.map.timeLimitSec + extra;
+    return Math.max(1, Math.round(sec * this.tuning.tickRate));
+  }
+
   /** Seconds left in the round, clamped at 0. */
   remainingSec(): number {
-    if (this.state.status !== "running") return this.state.status === "lobby" ? this.timeLimitTicks / this.tuning.tickRate : 0;
+    if (this.state.status !== "running") return this.state.status === "lobby" ? this.timeLimitTicks() / this.tuning.tickRate : 0;
     return Math.max(0, this.state.endsAtTick - this.state.tick) / this.tuning.tickRate;
   }
 
@@ -235,7 +244,7 @@ export class Simulation {
       ...this.state,
       status: "running",
       startTick: this.state.tick,
-      endsAtTick: this.state.tick + this.timeLimitTicks,
+      endsAtTick: this.state.tick + this.timeLimitTicks(),
       freezeUntilTick: this.state.tick + Math.round(this.tuning.round.startFreezeSec * this.tuning.tickRate),
       switches,
       ghost: initialGhostState(this.state.tick, this.tuning),

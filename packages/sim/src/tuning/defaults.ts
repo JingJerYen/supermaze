@@ -8,7 +8,7 @@ export const DEFAULT_TUNING: Tuning = {
   tickRate: 20,
 
   round: {
-    timeLimitSec: 12 * 60,
+    extraSecPerParticipant: 30,
     minParticipants: 2,
     maxParticipants: 6,
     timeoutClimbMetric: "count",

@@ -206,6 +206,20 @@ describe("trap", () => {
   });
 });
 
+describe("bridges", () => {
+  it("take no placeable, neither on the deck nor on the road under it", () => {
+    const sim = armed("obstacle"); // a on (2,5) holding an obstacle
+    walk(sim, "a", [N, E, E, N]); // (2,4) -> (3,4) -> (4,4) -> (4,3), facing north at plain road (4,2)
+    expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 4, y: 3, layer: "road" });
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBe("useItem");
+    sim.step(new Map([["a", E]])); // tap east: now facing the road under the bridge (5,3)
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBeNull();
+    sim.step(new Map([["a", press]]));
+    expect(Object.values(sim.getState().placeables)).toHaveLength(0);
+    expect(sim.getState().players["a"]!.items).toEqual(["obstacle"]);
+  });
+});
+
 describe("trap scoring", () => {
   it("gives the owner points for catching a player of another team", () => {
     const sim = armed("trap", {}, 2); // a (team A) on (2,5) facing south; b (team B) on the east entry (3,3)

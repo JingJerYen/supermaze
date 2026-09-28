@@ -80,6 +80,9 @@ describe("validateMap", () => {
     };
     expect(validateMap(shared).join("\n")).toMatch(/lightSwitches spawn 7,1,road collides with keys spawn/);
     expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 3 }).join("\n")).toMatch(/must be even/);
+    const { timeLimitSec: _omit, ...noTime } = LATTICE_MAP;
+    expect(validateMap(noTime as typeof LATTICE_MAP).join("\n")).toMatch(/timeLimitSec is required/);
+    expect(validateMap({ ...LATTICE_MAP, timeLimitSec: 5 }).join("\n")).toMatch(/timeLimitSec is required/);
     expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 0 }).join("\n")).toMatch(/below the minimum/);
     expect(validateMap({ ...LATTICE_MAP, lightSwitchCount: 4 }).join("\n")).toMatch(/only 2 lightSwitches spawns but 4/);
   });

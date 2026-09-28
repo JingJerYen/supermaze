@@ -13,6 +13,7 @@
   "supportedParticipants": [2, 3, 4, 5, 6],   // 這張圖允許的參賽人數
   "plazaRadius": 1,                      // 塔周圍幾格內豁免「走道一格寬」規則
   "lightSwitchCount": 4,                 // 每局放幾個開關：偶數、至少 2
+  "timeLimitSec": 180,                   // 必填：兩人對局的回合秒數（30～3600）；每多一人自動加 30 秒
   "rows": [ "#####...", ... ]            // 版面，每行一個字串，長度一致；候選點直接畫在裡面
 }
 ```
@@ -30,7 +31,7 @@
 | `#` | 牆，一格厚一格高，牆頂可走 |
 | `.` | 道路 |
 | `S` | 樓梯：地面與牆頂之間唯一的換層點 |
-| `=` | 橋：牆頂走道跨過一格道路，道路照常通行 |
+| `=` | 橋：牆頂走道跨過一格道路，道路照常通行；橋面與橋下都不能放道具 |
 | `T` | 中心塔占地（塔本身會依 T 的範圍自動畫出） |
 | `X` | 空白，任何人都不能進入；正式地圖不用 |
 
@@ -129,5 +130,6 @@ http://localhost:5173/?local&map=maze-01&players=6&seed=1&rot=0
 | `keys spawn 3,2,wallTop collides with itemBoxes spawn` | 兩個列表用了同一格 |
 | `... sits on a tower entry tile` | 候選放到塔入口格 |
 | `lightSwitchCount 3 must be even` / `below the minimum` | 開關數要偶數且至少 2 |
+| `timeLimitSec is required ...` | 沒填回合秒數，或不在 30～3600 之間 |
 | `light switch 5,3,road touches no wall to hang on` | 開關格旁邊沒有牆 |
 | `light switch ... must be on the road layer` | 開關不能放牆頂 |
