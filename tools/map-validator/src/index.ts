@@ -4,16 +4,19 @@ import { fileURLToPath } from "node:url";
 import { validateMap, type MapData } from "@supermaze/sim";
 
 /**
- * Validates every map in content/maps/ using the same rules the simulation
- * relies on. Exit code 1 if any map fails.
+ * Validates every map in content/maps/ (or only the ones named on the command
+ * line) using the same rules the simulation relies on. Exit code 1 if any fails.
  */
 const here = path.dirname(fileURLToPath(import.meta.url));
 const mapsDir = path.resolve(here, "../../../content/maps");
 
 async function main(): Promise<void> {
-  const files = (await readdir(mapsDir)).filter((f) => f.endsWith(".json"));
+  // Optional arguments name the maps to check (`maze-02` or `maze-02.json`); none means all.
+  const wanted = process.argv.slice(2).map((a) => (a.endsWith(".json") ? a : `${a}.json`));
+  const files = (await readdir(mapsDir)).filter((f) => f.endsWith(".json") && (wanted.length === 0 || wanted.includes(f)));
   if (files.length === 0) {
-    console.log(`[map-validator] no maps in ${mapsDir}`);
+    console.log(wanted.length ? `[map-validator] no such map: ${wanted.join(", ")}` : `[map-validator] no maps in ${mapsDir}`);
+    if (wanted.length) process.exit(1);
     return;
   }
 
