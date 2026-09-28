@@ -17,7 +17,6 @@ export const DEFAULT_TUNING: Tuning = {
 
   teams: {
     count: 2,
-    maxSizeDifference: 1,
   },
 
   movement: {

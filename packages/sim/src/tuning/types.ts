@@ -29,8 +29,6 @@ export interface Tuning {
   teams: {
     /** Fixed at 2 by the rules; kept as data so validation code reads it from one place. */
     count: number;
-    /** Largest allowed difference in team sizes. */
-    maxSizeDifference: number;
   };
 
   movement: {
