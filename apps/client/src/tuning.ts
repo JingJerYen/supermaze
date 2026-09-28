@@ -94,6 +94,12 @@ export const CLIENT_TUNING = {
     liftSec: 0.3,
     bounce: 0.05,
   },
+  fixtureLook: {
+    /** Map fixtures (permanent doors, obstacles, traps): colours lerp toward this by `mix`, then darken. */
+    tint: 0x8a5a3c,
+    mix: 0.45,
+    darken: 0.8,
+  },
   selfMarker: {
     /** Height of the arrow's tip above the feet, world units (the character is 0.9 tall). */
     height: 1.25,

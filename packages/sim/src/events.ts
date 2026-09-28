@@ -17,7 +17,7 @@ export type SimEvent =
   | { type: "placeableExpired"; tick: Tick; placeableId: string; kind: PlaceableKind }
   | { type: "placeableDestroyed"; tick: Tick; playerId: PlayerId; placeableId: string; kind: PlaceableKind }
   | { type: "nodeDestroyed"; tick: Tick; playerId: PlayerId; nodeId: string; teamId: TeamId }
-  | { type: "trapTriggered"; tick: Tick; playerId: PlayerId; placeableId: string; frozenUntilTick: Tick; ownerId: PlayerId; ownerScored: boolean }
+  | { type: "trapTriggered"; tick: Tick; playerId: PlayerId; placeableId: string; frozenUntilTick: Tick; ownerId: PlayerId | null; ownerScored: boolean }
   | { type: "nodePlaced"; tick: Tick; playerId: PlayerId; nodeId: string; pairedWith: string | null }
   | { type: "nodePickedUp"; tick: Tick; playerId: PlayerId; nodeId: string }
   | { type: "teleported"; tick: Tick; playerId: PlayerId; fromNodeId: string; toNodeId: string }

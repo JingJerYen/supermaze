@@ -3,6 +3,7 @@ import type { MapGrid, PlaceableState, TeleportNodeState } from "@supermaze/sim"
 import { tileElevation } from "./elevation.js";
 import { createObstacle, createOneWayDoor, createTeleportNode, createTrap } from "./itemModels.js";
 import { TEAM_COLORS, teamColorIndex } from "./teamColors.js";
+import { CLIENT_TUNING } from "../tuning.js";
 
 /** Doors, obstacles, traps and teleport nodes, all drawn in code (itemModels.ts). */
 export class PlaceableViews {
@@ -49,14 +50,30 @@ export class PlaceableViews {
 }
 
 function createPlaceable(p: PlaceableState): THREE.Object3D {
-  switch (p.kind) {
-    case "oneWayDoor":
-      return createOneWayDoor(p.dir);
-    case "obstacle":
-      return createObstacle();
-    case "trap":
-      return createTrap();
-  }
+  const m = p.kind === "oneWayDoor" ? createOneWayDoor(p.dir) : p.kind === "obstacle" ? createObstacle() : createTrap();
+  if (p.permanent) weather(m);
+  return m;
+}
+
+/**
+ * Map fixtures get an aged look so players can tell them from what someone
+ * just put down and know they will not time out: every colour is pulled toward
+ * a rusty iron tone and darkened. Same shapes, so the kind still reads at once.
+ */
+function weather(root: THREE.Object3D): void {
+  const t = CLIENT_TUNING.fixtureLook;
+  const rust = new THREE.Color(t.tint);
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    mesh.material = mats.map((src) => {
+      const mat = src.clone() as THREE.MeshLambertMaterial | THREE.MeshBasicMaterial;
+      if (mat.color) mat.color.lerp(rust, t.mix).multiplyScalar(t.darken);
+      return mat;
+    });
+    if (mesh.material.length === 1) mesh.material = mesh.material[0] as THREE.Material;
+  });
 }
 
 function animatePlaceable(m: THREE.Object3D, p: PlaceableState, timeSec: number): void {

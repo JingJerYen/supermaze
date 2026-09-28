@@ -1,21 +1,28 @@
-import { SPAWN_MARKERS } from "./cells.js";
-import type { MapData, NormalizedMapData, TilePos } from "./types.js";
+import { FIXTURE_MARKERS, SPAWN_MARKERS } from "./cells.js";
+import type { FixtureSpec, MapData, NormalizedMapData, TilePos } from "./types.js";
 
 /**
  * Resolve authoring sugar: spawn markers drawn in the rows become `spawns`
- * entries (appended after any explicit lists) and the rows are reduced to the
- * six plain cell codes. Idempotent; every loader calls this once.
+ * entries, fixture markers become `fixtures` entries (both appended after any
+ * explicit lists) and the rows are reduced to the six plain cell codes. Idempotent; every loader calls this once.
  */
 export function normalizeMap(map: MapData): NormalizedMapData {
   const keys: TilePos[] = [...(map.spawns?.keys ?? [])];
   const itemBoxes: TilePos[] = [...(map.spawns?.itemBoxes ?? [])];
   const lightSwitches: TilePos[] = [...(map.spawns?.lightSwitches ?? [])];
   const lists = { keys, itemBoxes, lightSwitches };
+  const fixtures: FixtureSpec[] = [...(map.fixtures ?? [])];
 
   const rows = map.rows.map((row, y) => {
     let out = "";
     for (let x = 0; x < row.length; x++) {
       const code = row[x] as string;
+      const fixture = FIXTURE_MARKERS[code];
+      if (fixture) {
+        fixtures.push({ kind: fixture.kind, x, y, layer: fixture.base === "#" ? "wallTop" : "road", ...(fixture.dir ? { dir: fixture.dir } : {}) });
+        out += fixture.base;
+        continue;
+      }
       const marker = SPAWN_MARKERS[code];
       if (!marker) {
         out += code;
@@ -27,5 +34,5 @@ export function normalizeMap(map: MapData): NormalizedMapData {
     return out;
   });
 
-  return { ...map, rows, spawns: lists };
+  return { ...map, rows, spawns: lists, fixtures };
 }

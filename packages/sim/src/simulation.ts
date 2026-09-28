@@ -237,7 +237,26 @@ export class Simulation {
     };
     this.spawnKeys(count);
     this.spawnBoxes(Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
+    this.placeFixtures();
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];
+  }
+
+  /** Every map fixture, every round: permanent doors, obstacles and traps (section 10.6). */
+  private placeFixtures(): void {
+    const placeables = { ...this.state.placeables };
+    this.map.fixtures.forEach((f, i) => {
+      const id = `f${i}`;
+      placeables[id] = {
+        id,
+        kind: f.kind,
+        pos: { x: f.x, y: f.y, layer: f.layer },
+        dir: f.dir ?? { dx: 0, dy: 1 },
+        ownerId: null,
+        expiresAtTick: 0,
+        permanent: true,
+      };
+    });
+    this.state = { ...this.state, placeables };
   }
 
   private spawnKeys(count: number): void {
@@ -311,7 +330,7 @@ export class Simulation {
 
     // Placeables time out first so nothing acts on a stale one this tick (section 9).
     for (const pl of Object.values(work.placeables)) {
-      if (pl.expiresAtTick <= tick) {
+      if (!pl.permanent && pl.expiresAtTick <= tick) {
         delete work.placeables[pl.id];
         work.events.push({ type: "placeableExpired", tick, placeableId: pl.id, kind: pl.kind });
       }
@@ -509,9 +528,10 @@ export class Simulation {
       delete work.placeables[trap.id];
       const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
       // The owner scores only for catching another team; trapping yourself or a teammate is worth nothing.
-      const owner = this.state.players[trap.ownerId];
+      // A fixture trap has no owner and scores for nobody.
+      const owner = trap.ownerId === null ? undefined : this.state.players[trap.ownerId];
       const ownerScored = !!owner && owner.teamId !== p.teamId;
-      if (ownerScored) this.pendingScores.push({ playerId: trap.ownerId, points: this.tuning.scoring.trapCatch });
+      if (owner && ownerScored) this.pendingScores.push({ playerId: owner.id, points: this.tuning.scoring.trapCatch });
       work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick, ownerId: trap.ownerId, ownerScored });
       // Arriving cancels any queued movement; the player stands frozen on the trap tile.
       p = { ...p, frozenUntilTick, frozenBy: "trap", mover: { ...p.mover, target: null, progress: 0 } };

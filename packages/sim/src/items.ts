@@ -97,7 +97,7 @@ export function useOldestItem(grid: MapGrid, tuning: Tuning, work: ItemWork, p: 
       const lifetime = Math.round(tuning.placeables.lifetimeSec[item] * tuning.tickRate);
       work.placeables = {
         ...work.placeables,
-        [id]: { id, kind: item, pos: front, dir: p.mover.facing, ownerId: p.id, expiresAtTick: work.tick + lifetime },
+        [id]: { id, kind: item, pos: front, dir: p.mover.facing, ownerId: p.id, expiresAtTick: work.tick + lifetime, permanent: false },
       };
       work.events.push({ type: "placeablePlaced", tick: work.tick, playerId: p.id, placeableId: id, kind: item });
       return consume();

@@ -1,8 +1,9 @@
 import { isGhost } from "../ghost.js";
-import { tileKey } from "../map/grid.js";
+import { placementContextOf, placementProblem } from "../items.js";
+import { ALL_DIRS, tileKey, type Dir } from "../map/grid.js";
 import type { TilePos } from "../map/types.js";
-import { moverPosition, sameTile } from "../movement.js";
-import { placeableMoveFilter, sameDir } from "../placeables.js";
+import { frontTile, moverPosition, sameTile } from "../movement.js";
+import { placeableAt, placeableMoveFilter, sameDir } from "../placeables.js";
 import { SeededRandom } from "../random/seeded.js";
 import { NO_INPUT, type PlayerInput, type PlayerState, type Simulation, type SimulationState } from "../simulation.js";
 import type { Tuning } from "../tuning/index.js";
@@ -36,8 +37,10 @@ const STUCK_TICKS = 8;
  * it notices keys and runners only within `cpu.visionTiles`, explores unvisited
  * ground otherwise, and pauses briefly after reaching somewhere. With a key it
  * walks to the nearest tower door, turns to it and climbs; as a ghost it chases
- * the nearest runner it can see. Never uses items; picks up whatever it walks
- * over. The same class drives the sandbox's CPUs and the server's takeover of
+ * the nearest runner it can see. It picks up whatever it walks over, puts down
+ * its oldest item when it stops to think (so the bag keeps cycling), and keeps
+ * a hammer for the moment something blocks the only way to its goal, which is
+ * how it gets past map fixtures (section 10.6). The same class drives the sandbox's CPUs and the server's takeover of
  * dropped players, and is deterministic for a given simulation and seed.
  */
 export class CpuController {
@@ -84,7 +87,11 @@ export class CpuController {
     const hasKey = p.keyId !== null;
     if (hasKey && !mem.hadKey) this.pause(mem, tick);
     mem.hadKey = hasKey;
-    if (tick < mem.pauseUntil && !ghostly) return NO_INPUT;
+    if (tick < mem.pauseUntil && !ghostly) {
+      // Thinking time is also when it puts an item down; hammers are kept for blocked paths.
+      const idle = p.mover.target === null && p.items.length > 0 && p.items[0] !== "hammer";
+      return idle && this.sim.availableAction(p) === "useItem" ? { moveX: 0, moveY: 0, action: true } : NO_INPUT;
+    }
 
     // On a door tile with the key: turn toward the door, then climb (section 5).
     if (hasKey && p.mover.target === null && !ghostly && anchor.layer === "road") {
@@ -109,7 +116,10 @@ export class CpuController {
     if (stuck || goal !== mem.goal || tick - mem.plannedAt >= REPLAN_TICKS || !adjacent) {
       mem.goal = goal;
       mem.plannedAt = tick;
-      const path = shortestPath(grid, anchor, isGoal, placeableMoveFilter(state.placeables));
+      const path =
+        shortestPath(grid, anchor, isGoal, placeableMoveFilter(state.placeables)) ??
+        // Blocked everywhere: with a hammer in the bag, plan straight through and break what is in the way.
+        (p.items.includes("hammer") && !ghostly ? shortestPath(grid, anchor, isGoal) : null);
       if (path) {
         mem.path = path; // empty when already on the goal: stand there (the pickup or catch happens by itself)
       } else {
@@ -122,7 +132,32 @@ export class CpuController {
     }
     const step = mem.path[0];
     if (!step) return NO_INPUT;
-    return { moveX: Math.sign(step.x - anchor.x), moveY: Math.sign(step.y - anchor.y) };
+    const dir: Dir = { dx: Math.sign(step.x - anchor.x), dy: Math.sign(step.y - anchor.y) };
+    if (p.mover.target === null && !ghostly && !placeableMoveFilter(state.placeables)(anchor, step, dir) && placeableAt(state.placeables, step)) {
+      const breaking = this.breakThrough(state, p, dir);
+      if (breaking) return breaking;
+      mem.path = []; // no hammer after all: give up on this way and think again
+      mem.plannedAt = -REPLAN_TICKS;
+      return NO_INPUT;
+    }
+    return { moveX: dir.dx, moveY: dir.dy };
+  }
+
+  /**
+   * Something placed on the next tile blocks the way. With the hammer at the
+   * front of the bag: face the thing and swing. With older items in front of
+   * the hammer: put them down on any free neighbouring tile first (the bag is
+   * first in, first out). Null when there is no hammer or nowhere to unload.
+   */
+  private breakThrough(state: SimulationState, p: PlayerState, dir: Dir): PlayerInput | null {
+    if (!p.items.includes("hammer")) return null;
+    if (p.items[0] === "hammer") {
+      return sameDir(p.mover.facing, dir) ? { moveX: 0, moveY: 0, action: true } : { moveX: dir.dx, moveY: dir.dy };
+    }
+    const ctx = placementContextOf(state);
+    const free = ALL_DIRS.find((d) => !sameDir(d, dir) && placementProblem(this.sim.grid, ctx, frontTile({ ...p.mover, facing: d })) === null);
+    if (!free) return null;
+    return sameDir(p.mover.facing, free) ? { moveX: 0, moveY: 0, action: true } : { moveX: free.dx, moveY: free.dy };
   }
 
   /** Remember unowned keys within sight. Sight is a straight-line radius: the camera shows over walls. */

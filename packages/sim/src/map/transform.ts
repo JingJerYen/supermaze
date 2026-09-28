@@ -38,5 +38,7 @@ function rotateOnce(map: NormalizedMapData): NormalizedMapData {
       itemBoxes: map.spawns.itemBoxes.map(rot),
       lightSwitches: map.spawns.lightSwitches.map(rot),
     },
+    // A door's passage direction turns with the map: clockwise, (dx, dy) -> (-dy, dx).
+    fixtures: map.fixtures.map((f) => ({ ...f, ...rot(f), ...(f.dir ? { dir: { dx: -f.dir.dy || 0, dy: f.dir.dx } } : {}) })),
   };
 }

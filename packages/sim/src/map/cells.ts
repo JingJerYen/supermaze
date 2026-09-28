@@ -28,8 +28,28 @@ export const SPAWN_MARKERS: Record<string, { kind: SpawnKind; base: "." | "#" }>
   L: { kind: "lightSwitches", base: "." },
 };
 
+export type FixtureKind = "obstacle" | "trap" | "oneWayDoor";
+
+/**
+ * Fixtures: doors, obstacles and traps that are on the map from the first tick
+ * and never time out (CLAUDE.md section 10.6). Same sugar as the spawn markers:
+ * upper case on the road, lower case on a wall top. A door is drawn as the
+ * arrow of its passage direction, on the road layer; wall-top doors go in the
+ * `fixtures` list. `dir` is in map coordinates (y grows downward).
+ */
+export const FIXTURE_MARKERS: Record<string, { kind: FixtureKind; base: "." | "#"; dir?: { dx: number; dy: number } }> = {
+  O: { kind: "obstacle", base: "." },
+  o: { kind: "obstacle", base: "#" },
+  A: { kind: "trap", base: "." },
+  a: { kind: "trap", base: "#" },
+  "^": { kind: "oneWayDoor", base: ".", dir: { dx: 0, dy: -1 } },
+  v: { kind: "oneWayDoor", base: ".", dir: { dx: 0, dy: 1 } },
+  "<": { kind: "oneWayDoor", base: ".", dir: { dx: -1, dy: 0 } },
+  ">": { kind: "oneWayDoor", base: ".", dir: { dx: 1, dy: 0 } },
+};
+
 export function cellKindFromCode(code: string): CellKind {
-  const marker = SPAWN_MARKERS[code];
+  const marker = SPAWN_MARKERS[code] ?? FIXTURE_MARKERS[code];
   const kind = CODE_TO_KIND[marker ? marker.base : code];
   if (!kind) throw new Error(`unknown map cell code ${JSON.stringify(code)}`);
   return kind;

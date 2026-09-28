@@ -32,7 +32,8 @@ export interface MapData {
    * Row-major cell codes. All rows must have the same length. Besides the six
    * cell codes, rows may carry spawn markers (K/k keys, B/b item boxes,
    * L/l light switches; upper case on road, lower case on a wall top) which
-   * `normalizeMap` converts into `spawns` entries.
+   * `normalizeMap` converts into `spawns` entries, and fixture markers
+   * (O/o, A/a, ^ v < >) which it converts into `fixtures` entries.
    */
   rows: string[];
   /**
@@ -60,6 +61,19 @@ export interface MapData {
   };
   /** Light switches placed per round. Even and at least tuning.lighting.switchCountMin. */
   lightSwitchCount: number;
+  /**
+   * Doors, obstacles and traps present from the start of every round and never
+   * timing out; only a hammer removes them (a trap also goes when it fires).
+   * Usually drawn as markers in `rows` (O/o obstacle, A/a trap, ^ v < > door);
+   * this list is for what the markers cannot express, such as a wall-top door.
+   */
+  fixtures?: FixtureSpec[];
+}
+
+export interface FixtureSpec extends TilePos {
+  kind: "obstacle" | "trap" | "oneWayDoor";
+  /** Passage direction of a door in map coordinates; required for doors, ignored otherwise. */
+  dir?: { dx: number; dy: number };
 }
 
 /** A map after `normalizeMap`: plain cell codes and every spawn list present. */
@@ -70,4 +84,5 @@ export interface NormalizedMapData extends MapData {
     itemBoxes: TilePos[];
     lightSwitches: TilePos[];
   };
+  fixtures: FixtureSpec[];
 }

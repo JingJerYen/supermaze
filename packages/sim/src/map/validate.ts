@@ -100,6 +100,23 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
     }
   }
 
+  // Fixtures are treated as plain floor for reachability (decided 2026-09-28): a
+  // permanent obstacle may sit on the only way somewhere, and players are expected
+  // to find a hammer. Only their own placement is checked here.
+  for (const f of data.fixtures) {
+    const key = tileKey(f.x, f.y, f.layer);
+    const prev = seen.get(key);
+    if (prev) errors.push(`fixture ${f.kind} at ${key} collides with ${prev}`);
+    seen.set(key, `${f.kind} fixture`);
+    if (!grid.isWalkable(f.x, f.y, f.layer)) errors.push(`fixture ${f.kind} at ${key} is not walkable on its layer`);
+    if (grid.kindAt(f.x, f.y) === "stairs") errors.push(`fixture ${f.kind} at ${key} sits on stairs`);
+    if (f.layer === "road" && grid.isTowerEntry(f.x, f.y)) errors.push(`fixture ${f.kind} at ${key} touches the tower`);
+    if (f.kind === "oneWayDoor") {
+      const d = f.dir;
+      if (!d || Math.abs(d.dx) + Math.abs(d.dy) !== 1) errors.push(`door fixture at ${key} needs a dir of one tile (dx, dy)`);
+    }
+  }
+
   for (const t of candidates.lightSwitches) {
     const key = tileKey(t.x, t.y, t.layer);
     if (t.layer !== "road") errors.push(`light switch ${key} must be on the road layer`);

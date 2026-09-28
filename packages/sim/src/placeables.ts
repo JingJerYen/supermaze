@@ -4,15 +4,22 @@ import { sameTile } from "./movement.js";
 import type { PlaceableKind } from "./tuning/index.js";
 import type { PlayerId, TeamId, Tick } from "./types.js";
 
-/** A one-way door, obstacle or trap sitting on a tile for a limited time (CLAUDE.md section 10). */
+/**
+ * A one-way door, obstacle or trap sitting on a tile (CLAUDE.md section 10):
+ * placed by a player for a limited time, or a map fixture that never times out.
+ */
 export interface PlaceableState {
   id: string;
   kind: PlaceableKind;
   pos: TilePos;
   /** Passage direction for doors; irrelevant for the others (kept for rendering). */
   dir: Dir;
-  ownerId: PlayerId;
+  /** Who placed it; null for a map fixture. */
+  ownerId: PlayerId | null;
+  /** Ignored while `permanent`. */
   expiresAtTick: Tick;
+  /** Map fixture: there from the first tick, never expires; a hammer removes it, a trap also goes when it fires. */
+  permanent: boolean;
 }
 
 /** A quantum teleport endpoint lying on the floor. Persistent; never blocks passage. */
