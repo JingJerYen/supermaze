@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CpuController } from "../src/cpu/controller.js";
+import { CpuController, cpuVisionTiles } from "../src/cpu/controller.js";
 import { shortestPath } from "../src/cpu/pathfind.js";
 import { MapGrid } from "../src/map/grid.js";
 import type { MapData } from "../src/map/types.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
-import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
+import { DEFAULT_TUNING, withCpuDifficulty, type Tuning } from "../src/tuning/index.js";
 import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 
 const grid = MapGrid.fromMapData(TINY_MAP);
@@ -32,6 +32,25 @@ describe("shortestPath", () => {
     ]);
     expect(shortestPath(grid, { x: 2, y: 4, layer: "road" }, (t) => t.x === 2 && t.y === 4)).toEqual([]);
     expect(shortestPath(grid, { x: 2, y: 4, layer: "road" }, (t) => t.x === 0 && t.y === 0)).toBeNull();
+  });
+});
+
+describe("cpu strength", () => {
+  it("difficulty presets replace vision and speed and leave the rest alone", () => {
+    const easy = withCpuDifficulty("easy");
+    const hard = withCpuDifficulty("hard");
+    expect(easy.cpu).toMatchObject({ visionTiles: 3, speedMultiplier: 0.5 });
+    expect(hard.cpu).toMatchObject({ visionTiles: 4, speedMultiplier: 0.5 });
+    expect(hard.cpu.pauseMaxSec).toBe(DEFAULT_TUNING.cpu.pauseMaxSec);
+    expect(hard.round).toBe(DEFAULT_TUNING.round);
+  });
+
+  it("sees one tile less in the dark, never below zero", () => {
+    const hard = withCpuDifficulty("hard");
+    expect(cpuVisionTiles(hard, true)).toBe(4);
+    expect(cpuVisionTiles(hard, false)).toBe(3);
+    const blind: Tuning = { ...DEFAULT_TUNING, cpu: { ...DEFAULT_TUNING.cpu, visionTiles: 0 } };
+    expect(cpuVisionTiles(blind, false)).toBe(0);
   });
 });
 

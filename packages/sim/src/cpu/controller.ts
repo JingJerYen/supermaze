@@ -5,6 +5,7 @@ import { moverPosition, sameTile } from "../movement.js";
 import { placeableMoveFilter, sameDir } from "../placeables.js";
 import { SeededRandom } from "../random/seeded.js";
 import { NO_INPUT, type PlayerInput, type PlayerState, type Simulation, type SimulationState } from "../simulation.js";
+import type { Tuning } from "../tuning/index.js";
 import type { PlayerId, Tick } from "../types.js";
 import { shortestPath, tilesFromKeys } from "./pathfind.js";
 
@@ -127,10 +128,14 @@ export class CpuController {
   /** Remember unowned keys within sight. Sight is a straight-line radius: the camera shows over walls. */
   private notice(state: SimulationState, p: PlayerState, mem: Memory): void {
     const me = moverPosition(p.mover);
-    const r = this.sim.tuning.cpu.visionTiles;
+    const r = this.vision(state);
     for (const k of Object.values(state.keys)) {
       if (k.ownerId === null && Math.hypot(k.pos.x - me.x, k.pos.y - me.y) <= r) mem.seenKeys.add(k.id);
     }
+  }
+
+  private vision(state: SimulationState): number {
+    return cpuVisionTiles(this.sim.tuning, state.lightsOn);
   }
 
   private pause(mem: Memory, tick: Tick): void {
@@ -140,7 +145,7 @@ export class CpuController {
   }
 
   private chooseGoal(state: SimulationState, p: PlayerState, anchor: TilePos, mem: Memory, tick: Tick): { goal: string; isGoal: (t: TilePos) => boolean } {
-    const r = this.sim.tuning.cpu.visionTiles;
+    const r = this.vision(state);
     const me = moverPosition(p.mover);
     if (isGhost(state.ghost, p)) {
       const runners = Object.values(state.players)
@@ -184,4 +189,10 @@ export class CpuController {
     const target = mem.wander;
     return { goal: `wander:${tileKey(target.x, target.y, target.layer)}`, isGoal: (t) => sameTile(t, target) };
   }
+}
+
+/** A CPU's sight radius right now: `cpu.visionTiles`, shorter by `cpu.darkVisionPenaltyTiles` while the map is dark. */
+export function cpuVisionTiles(tuning: Tuning, lightsOn: boolean): number {
+  const { visionTiles, darkVisionPenaltyTiles } = tuning.cpu;
+  return Math.max(0, visionTiles - (lightsOn ? 0 : darkVisionPenaltyTiles));
 }

@@ -1,4 +1,4 @@
-import { CpuController, DEFAULT_TUNING, Simulation, type MapData, type SimulationState } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState } from "@supermaze/sim";
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
 
@@ -11,6 +11,8 @@ export interface LocalOptions {
   players?: number;
   seed?: number;
   name?: string;
+  /** CPU strength preset (tuning `cpu.difficulties`); easy when omitted. */
+  difficulty?: CpuDifficulty;
   /** Result-screen actions; default to reloading the page and going to the site root. */
   onAgain?: () => void;
   onHome?: () => void;
@@ -31,6 +33,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     seed: options.seed ?? 1,
     map,
     teamMode: "solo",
+    tuning: withCpuDifficulty(options.difficulty ?? "easy"),
     participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你" }, ...idle],
   });
   sim.start();

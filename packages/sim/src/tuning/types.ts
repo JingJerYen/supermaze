@@ -113,6 +113,10 @@ export interface Tuning {
     pauseMaxSec: number;
     /** Walking speed of cpu-controlled players relative to humans. Stacks with the ghost multiplier. */
     speedMultiplier: number;
+    /** Tiles taken off `visionTiles` while the map is dark (section 8); sight never drops below 0. */
+    darkVisionPenaltyTiles: number;
+    /** Single-player strength presets; each replaces `visionTiles` and `speedMultiplier`. */
+    difficulties: Record<CpuDifficulty, { visionTiles: number; speedMultiplier: number }>;
   };
 
   scoring: {
@@ -128,6 +132,8 @@ export interface Tuning {
     winningTeamMultiplier: number;
   };
 }
+
+export type CpuDifficulty = "easy" | "hard";
 
 export type ItemKind = "oneWayDoor" | "obstacle" | "hammer" | "trap" | "teleportNode";
 

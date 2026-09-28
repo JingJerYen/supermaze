@@ -31,7 +31,7 @@ const CSS = `
 export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
   /** Single player against `cpus` CPU opponents, run inside the page. */
-  onLocal(name: string, cpus: number): void;
+  onLocal(name: string, cpus: number, difficulty: "easy" | "hard"): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   /** Private-room host: two teams or everyone for themselves. */
@@ -100,6 +100,8 @@ export class LobbyUi {
         <button id="lb-local">單機個人對戰</button>
         <label class="lb-muted">CPU</label>
         <select id="lb-cpus">${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n} 人</option>`).join("")}</select>
+        <label class="lb-muted">強度</label>
+        <select id="lb-cpu-level"><option value="easy">簡單</option><option value="hard">困難</option></select>
       </div>
       <div class="lb-notice ${error ? "lb-error" : ""}" id="lb-home-notice">${error ?? "同一個伺服器上的朋友輸入四碼代碼就能加入你的私人房"}</div>`;
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
@@ -112,7 +114,8 @@ export class LobbyUi {
     this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), server: server() }));
     this.card.querySelector("#lb-local")!.addEventListener("click", () => {
       const cpus = Number(this.card.querySelector<HTMLSelectElement>("#lb-cpus")!.value) || 1;
-      this.handlers.onLocal(name(), cpus);
+      const level = this.card.querySelector<HTMLSelectElement>("#lb-cpu-level")!.value === "hard" ? "hard" : "easy";
+      this.handlers.onLocal(name(), cpus, level);
     });
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {
       const code = this.card.querySelector<HTMLInputElement>("#lb-code")!.value.trim().toUpperCase();

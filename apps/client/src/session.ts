@@ -30,7 +30,7 @@ export class Session {
   ) {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
-      onLocal: (name, cpus) => this.playLocal(name, cpus),
+      onLocal: (name, cpus, difficulty) => this.playLocal(name, cpus, difficulty),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
       onSetTeamMode: (mode) => this.conn.setTeamMode(mode),
@@ -67,7 +67,7 @@ export class Session {
   }
 
   /** Single player in the page: no socket involved; the results screen leads back here. */
-  private playLocal(name: string, cpus: number): void {
+  private playLocal(name: string, cpus: number, difficulty: "easy" | "hard"): void {
     this.teardownMatch();
     this.ui.hide();
     const seed = Date.now() >>> 0;
@@ -76,7 +76,8 @@ export class Session {
       players: cpus + 1,
       seed,
       name,
-      onAgain: () => this.playLocal(name, cpus),
+      difficulty,
+      onAgain: () => this.playLocal(name, cpus, difficulty),
       onHome: () => {
         this.teardownMatch();
         this.ui.showHome(name);

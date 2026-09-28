@@ -1,4 +1,4 @@
-import type { Tuning } from "./types.js";
+import type { CpuDifficulty, Tuning } from "./types.js";
 
 /**
  * Initial playtest values. Nothing here is final; see CLAUDE.md sections 3, 8-13.
@@ -81,6 +81,11 @@ export const DEFAULT_TUNING: Tuning = {
     pauseMinSec: 0.4,
     pauseMaxSec: 1.5,
     speedMultiplier: 0.6,
+    darkVisionPenaltyTiles: 1,
+    difficulties: {
+      easy: { visionTiles: 3, speedMultiplier: 0.5 },
+      hard: { visionTiles: 4, speedMultiplier: 0.5 },
+    },
   },
 
   scoring: {
@@ -91,6 +96,11 @@ export const DEFAULT_TUNING: Tuning = {
     winningTeamMultiplier: 2,
   },
 };
+
+/** `base` with the CPU strength preset for `level` applied (single-player difficulty). */
+export function withCpuDifficulty(level: CpuDifficulty, base: Tuning = DEFAULT_TUNING): Tuning {
+  return { ...base, cpu: { ...base.cpu, ...base.cpu.difficulties[level] } };
+}
 
 /** Shallow-merge overrides onto the defaults. Deep merge is intentionally not provided yet. */
 export function withTuning(overrides: Partial<Tuning>): Tuning {

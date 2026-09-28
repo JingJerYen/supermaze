@@ -36,6 +36,7 @@ if (params.has("local")) {
     players: Number(params.get("players") ?? 1),
     seed: Number(params.get("seed") ?? 1),
     name: playerName,
+    difficulty: params.get("cpu") === "hard" ? "hard" : "easy",
   });
   new Match(root, renderer, mode);
 } else {
