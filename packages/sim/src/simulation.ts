@@ -210,7 +210,7 @@ export class Simulation {
     if (this.state.status === "running") {
       this.spawnKeys(this.tuning.keys.perParticipant);
       this.reserveTiles();
-      this.spawnBoxes(this.tuning.itemBoxes.perParticipant);
+      if (this.map.itemBoxCount === undefined) this.spawnBoxes(this.tuning.itemBoxes.perParticipant);
     }
   }
 
@@ -251,7 +251,8 @@ export class Simulation {
       ghost: initialGhostState(this.state.tick, this.tuning),
     };
     this.spawnKeys(count);
-    this.spawnBoxes(Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
+    // The map's own box count when it has one, otherwise so many per participant (section 9).
+    this.spawnBoxes(this.map.itemBoxCount ?? Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
     this.placeFixtures();
     this.reserveTiles();
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];

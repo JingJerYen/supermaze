@@ -172,3 +172,29 @@ describe("nothing to draw", () => {
     expect(Object.values(sim.getState().boxes).some((b) => b.pos.x === 1 && b.pos.y === 6)).toBe(true);
   });
 });
+
+describe("map-defined box count", () => {
+  const two = [...one, { id: "b", teamId: "t2", controller: "human" as const }];
+
+  it("puts itemBoxCount boxes on the field whatever the number of players, and keeps it there", () => {
+    for (const participants of [one, two]) {
+      const keys = [{ x: 7, y: 1, layer: "road" as const }, { x: 7, y: 5, layer: "road" as const }];
+      const sim = new Simulation({ seed: 4, map: { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, keys }, itemBoxCount: 3 }, participants, tuning: NO_FREEZE });
+      sim.start();
+      expect(Object.keys(sim.getState().boxes)).toHaveLength(3);
+    }
+    // Opening one brings a replacement at once.
+    const map = { ...BOX_MAP, itemBoxCount: 5 }; // 6 candidates: every tile but one holds a box
+    const sim = new Simulation({ seed: 4, map, participants: one, tuning: NO_FREEZE });
+    sim.start();
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }]); // (2,5) and (2,6) are candidates
+    expect(sim.getState().players["a"]!.items.length).toBeGreaterThan(0);
+    expect(Object.keys(sim.getState().boxes).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("zero means no boxes at all", () => {
+    const sim = new Simulation({ seed: 4, map: { ...BOX_MAP, itemBoxCount: 0 }, participants: one, tuning: NO_FREEZE });
+    sim.start();
+    expect(sim.getState().boxes).toEqual({});
+  });
+});

@@ -62,6 +62,12 @@ export interface MapData {
   /** Light switches placed per round. Even and at least tuning.lighting.switchCountMin. */
   lightSwitchCount: number;
   /**
+   * Item boxes on the field at any time, whatever the number of players; a
+   * box that is opened is replaced at once, so the count holds all round.
+   * Optional: without it the count is participants x tuning.itemBoxes.perParticipant.
+   */
+  itemBoxCount?: number;
+  /**
    * Round length in seconds for two participants, chosen by the map's author.
    * Every participant beyond the second adds tuning.round.extraSecPerParticipant.
    */

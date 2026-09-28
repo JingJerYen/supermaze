@@ -44,6 +44,16 @@ describe("MapGrid.tryMove", () => {
   });
 });
 
+describe("validateMap: itemBoxCount", () => {
+  it("needs that many candidates plus spares, and a sensible number", () => {
+    // LATTICE_MAP has 6 box candidates.
+    expect(validateMap({ ...LATTICE_MAP, itemBoxCount: 4 })).toEqual([]);
+    expect(validateMap({ ...LATTICE_MAP, itemBoxCount: 5 }).join("\n")).toMatch(/only 6 itemBoxes spawns but 7/);
+    expect(validateMap({ ...LATTICE_MAP, itemBoxCount: 1.5 }).join("\n")).toMatch(/itemBoxCount must be a whole number/);
+    expect(validateMap({ ...LATTICE_MAP, itemBoxCount: -1 }).join("\n")).toMatch(/itemBoxCount must be a whole number/);
+  });
+});
+
 describe("validateMap", () => {
   it("accepts the lattice fixture", () => {
     expect(validateMap(LATTICE_MAP)).toEqual([]);

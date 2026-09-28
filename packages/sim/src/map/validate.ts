@@ -80,9 +80,12 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
   const BOX_SPARES = 2;
   const needed: Record<keyof NormalizedMapData["spawns"], number> = {
     keys: maxParticipants * tuning.keys.perParticipant,
-    itemBoxes: maxParticipants * tuning.itemBoxes.perParticipant + BOX_SPARES,
+    itemBoxes: (data.itemBoxCount ?? maxParticipants * tuning.itemBoxes.perParticipant) + BOX_SPARES,
     lightSwitches: data.lightSwitchCount ?? 0,
   };
+  if (data.itemBoxCount !== undefined && (!Number.isInteger(data.itemBoxCount) || data.itemBoxCount < 0)) {
+    errors.push(`itemBoxCount must be a whole number of 0 or more (got ${data.itemBoxCount})`);
+  }
   const seen = new Map<string, string>();
   for (const kind of ["keys", "itemBoxes", "lightSwitches"] as const) {
     const list: TilePos[] = candidates[kind];
