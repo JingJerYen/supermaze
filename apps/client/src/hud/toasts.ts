@@ -24,12 +24,15 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
     const id = next.towerArrivals[i] as string;
     out.push({ text: id === meId ? `你登上塔頂，第 ${i + 1} 名` : `${name(id)} 登上塔頂，第 ${i + 1} 名`, big: true });
   }
+  for (const p of Object.values(next.players)) {
+    const before = prev.players[p.id];
+    if (before && before.keyId === null && p.keyId !== null) out.push(p.id === meId ? "🔑 你拿到鑰匙" : `🔑 ${name(p.id)} 拿到鑰匙`);
+  }
   if (prev.lightsOn !== next.lightsOn) out.push(next.lightsOn ? "燈亮了" : "全圖進入黑暗");
   if (meId) {
     const a = prev.players[meId];
     const b = next.players[meId];
     if (a && b) {
-      if (a.keyId === null && b.keyId !== null) out.push("拿到鑰匙");
       if (b.items.length > a.items.length) out.push(`取得 ${ITEM_LABEL[b.items[b.items.length - 1] ?? ""] ?? "道具"}`);
       // A ghost catch has its own notice below; this one is for traps.
       if (b.frozenUntilTick > a.frozenUntilTick && b.frozenBy !== "ghost") out.push("踩到陷阱，被鐵籠罩住");

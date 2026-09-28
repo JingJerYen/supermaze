@@ -13,9 +13,12 @@ const CSS = `
 .hud-team-name{font-size:11px;letter-spacing:.5px;color:#c9d2e3;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .hud-row{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.4);border-radius:8px;padding:4px 8px;font-size:13px;line-height:1;white-space:nowrap}
 .hud-row.me{outline:1px solid rgba(255,255,255,.45)}
+.hud-row.up{background:rgba(28,96,44,.72);outline:1px solid rgba(139,255,122,.75)}
+.hud-key{font-size:15px;line-height:1;flex:none}
+.hud-key.off{opacity:.2;filter:grayscale(1)}
 .hud-dot{width:10px;height:10px;border-radius:50%;flex:none}
 .hud-badge{font-size:10px;padding:2px 4px;border-radius:4px;background:rgba(255,255,255,.15);color:#ffe08a}
-.hud-badge.tower{color:#8bff7a}.hud-badge.cpu{color:#ff9f7a}
+.hud-badge.tower{color:#fff;background:rgba(139,255,122,.28);font-size:11px;font-weight:500}.hud-badge.cpu{color:#ff9f7a}
 .hud-score{font-size:12px;color:#c9d2e3;min-width:2.5em;text-align:right}
 .hud-coord{font-size:11px;color:#9be7ff;font-variant-numeric:tabular-nums}
 .hud-mycoord{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:clamp(16px,3vw,22px);font-weight:500;color:#9be7ff;text-shadow:0 1px 3px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
@@ -205,14 +208,21 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean, sho
     }
     const color = `#${(TEAM_COLORS[team.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
     for (const p of team.players) {
-      const row = el("div", `hud-row${p.isMe ? " me" : ""}`);
+      const row = el("div", `hud-row${p.isMe ? " me" : ""}${p.onTower ? " up" : ""}`);
       const dot = el("span", "hud-dot");
       dot.style.background = color;
       const label = el("span", "");
       label.textContent = `${p.isMe ? `${p.name}（你）` : p.name}${p.ghost ? " 👻" : ""}`;
       const badges: HTMLElement[] = [];
-      if (p.onTower) badges.push(badge("tower", p.arrival === null ? "塔" : `第${p.arrival + 1}名`));
-      else if (p.hasKey) badges.push(badge("", "鑰匙"));
+      // Everyone in the maze shows a key slot: bright once they hold their key, faint until then.
+      // On the tower the row turns green and the slot becomes the arrival rank.
+      if (p.onTower) badges.push(badge("tower", p.arrival === null ? "🏰" : `🏰 第${p.arrival + 1}名`));
+      else {
+        const key = el("span", `hud-key${p.hasKey ? "" : " off"}`);
+        key.textContent = "🔑";
+        key.title = p.hasKey ? "已拿到鑰匙" : "還沒有鑰匙";
+        badges.push(key);
+      }
       if (p.cpu) badges.push(badge("cpu", "CPU"));
       if (p.frozen) badges.push(badge("frozen", "定身"));
       if (showCoords && p.coord && !p.isMe) {
