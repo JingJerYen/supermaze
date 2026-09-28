@@ -80,11 +80,11 @@ export const DEFAULT_TUNING: Tuning = {
     visionTiles: 3,
     pauseMinSec: 0.4,
     pauseMaxSec: 1.5,
-    speedMultiplier: 0.6,
+    speedMultiplier: 0.5,
     darkVisionPenaltyTiles: 1,
     difficulties: {
       easy: { visionTiles: 3, speedMultiplier: 0.5 },
-      hard: { visionTiles: 4, speedMultiplier: 0.5 },
+      hard: { visionTiles: 4, speedMultiplier: 0.6 },
     },
   },
 
