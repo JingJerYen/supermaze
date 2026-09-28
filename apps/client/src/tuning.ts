@@ -79,6 +79,21 @@ export const CLIENT_TUNING = {
     opacity: 0.9,
     opacityDesktop: 0.45,
   },
+  cage: {
+    /** Iron cage over a trapped player (world units; the character is 0.9 tall). */
+    radius: 0.4,
+    height: 0.95,
+    domeHeight: 0.22,
+    bars: 10,
+    barRadius: 0.018,
+    color: 0x5a616e,
+    hoopColor: 0x2f343d,
+    /** It falls from this height in dropSec, with a small bounce, and lifts away in liftSec. */
+    dropHeight: 1.8,
+    dropSec: 0.22,
+    liftSec: 0.3,
+    bounce: 0.05,
+  },
   selfMarker: {
     /** Height of the arrow's tip above the feet, world units (the character is 0.9 tall). */
     height: 1.25,

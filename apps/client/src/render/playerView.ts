@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { moverPosition, type Dir, type MapGrid, type MoverState } from "@supermaze/sim";
 import { characters, type CharacterRig } from "./characters.js";
 import { tileElevation } from "./elevation.js";
+import { CageDrop, createCage } from "./cage.js";
 import { HammerSwing } from "./hammerSwing.js";
 import { models } from "./models.js";
 import { CLIENT_TUNING } from "../tuning.js";
@@ -39,6 +40,10 @@ export class PlayerView {
   private readonly body = new THREE.Group();
   private ghost: THREE.Object3D | null = null;
   private ghostTime = 0;
+  /** Iron cage shown while a trap holds the player; created the first time it is needed. */
+  private cage: THREE.Group | null = null;
+  private readonly cageDrop = new CageDrop();
+  private caged = false;
 
   constructor(playerId: string, color: number) {
     this.color = color;
@@ -93,6 +98,16 @@ export class PlayerView {
       const g = CLIENT_TUNING.ghostModel;
       this.ghostTime += dtSec;
       this.ghost.position.y = g.hover + Math.sin(this.ghostTime * g.bobHz * Math.PI * 2) * g.bobAmp;
+    }
+    if (this.cage) this.cageDrop.update(this.cage, this.caged, dtSec);
+  }
+
+  /** Trapped: an iron cage drops over the player and lifts away when the freeze ends. */
+  setCaged(on: boolean): void {
+    this.caged = on;
+    if (on && !this.cage) {
+      this.cage = createCage();
+      this.mesh.add(this.cage);
     }
   }
 

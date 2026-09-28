@@ -193,6 +193,7 @@ describe("trap", () => {
     for (let i = 0; i < STEP_TICKS; i++) ev.push(...sim.step(new Map([["a", S]])).map((e) => e.type));
     expect(ev).toContain("trapTriggered");
     const a = sim.getState().players["a"]!;
+    expect(a.frozenBy).toBe("trap");
     expect(a.mover.from).toEqual({ x: 2, y: 6, layer: "road" });
     expect(Object.values(sim.getState().placeables)).toHaveLength(0);
     // Frozen: pushing does not move.

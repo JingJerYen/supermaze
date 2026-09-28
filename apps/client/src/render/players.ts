@@ -74,6 +74,7 @@ export class PlayerViews {
       view.update(this.grid, prev, p.mover, alpha, dtSec);
       view.setFacing(p.mover.facing);
       view.setFrozen(p.frozenUntilTick > tick);
+      view.setCaged(p.frozenUntilTick > tick && p.frozenBy === "trap");
       view.setSelfMarker(id === meId && p.phase === "maze");
       view.setGhost(ghostIds.has(id));
     }

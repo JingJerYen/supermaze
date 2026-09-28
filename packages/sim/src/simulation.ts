@@ -49,8 +49,10 @@ export interface PlayerState extends Participant {
   score: number;
   /** Carried items, oldest first, at most tuning.inventory.capacity. */
   items: ItemKind[];
-  /** Cannot move until this tick (trap). 0 when free. */
+  /** Cannot move until this tick (trap or ghost catch). 0 when free. */
   frozenUntilTick: Tick;
+  /** What caused the latest freeze; meaningful while `frozenUntilTick` is in the future. Clients pick the look from it. */
+  frozenBy: "trap" | "ghost" | null;
   /** Node the player just arrived on by teleport; no bounce-back until they step off it. */
   teleportImmunity: string | null;
   /** Cannot be caught by a ghost until this tick (covers the post-catch freeze and protection). */
@@ -170,6 +172,7 @@ export class Simulation {
       score: 0,
       items: [],
       frozenUntilTick: 0,
+      frozenBy: null,
       teleportImmunity: null,
       protectedUntilTick: 0,
     };
@@ -404,6 +407,7 @@ export class Simulation {
             ...r,
             items: [], // everything carried is lost, teleport nodes included; the key is kept
             frozenUntilTick,
+            frozenBy: "ghost",
             protectedUntilTick,
             mover: { ...r.mover, target: null, progress: 0 },
           };
@@ -476,7 +480,7 @@ export class Simulation {
       const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
       work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick });
       // Arriving cancels any queued movement; the player stands frozen on the trap tile.
-      p = { ...p, frozenUntilTick, mover: { ...p.mover, target: null, progress: 0 } };
+      p = { ...p, frozenUntilTick, frozenBy: "trap", mover: { ...p.mover, target: null, progress: 0 } };
     }
     const node = nodeAt(work.nodes, p.mover.from);
     if (node && node.teamId === p.teamId && node.pairedWith && p.teleportImmunity !== node.id) {

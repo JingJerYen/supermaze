@@ -118,6 +118,7 @@ describe("ghost rules", () => {
     expect(caught).toBeDefined();
     const b = sim.getState().players["b"]!;
     expect(b.items).toEqual([]);
+    expect(b.frozenBy).toBe("ghost");
     expect(b.frozenUntilTick).toBeGreaterThan(sim.getState().tick);
     expect(b.protectedUntilTick).toBeGreaterThan(b.frozenUntilTick);
     expect(sim.getState().players["a"]!.score).toBe(FAST.scoring.ghostCatch);

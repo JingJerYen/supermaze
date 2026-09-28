@@ -21,7 +21,7 @@ export function diffToasts(prev: SimulationState | null, next: SimulationState, 
     if (a && b) {
       if (a.keyId === null && b.keyId !== null) out.push("拿到鑰匙");
       if (b.items.length > a.items.length) out.push(`取得 ${ITEM_LABEL[b.items[b.items.length - 1] ?? ""] ?? "道具"}`);
-      if (b.frozenUntilTick > a.frozenUntilTick) out.push("踩到陷阱，暫時無法移動");
+      if (b.frozenUntilTick > a.frozenUntilTick) out.push(b.frozenBy === "ghost" ? "被鬼抓到，暫時無法移動" : "踩到陷阱，被鐵籠罩住");
       if (a.teleportImmunity === null && b.teleportImmunity !== null) out.push("傳送");
     }
   }
