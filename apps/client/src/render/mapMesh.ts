@@ -4,6 +4,7 @@ import { CLIENT_TUNING } from "../tuning.js";
 import { platformTopY as platformTopYWorld } from "./elevation.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { collectTorches, tileHash, torchMaterials } from "./decor.js";
+import { sightBlocked, type Box3, type Point3 } from "./occlusion.js";
 import { createBridge, createStairs } from "./structures.js";
 import { TowerAnimations, type Face } from "./climbSequence.js";
 import { patternTexture, runeTexture, themeFor, type Theme } from "./themes.js";
@@ -14,21 +15,82 @@ const COLORS = {
   towerPlatform: 0xf0a19b,
 } as const;
 
-/** Handle to the tower's materials so the view can see through it from above. */
+/**
+ * Handle to the tower's materials so the view can see through it: from above
+ * when the player is a commander, and from the maze whenever the tower stands
+ * between the camera and the local player.
+ */
 export class TowerView {
+  /** Solid parts of the tower (shaft, base tiers, bands, doors...); glowing and already see-through parts keep their own opacity. */
+  private solid: THREE.Material[] = [];
+  /** What can hide a character: the base tiers and the shaft, as boxes. */
+  private boxes: Box3[] = [];
+  private overview = false;
+  private hiding = false;
+  /** 0 solid .. 1 fully faded, eased. */
+  private fade = 0;
+  private applied = -1;
+
   constructor(
     private readonly platform: THREE.MeshLambertMaterial,
     private readonly shaft: THREE.MeshLambertMaterial,
   ) {}
 
+  /** Called once the tower is assembled. */
+  attach(group: THREE.Object3D, boxes: Box3[]): void {
+    const seen = new Set<THREE.Material>();
+    group.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        if (!m.transparent && m !== this.shaft) seen.add(m);
+      }
+    });
+    this.solid = [...seen];
+    this.boxes = boxes;
+  }
+
   /** Overview: the commander stands on the slab and must see the plaza beneath it. */
   setOverview(overview: boolean): void {
-    const t = CLIENT_TUNING.tower;
-    this.platform.opacity = overview ? t.platformOpacityOverview : t.platformOpacityFollow;
-    this.shaft.transparent = overview;
-    this.shaft.opacity = overview ? t.shaftOpacityOverview : 1;
-    this.shaft.needsUpdate = true;
+    this.overview = overview;
+    this.platform.opacity = overview ? CLIENT_TUNING.tower.platformOpacityOverview : CLIENT_TUNING.tower.platformOpacityFollow;
   }
+
+  /** Tell the tower where the camera and the local player are; it fades while it hides that player. */
+  watch(eye: Point3, feet: Point3, height: number): void {
+    const margin = CLIENT_TUNING.tower.occlusionMargin;
+    const low = { x: feet.x, y: feet.y + 0.1, z: feet.z };
+    const high = { x: feet.x, y: feet.y + height, z: feet.z };
+    this.hiding = this.boxes.some((b) => sightBlocked(eye, low, b, margin) || sightBlocked(eye, high, b, margin));
+  }
+
+  /** Nobody to watch (no local player, or the player is on the tower). */
+  unwatch(): void {
+    this.hiding = false;
+  }
+
+  update(dtSec: number): void {
+    const t = CLIENT_TUNING.tower;
+    const want = this.hiding && !this.overview ? 1 : 0;
+    this.fade += (want - this.fade) * (1 - Math.exp(-t.occlusionFadePerSec * dtSec));
+    if (Math.abs(want - this.fade) < 0.002) this.fade = want;
+    const opacity = 1 - this.fade * (1 - t.occludedOpacity);
+    const shaftOpacity = this.overview ? t.shaftOpacityOverview : opacity;
+    const key = Math.round(opacity * 1000) + (this.overview ? 5000 : 0);
+    if (key === this.applied) return;
+    this.applied = key;
+    setOpacity(this.shaft, shaftOpacity);
+    for (const m of this.solid) setOpacity(m, opacity);
+  }
+}
+
+function setOpacity(m: THREE.Material, opacity: number): void {
+  const transparent = opacity < 0.999;
+  if (m.transparent !== transparent) {
+    m.transparent = transparent;
+    m.needsUpdate = true;
+  }
+  m.opacity = opacity;
 }
 
 /** Handles the view needs after building: the tower and the lines that must hide in the dark. */
@@ -361,5 +423,10 @@ function buildTower(grid: MapGrid, theme: Theme): {
     crystal,
     theme.towerRune,
   );
+  const baseTop = t.baseHeight * 2.6;
+  view.attach(tower, [
+    { min: { x: cx - footW / 2, y: 0, z: cy - footD / 2 }, max: { x: cx + footW / 2, y: baseTop, z: cy + footD / 2 } },
+    { min: { x: cx - faceDist, y: baseTop, z: cy - faceDist }, max: { x: cx + faceDist, y: shaftBottom + shaftH, z: cy + faceDist } },
+  ]);
   return { group: tower, view, animations, center };
 }

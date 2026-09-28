@@ -163,6 +163,10 @@ export class Match {
       this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2), dt);
       this.lighting.follow(mePos);
     }
+    // The tower turns see-through while it stands between the camera and the local player.
+    if (mePos && meState?.phase === "maze") this.mapMesh.tower.watch(this.follow.camera.position, mePos, PLAYER_HEIGHT);
+    else this.mapMesh.tower.unwatch();
+    this.mapMesh.tower.update(dt);
 
     this.renderer.render(this.scene, this.follow.camera);
     const r = this.renderer.info.render;

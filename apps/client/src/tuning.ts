@@ -47,6 +47,12 @@ export const CLIENT_TUNING = {
     /** Platform and shaft opacity while looking straight down from the tower top. */
     platformOpacityOverview: 0.12,
     shaftOpacityOverview: 0.25,
+    /** Opacity of the tower's solid parts while it hides the local player from the camera. */
+    occludedOpacity: 0.35,
+    /** How fast it fades in and out, per second. */
+    occlusionFadePerSec: 8,
+    /** The player counts as hidden when the line of sight passes this close to the tower, tiles. */
+    occlusionMargin: 0.3,
     /** Low base covering the whole footprint so the blocked tiles read as tower ground. */
     baseHeight: 0.3,
   },
