@@ -5,6 +5,7 @@ import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
 import { characters } from "./render/characters.js";
 import { models } from "./render/models.js";
+import { sfx } from "./audio/sfx.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
 import { Session } from "./session.js";
 import { CLIENT_TUNING } from "./tuning.js";
@@ -24,6 +25,7 @@ renderer.setSize(root.clientWidth || window.innerWidth, root.clientHeight || win
 root.appendChild(renderer.domElement);
 
 fullscreenOnFirstTouch();
+sfx.init();
 
 // URL parameters (see README). `?local` runs the single-player sandbox in the page;
 // otherwise the online flow starts at the home screen.

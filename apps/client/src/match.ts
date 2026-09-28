@@ -5,6 +5,8 @@ import { Hud } from "./hud/hud.js";
 import { Minimap } from "./hud/minimap.js";
 import { ResultsPanel } from "./hud/results.js";
 import { buildHudModel } from "./hud/model.js";
+import { sfx } from "./audio/sfx.js";
+import { diffSounds } from "./audio/sounds.js";
 import { diffGains } from "./hud/gains.js";
 import { diffToasts } from "./hud/toasts.js";
 import { InputSource } from "./input/index.js";
@@ -136,6 +138,7 @@ export class Match {
       if (this.lastToastState !== s.to) {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t.text, t.big);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);
+        for (const c of diffSounds(this.lastToastState, s.to, meId)) sfx.play(c.name, c.volume);
         this.lastToastState = s.to;
       }
       this.results.update(s.to, meId, this.mode.results());

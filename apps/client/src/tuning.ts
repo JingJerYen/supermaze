@@ -79,6 +79,14 @@ export const CLIENT_TUNING = {
     opacity: 0.9,
     opacityDesktop: 0.45,
   },
+  audio: {
+    /** Master volume, 0 to 1. `M` mutes; `?mute` starts muted. */
+    volume: 0.7,
+    /** Relative volume of things happening to other players (keys, traps, catches, climbs). */
+    othersVolume: 0.3,
+    /** Relative volume of the light switch, heard by everyone. */
+    lightsVolume: 0.85,
+  },
   cage: {
     /** Iron cage over a trapped player (world units; the character is 0.9 tall). */
     radius: 0.4,
