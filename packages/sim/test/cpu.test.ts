@@ -36,19 +36,26 @@ describe("shortestPath", () => {
 });
 
 describe("cpu strength", () => {
+  // The preset numbers are playtest values that change often, so these tests read
+  // them from the table and check the mechanism, not the numbers.
   it("difficulty presets replace vision and speed and leave the rest alone", () => {
-    const easy = withCpuDifficulty("easy");
-    const hard = withCpuDifficulty("hard");
-    expect(easy.cpu).toMatchObject({ visionTiles: 3, speedMultiplier: 0.5 });
-    expect(hard.cpu).toMatchObject({ visionTiles: 4, speedMultiplier: 0.5 });
-    expect(hard.cpu.pauseMaxSec).toBe(DEFAULT_TUNING.cpu.pauseMaxSec);
-    expect(hard.round).toBe(DEFAULT_TUNING.round);
+    const presets = DEFAULT_TUNING.cpu.difficulties;
+    for (const level of ["easy", "hard"] as const) {
+      const t = withCpuDifficulty(level);
+      expect(t.cpu).toMatchObject(presets[level]);
+      expect(t.cpu.pauseMaxSec).toBe(DEFAULT_TUNING.cpu.pauseMaxSec);
+      expect(t.round).toBe(DEFAULT_TUNING.round);
+    }
+    // Hard is never weaker than easy on either knob.
+    expect(presets.hard.visionTiles).toBeGreaterThanOrEqual(presets.easy.visionTiles);
+    expect(presets.hard.speedMultiplier).toBeGreaterThanOrEqual(presets.easy.speedMultiplier);
   });
 
   it("sees one tile less in the dark, never below zero", () => {
     const hard = withCpuDifficulty("hard");
-    expect(cpuVisionTiles(hard, true)).toBe(4);
-    expect(cpuVisionTiles(hard, false)).toBe(3);
+    const penalty = hard.cpu.darkVisionPenaltyTiles;
+    expect(cpuVisionTiles(hard, true)).toBe(hard.cpu.visionTiles);
+    expect(cpuVisionTiles(hard, false)).toBe(Math.max(0, hard.cpu.visionTiles - penalty));
     const blind: Tuning = { ...DEFAULT_TUNING, cpu: { ...DEFAULT_TUNING.cpu, visionTiles: 0 } };
     expect(cpuVisionTiles(blind, false)).toBe(0);
   });
