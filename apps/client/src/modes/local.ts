@@ -72,6 +72,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
         action: (me && sim.availableAction(me)) ?? "-",
       };
     },
+    exit: options.onHome ?? (() => (location.href = location.pathname)),
     debug: (cmd) => {
       if (cmd === "ghost") sim.debugForceGhost();
     },

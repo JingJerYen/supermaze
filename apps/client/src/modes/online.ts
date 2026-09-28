@@ -80,6 +80,11 @@ export class OnlineMatchMode implements GameMode {
     this.onDebug?.(cmd);
   }
 
+  /** Leaving mid-match hands the player to the CPU for the rest of the round (CLAUDE.md 2.1). */
+  exit(): void {
+    this.onLeaveRoom?.();
+  }
+
   results() {
     return {
       endsAt: this.resultsEndAt,

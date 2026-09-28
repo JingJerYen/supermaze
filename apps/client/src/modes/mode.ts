@@ -21,6 +21,8 @@ export interface GameMode {
   banner?(): string | null;
   /** What the results screen offers once the round is finished. */
   results(): ResultsActions;
+  /** Leave the match from the on-screen exit button; absent when there is nowhere to go. */
+  exit?(): void;
   /** Developer command (F4 forces a ghost event). Optional. */
   debug?(cmd: "ghost"): void;
 }

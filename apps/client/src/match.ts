@@ -8,6 +8,7 @@ import { buildHudModel } from "./hud/model.js";
 import { sfx } from "./audio/sfx.js";
 import { diffSounds } from "./audio/sounds.js";
 import { diffGains } from "./hud/gains.js";
+import { SystemButtons } from "./hud/systemButtons.js";
 import { diffToasts } from "./hud/toasts.js";
 import { InputSource } from "./input/index.js";
 import { startLoop } from "./loop.js";
@@ -37,6 +38,7 @@ export class Match {
   private readonly hud: Hud;
   private readonly results: ResultsPanel;
   private readonly minimap: Minimap;
+  private readonly system: SystemButtons;
   private readonly debug: DebugOverlay;
   private readonly players: PlayerViews;
   private readonly keys: KeyViews;
@@ -83,6 +85,7 @@ export class Match {
     this.hud = new Hud(root);
     this.results = new ResultsPanel(root);
     this.minimap = new Minimap(root, mode.grid);
+    this.system = new SystemButtons(root, mode.exit ? () => mode.exit?.() : null);
 
     this.onResize = () => {
       const { w, h } = viewportSize(root);
@@ -184,6 +187,7 @@ export class Match {
     this.hud.dispose();
     this.results.dispose();
     this.minimap.dispose();
+    this.system.dispose();
     this.debug.dispose();
     this.input.dispose();
     this.renderer.clear();
