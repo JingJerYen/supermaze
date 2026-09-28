@@ -8,7 +8,9 @@ import {
   type LobbyMessage,
   type MatchStartedMessage,
   type PingMessage,
+  type SetTeamModeMessage,
   type SnapshotMessage,
+  type TeamMode,
   type WelcomeMessage,
 } from "@supermaze/protocol";
 import type { PlayerInput } from "@supermaze/sim";
@@ -107,6 +109,9 @@ export class Connection {
   }
   switchTeam(): void {
     this.room?.send(C2S.switchTeam, {});
+  }
+  setTeamMode(teamMode: TeamMode): void {
+    this.room?.send(C2S.setTeamMode, { teamMode } satisfies SetTeamModeMessage);
   }
   requestStart(): void {
     this.room?.send(C2S.start, {});

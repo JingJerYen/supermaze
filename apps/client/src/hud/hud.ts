@@ -178,9 +178,12 @@ export class Hud {
 function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean, showCoords: boolean): void {
   container.replaceChildren();
   for (const team of teams) {
-    const name = el("div", "hud-team-name");
-    name.textContent = mine ? `我方 ${team.label}` : team.label;
-    container.appendChild(name);
+    // Solo rounds have no team names: the rows alone are the roster.
+    if (team.label) {
+      const name = el("div", "hud-team-name");
+      name.textContent = mine ? `我方 ${team.label}` : team.label;
+      container.appendChild(name);
+    }
     const color = `#${(TEAM_COLORS[team.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
     for (const p of team.players) {
       const row = el("div", `hud-row${p.isMe ? " me" : ""}`);

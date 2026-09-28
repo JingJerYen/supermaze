@@ -1,8 +1,9 @@
-import type { LobbyPlayer } from "@supermaze/protocol";
+import type { LobbyPlayer, RoomMode, TeamMode } from "@supermaze/protocol";
 
 /**
  * Pure lobby rules (CLAUDE.md 2.1). No Colyseus here so they can be unit-tested.
- * Two fixed teams, "A" and "B".
+ * Lobby players always carry team "A" or "B"; in solo mode the simulation
+ * ignores it and puts everyone in a team of their own.
  */
 export const TEAMS = ["A", "B"] as const;
 export type TeamId = (typeof TEAMS)[number];
@@ -10,7 +11,16 @@ export type TeamId = (typeof TEAMS)[number];
 export interface LobbyRules {
   minPlayers: number;
   maxPlayers: number;
-  maxTeamSizeDifference: number;
+  teamMode: TeamMode;
+}
+
+/**
+ * Quick match is always two players, one against one. A private room holds up
+ * to `maxParticipants` and plays whichever mode its host picked.
+ */
+export function rulesFor(mode: RoomMode, teamMode: TeamMode, maxParticipants: number): LobbyRules {
+  if (mode === "quick") return { minPlayers: 2, maxPlayers: 2, teamMode: "teams" };
+  return { minPlayers: 2, maxPlayers: maxParticipants, teamMode };
 }
 
 export function teamSizes(players: readonly LobbyPlayer[]): Record<TeamId, number> {
@@ -25,21 +35,19 @@ export function teamForNewPlayer(players: readonly LobbyPlayer[]): TeamId {
   return s.B < s.A ? "B" : "A";
 }
 
-/** Whether `playerId` may move to the other team without breaking the size rule. */
+/** Whether `playerId` may move to the other team: teams mode only, and the other team must have a free seat. */
 export function canSwitchTeam(players: readonly LobbyPlayer[], playerId: string, rules: LobbyRules): boolean {
+  if (rules.teamMode !== "teams") return false;
   const me = players.find((p) => p.id === playerId);
   if (!me) return false;
-  const s = teamSizes(players);
-  const from = me.teamId as TeamId;
-  const to: TeamId = from === "A" ? "B" : "A";
-  s[from]--;
-  s[to]++;
-  return Math.abs(s.A - s.B) <= rules.maxTeamSizeDifference;
+  const to: TeamId = me.teamId === "A" ? "B" : "A";
+  return teamSizes(players)[to] < Math.ceil(rules.maxPlayers / 2);
 }
 
-export function teamsBalanced(players: readonly LobbyPlayer[], rules: LobbyRules): boolean {
+/** Teams mode starts only with the same number of players on both sides. */
+export function teamsEqual(players: readonly LobbyPlayer[]): boolean {
   const s = teamSizes(players);
-  return Math.abs(s.A - s.B) <= rules.maxTeamSizeDifference;
+  return s.A === s.B;
 }
 
 /**
@@ -50,7 +58,7 @@ export function startBlocker(players: readonly LobbyPlayer[], rules: LobbyRules,
   const connected = players.filter((p) => p.connected);
   if (connected.length < rules.minPlayers) return `至少需要 ${rules.minPlayers} 人`;
   if (connected.length > rules.maxPlayers) return `最多 ${rules.maxPlayers} 人`;
-  if (!teamsBalanced(connected, rules)) return `兩隊人數差不能超過 ${rules.maxTeamSizeDifference}`;
+  if (rules.teamMode === "teams" && !teamsEqual(connected)) return "兩隊人數必須相同";
   if (requireReady && !connected.every((p) => p.ready)) return "還有人沒準備好";
   return null;
 }
@@ -59,9 +67,8 @@ export function startBlocker(players: readonly LobbyPlayer[], rules: LobbyRules,
  * Should the automatic countdown be running? Quick rooms count down as soon as
  * they are full regardless of readiness; otherwise everyone must be ready.
  */
-export function shouldCountDown(players: readonly LobbyPlayer[], rules: LobbyRules, mode: "quick" | "private"): boolean {
-  const connected = players.filter((p) => p.connected);
-  if (mode === "quick" && connected.length >= rules.maxPlayers && teamsBalanced(connected, rules)) return true;
+export function shouldCountDown(players: readonly LobbyPlayer[], rules: LobbyRules, mode: RoomMode): boolean {
+  if (mode === "quick" && startBlocker(players, rules, false) === null && players.filter((p) => p.connected).length >= rules.maxPlayers) return true;
   return startBlocker(players, rules, true) === null;
 }
 

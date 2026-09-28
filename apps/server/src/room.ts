@@ -12,6 +12,7 @@ import {
   type MatchStartedMessage,
   type PingMessage,
   type RoomMode,
+  type SetTeamModeMessage,
   type SnapshotMessage,
   type StateSection,
   type WelcomeMessage,
@@ -27,7 +28,7 @@ import {
   type QuarterTurns,
   type SimulationState,
 } from "@supermaze/sim";
-import { canSwitchTeam, makeRoomCode, shouldCountDown, startBlocker, teamForNewPlayer, type LobbyRules } from "./lobbyLogic.js";
+import { canSwitchTeam, makeRoomCode, rulesFor, shouldCountDown, startBlocker, teamForNewPlayer, type LobbyRules } from "./lobbyLogic.js";
 import { loadMap } from "./mapLoader.js";
 
 /** Developer commands (force a ghost event, ...). On unless the server runs with SUPERMAZE_DEBUG=0. */
@@ -54,11 +55,7 @@ export class MazeRoom extends Room {
   private countdownEndsAt: number | null = null;
   private resultsEndAt: number | null = null;
   private readonly lobby = new Map<string, LobbyPlayer>();
-  private readonly rules: LobbyRules = {
-    minPlayers: DEFAULT_TUNING.round.minParticipants,
-    maxPlayers: DEFAULT_TUNING.round.maxParticipants,
-    maxTeamSizeDifference: DEFAULT_TUNING.teams.maxSizeDifference,
-  };
+  private rules: LobbyRules = rulesFor("quick", "teams", DEFAULT_TUNING.round.maxParticipants);
 
   private baseMap!: MapData;
   private map: MapData | null = null;
@@ -74,6 +71,8 @@ export class MazeRoom extends Room {
   override async onCreate(options: { mode?: unknown; mapId?: unknown }): Promise<void> {
     this.mode = options.mode === "private" ? "private" : "quick";
     this.code = this.mode === "private" ? makeRoomCode() : null;
+    this.rules = rulesFor(this.mode, "teams", DEFAULT_TUNING.round.maxParticipants);
+    this.maxClients = this.rules.maxPlayers;
     await this.setMetadata({ mode: this.mode, code: this.code });
     this.baseMap = await loadMap(typeof options.mapId === "string" ? options.mapId : "maze-01");
     this.clock.start();
@@ -98,6 +97,15 @@ export class MazeRoom extends Room {
       if (!canSwitchTeam([...this.lobby.values()], p.id, this.rules)) return;
       p.teamId = p.teamId === "A" ? "B" : "A";
       p.ready = false;
+      this.afterLobbyChange();
+    });
+    this.onMessage<SetTeamModeMessage>(C2S.setTeamMode, (client, msg) => {
+      if (client.sessionId !== this.hostId || this.mode !== "private" || !this.inLobby()) return;
+      const teamMode = msg?.teamMode === "solo" ? "solo" : "teams";
+      if (teamMode === this.rules.teamMode) return;
+      this.rules = rulesFor(this.mode, teamMode, DEFAULT_TUNING.round.maxParticipants);
+      for (const p of this.lobby.values()) p.ready = false;
+      this.notice = null;
       this.afterLobbyChange();
     });
     this.onMessage(C2S.start, (client) => {
@@ -218,6 +226,7 @@ export class MazeRoom extends Room {
   private lobbyMessage(): LobbyMessage {
     return {
       mode: this.mode,
+      teamMode: this.rules.teamMode,
       code: this.code,
       phase: this.phase,
       hostId: this.hostId,
@@ -256,6 +265,7 @@ export class MazeRoom extends Room {
     this.sim = new Simulation({
       seed,
       map: this.map,
+      teamMode: this.rules.teamMode,
       participants: [...this.lobby.values()]
         .filter((p) => p.connected)
         .map((p) => ({ id: p.id, teamId: p.teamId, controller: "human" as const, name: p.name })),
@@ -337,6 +347,7 @@ export class MazeRoom extends Room {
 
 const SECTIONS: readonly StateSection[] = [
   "status",
+  "teamMode",
   "startTick",
   "endsAtTick",
   "freezeUntilTick",

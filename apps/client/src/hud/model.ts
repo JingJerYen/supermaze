@@ -8,6 +8,8 @@ export interface HudModel {
   /** Seconds until players may move after the round starts; 0 once the freeze is over. */
   freezeSec: number;
   status: SimulationState["status"];
+  /** Everyone for themselves: rosters carry no team headers and labels are player names. */
+  solo: boolean;
   climbed: number;
   total: number;
   lightsOn: boolean;
@@ -66,6 +68,12 @@ export function buildHudModel(
   capacity: number,
 ): HudModel {
   const me = meId ? state.players[meId] : undefined;
+  const solo = state.teamMode === "solo";
+  const nameOfTeam = (teamId: string): string => {
+    if (!solo) return `${LETTERS[teamIndex(teamId) % LETTERS.length]} 隊`;
+    const owner = Object.values(state.players).find((p) => p.teamId === teamId);
+    return owner?.name ?? teamId.slice(0, 6);
+  };
   const byTeam = new Map<string, PlayerRow[]>();
   for (const p of Object.values(state.players)) {
     const rows = byTeam.get(p.teamId) ?? [];
@@ -75,7 +83,7 @@ export function buildHudModel(
   const teams: TeamRow[] = [...byTeam.entries()]
     .map(([teamId, players]) => ({
       teamId,
-      label: `${LETTERS[teamIndex(teamId) % LETTERS.length]} 隊`,
+      label: solo ? "" : nameOfTeam(teamId),
       colorIndex: teamIndex(teamId),
       players: players.sort((a, b) => (a.isMe ? -1 : b.isMe ? 1 : b.score - a.score)),
     }))
@@ -86,6 +94,7 @@ export function buildHudModel(
     remainingSec: state.status === "lobby" ? 0 : remainingTicks / tickRate,
     freezeSec: state.status === "running" ? Math.max(0, state.freezeUntilTick - state.tick) / tickRate : 0,
     status: state.status,
+    solo,
     climbed: state.towerArrivals.length,
     total: Object.keys(state.players).length,
     lightsOn: state.lightsOn,
@@ -99,7 +108,7 @@ export function buildHudModel(
     showCoords: me?.phase === "tower",
     ghost: {
       phase: state.ghost.phase,
-      teamLabel: state.ghost.teamId ? `${LETTERS[teamIndex(state.ghost.teamId) % LETTERS.length]} 隊` : null,
+      teamLabel: state.ghost.teamId ? nameOfTeam(state.ghost.teamId) : null,
       secondsLeft: state.status === "running" ? Math.max(0, state.ghost.phaseEndsAtTick - state.tick) / tickRate : 0,
       iAmGhost: !!me && isGhost(state.ghost, me),
       myTeamIsGhost: !!me && state.ghost.teamId === me.teamId && state.ghost.phase !== "idle",

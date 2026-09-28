@@ -33,6 +33,7 @@ export class Session {
       onLocal: (name, cpus) => this.playLocal(name, cpus),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
+      onSetTeamMode: (mode) => this.conn.setTeamMode(mode),
       onStart: () => this.conn.requestStart(),
       onLeave: () => void this.leave(),
     });

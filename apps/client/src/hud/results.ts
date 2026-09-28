@@ -25,6 +25,9 @@ const CSS = `
 
 const REASON_TEXT: Record<string, string> = {
   allClimbed: "全員登頂",
+  lastOneLeft: "只剩一人未登塔，回合結束；最先全員登頂的隊伍獲勝",
+  "solo:score": "只剩一人未登塔，回合結束；分數最高者獲勝",
+  "solo:timeout": "時間到；分數最高者獲勝",
   "timeout:climbed": "時間到，登塔人數較多",
   "timeout:score": "時間到，登塔人數相同，總分較高",
   "timeout:earlier": "時間到，人數與分數相同，較早達成",
@@ -79,8 +82,12 @@ export class ResultsPanel {
   private render(state: SimulationState, meId: string | null, actions: ResultsActions): void {
     const r = state.result!;
     const winner = r.winnerTeamId;
+    const solo = state.teamMode === "solo";
     const letters = "ABCDEFGH";
-    const teamName = (id: string) => `${letters[teamColorIndex(id) % letters.length]} 隊`;
+    const teamName = (id: string) =>
+      solo
+        ? escapeHtml(Object.values(state.players).find((p) => p.teamId === id)?.name ?? id.slice(0, 6))
+        : `${letters[teamColorIndex(id) % letters.length]} 隊`;
     const teamColor = (id: string) => `#${(TEAM_COLORS[teamColorIndex(id) % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
 
     const rows = Object.values(state.players)
@@ -88,19 +95,20 @@ export class ResultsPanel {
       .sort((a, b) => b.final - a.final || (a.p.towerArrival ?? 99) - (b.p.towerArrival ?? 99))
       .map(({ p, final }, i) => {
         const win = p.teamId === winner;
+        const boosted = win && !solo; // the x2 exists in teams mode only
         const placement = p.phase === "tower" && p.towerArrival !== null ? `第 ${p.towerArrival + 1} 名登塔` : "未登塔";
         return `<tr class="${p.id === meId ? "me" : ""} ${win ? "win" : ""}">
           <td class="rs-rank">${i + 1}</td>
           <td><span class="rs-team" style="background:${teamColor(p.teamId)}"></span>${escapeHtml(p.name ?? p.id.slice(0, 6))}${p.id === meId ? "（你）" : ""}</td>
           <td>${placement}</td>
-          <td class="num">${p.score}${win ? `<span class="rs-mult">×2</span>` : ""}</td>
+          <td class="num">${p.score}${boosted ? `<span class="rs-mult">×2</span>` : ""}</td>
           <td class="num"><strong>${final}</strong></td>
         </tr>`;
       })
       .join("");
 
     this.card.innerHTML = `
-      <div class="rs-title">${winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${teamName(winner)}獲勝` : "沒有獲勝隊伍"}</div>
+      <div class="rs-title">${winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${teamName(winner)} 獲勝` : solo ? "平手" : "沒有獲勝隊伍"}</div>
       <div class="rs-reason">${REASON_TEXT[r.reason] ?? r.reason}</div>
       <table>
         <thead><tr><th></th><th>玩家</th><th>登塔</th><th class="num">分數</th><th class="num">最終</th></tr></thead>

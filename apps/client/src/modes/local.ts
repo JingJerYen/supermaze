@@ -2,9 +2,12 @@ import { CpuController, DEFAULT_TUNING, Simulation, type MapData, type Simulatio
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
 
-/** Single-player: the simulation runs inside the page. Same code the server runs. */
+/**
+ * Single-player: the simulation runs inside the page. Same code the server runs.
+ * Always everyone for themselves (CLAUDE.md 2.1): you against 1 to 5 CPUs, no teams.
+ */
 export interface LocalOptions {
-  /** Participants including you; the rest are CPUs split across the two teams. */
+  /** Participants including you; the rest are CPUs. */
   players?: number;
   seed?: number;
   name?: string;
@@ -20,14 +23,15 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
   const players = Math.max(1, Math.min(options.players ?? 1, DEFAULT_TUNING.round.maxParticipants));
   const idle = Array.from({ length: players - 1 }, (_, i) => ({
     id: `cpu${i + 1}`,
-    teamId: i % 2 === 0 ? "t2" : "t1",
+    teamId: `cpu${i + 1}`,
     controller: "cpu" as const,
     name: `CPU ${i + 1}`,
   }));
   const sim = new Simulation({
     seed: options.seed ?? 1,
     map,
-    participants: [{ id, teamId: "t1", controller: "human", name: options.name ?? "你" }, ...idle],
+    teamMode: "solo",
+    participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你" }, ...idle],
   });
   sim.start();
   const cpu = new CpuController(sim, (options.seed ?? 1) + 1);

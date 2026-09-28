@@ -1,4 +1,6 @@
-import type { PlayerInput, PlayerState, SimulationState } from "@supermaze/sim";
+import type { PlayerInput, PlayerState, SimulationState, TeamMode } from "@supermaze/sim";
+
+export type { TeamMode };
 
 /**
  * Wire messages between client and server, carried as Colyseus room messages.
@@ -15,13 +17,19 @@ export const C2S = {
   ping: "ping",
   /** Toggle ready in the lobby. */
   ready: "ready",
-  /** Move to the other team if the size difference allows it. */
+  /** Teams mode: move to the other team if it has room. */
   switchTeam: "switchTeam",
+  /** Host of a private room: choose two teams or everyone for themselves. */
+  setTeamMode: "setTeamMode",
   /** Host of a private room: start now (min players and team balance still apply). */
   start: "start",
   /** Developer-only commands; the server ignores them unless debugging is enabled. */
   debug: "debug",
 } as const;
+
+export interface SetTeamModeMessage {
+  teamMode: TeamMode;
+}
 
 export type DebugCommand = "ghost";
 export interface DebugMessage {
@@ -67,6 +75,8 @@ export interface LobbyPlayer {
 
 export interface LobbyMessage {
   mode: RoomMode;
+  /** Quick rooms are always `teams` (1v1); a private room's host chooses. */
+  teamMode: TeamMode;
   /** Four-letter join code for private rooms. */
   code: string | null;
   phase: LobbyPhase;
