@@ -121,8 +121,8 @@ http://localhost:5173/?local&map=maze-01&players=6&seed=1&rot=0
 
 | 訊息 | 意思 |
 | --- | --- |
-| `corridor wider than one tile at (x,y)-(x+1,y+1)` | 那個 2×2 全是地面，補一格牆 |
-| `wall thicker than one tile at ...` | 那個 2×2 全是牆頂可走格，打通一格 |
+| `[note]` `corridor wider than one tile at (x,y)-(x+1,y+1)` | 提醒，不是錯誤：那個 2×2 全是地面，障礙物、單向門與陷阱在這裡可以被繞過。刻意做的房間可以不理，畫錯的話補一格牆 |
+| `[note]` `wall thicker than one tile at ...` | 提醒，不是錯誤：那個 2×2 全是牆頂可走格，同樣可以被繞過 |
 | `stairs at (x,y) must have exactly one adjacent wall` | 樓梯旁的牆不是剛好一面 |
 | `stairs at (x,y) must have road opposite its wall` | 樓梯背面不是道路 |
 | `bridge at (x,y) must join two walls with road passing underneath` | 橋兩側不是牆、或底下不是路 |

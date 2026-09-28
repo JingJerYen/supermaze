@@ -56,7 +56,6 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
     }
   }
 
-  errors.push(...corridorWidthErrors(grid, data.plazaRadius ?? 0));
 
   const spawns = grid.spawnTiles();
   if (spawns.length === 0) {
@@ -141,11 +140,23 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
 }
 
 /**
- * Corridors are exactly one tile wide and walls exactly one tile thick
- * (CLAUDE.md section 6): no 2x2 block may be fully walkable on the road layer
- * or fully walkable on the wallTop layer, except inside the tower plaza.
+ * Things worth a second look that do not make a map unplayable (CLAUDE.md
+ * section 6): places where a corridor is wider than one tile or a wall thicker
+ * than one tile, outside the tower plaza. Wide spots are allowed since
+ * 2026-09-28; they are listed because obstacles, doors and traps can be walked
+ * round there, so the author can tell a deliberate room from a slip of the pen.
+ * A map with warnings is valid and joins the pool.
  */
-function corridorWidthErrors(grid: MapGrid, plazaRadius: number): string[] {
+export function mapWarnings(raw: MapData): string[] {
+  try {
+    const data = normalizeMap(raw);
+    return widthNotes(MapGrid.fromMapData(data), data.plazaRadius ?? 0);
+  } catch {
+    return []; // not even a grid: validateMap reports that
+  }
+}
+
+function widthNotes(grid: MapGrid, plazaRadius: number): string[] {
   const errors: string[] = [];
   const tower = grid.findCells("tower");
   const inPlaza = (x: number, y: number) =>

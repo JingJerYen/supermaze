@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TUNING, validateMap } from "@supermaze/sim";
+import { DEFAULT_TUNING, mapWarnings } from "@supermaze/sim";
 import { DemoRunner } from "../src/rules/runner.js";
 import { RULE_SCENES, ruleText } from "../src/rules/scenes.js";
 
@@ -41,7 +41,7 @@ describe("rules demos", () => {
       }
       expect(ticks / runner.tickRate).toBeLessThan(30);
       // The little maps keep to the real geometry rules where it matters for looks.
-      expect(validateMap(scene.map).filter((e) => /corridor wider/.test(e))).toEqual([]);
+      expect(mapWarnings(scene.map).filter((e) => /corridor wider/.test(e))).toEqual([]);
     });
   }
 });

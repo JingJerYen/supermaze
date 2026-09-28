@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateMap, type MapData } from "@supermaze/sim";
+import { mapWarnings, validateMap, type MapData } from "@supermaze/sim";
 
 /**
  * Validates every map in content/maps/ (or only the ones named on the command
@@ -24,9 +24,11 @@ async function main(): Promise<void> {
   for (const file of files) {
     const raw = await readFile(path.join(mapsDir, file), "utf8");
     let errors: string[];
+    let warnings: string[] = [];
     try {
       const data = JSON.parse(raw) as MapData;
       errors = validateMap(data);
+      warnings = mapWarnings(data);
     } catch (e) {
       errors = [`invalid JSON: ${(e as Error).message}`];
     }
@@ -36,6 +38,8 @@ async function main(): Promise<void> {
     } else {
       console.log(`[ok]   ${file}`);
     }
+    // Wide corridors and thick walls are allowed; they are listed so a slip is not mistaken for a room.
+    if (warnings.length) console.log(`[note] ${file}: ${warnings.length} wide spot(s) where items can be walked round\n  ${warnings.join("\n  ")}`);
   }
   if (failed) process.exit(1);
 }

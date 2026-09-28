@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIRS, MapGrid } from "../src/map/grid.js";
-import { validateMap } from "../src/map/validate.js";
+import { mapWarnings, validateMap } from "../src/map/validate.js";
 import { LATTICE_MAP, TINY_MAP } from "./fixtures.js";
 
 const grid = MapGrid.fromMapData(TINY_MAP);
@@ -59,17 +59,19 @@ describe("validateMap", () => {
     expect(validateMap(LATTICE_MAP)).toEqual([]);
   });
 
-  it("rejects corridors wider than one tile and walls thicker than one tile", () => {
-    // TINY_MAP has open 2x2 road areas (e.g. rows 1-2 at x=6..7) and a 2x2 wall block nowhere, so only the corridor message appears.
-    const msgs = validateMap(TINY_MAP).join("\n");
-    expect(msgs).toMatch(/corridor wider than one tile/);
+  it("notes corridors wider than one tile and walls thicker than one tile without failing the map", () => {
+    // TINY_MAP has open 2x2 road areas (e.g. rows 1-2 at x=6..7) and no 2x2 wall block.
+    expect(mapWarnings(TINY_MAP).join("\n")).toMatch(/corridor wider than one tile/);
+    expect(validateMap(TINY_MAP).join("\n")).not.toMatch(/corridor wider|wall thicker/);
     const thick = { ...LATTICE_MAP, rows: LATTICE_MAP.rows.map((r, y) => (y === 3 ? "XS#.....X" : r)) };
-    expect(validateMap(thick).join("\n")).toMatch(/wall thicker than one tile/);
+    expect(mapWarnings(thick).join("\n")).toMatch(/wall thicker than one tile/);
+    expect(validateMap(thick).join("\n")).not.toMatch(/wall thicker/);
+    expect(mapWarnings(LATTICE_MAP)).toEqual([]);
   });
 
   it("waives the width rule inside the tower plaza", () => {
     const plaza = { ...TINY_MAP, plazaRadius: 99 };
-    expect(validateMap(plaza).join("\n")).not.toMatch(/corridor wider/);
+    expect(mapWarnings(plaza)).toEqual([]);
   });
 
   it("rejects ragged rows", () => {
