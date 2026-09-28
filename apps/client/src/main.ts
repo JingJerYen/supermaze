@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { rotateMap, type QuarterTurns } from "@supermaze/sim";
-import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
+import { drawMap, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
 import { characters } from "./render/characters.js";
@@ -36,11 +36,17 @@ if (params.has("rules")) {
   // ?rules opens the rules cards directly (handy while authoring scenes).
   new RulesScreen(root, renderer, () => (location.href = location.pathname));
 } else if (params.has("local")) {
-  const rot = (Number(params.get("rot") ?? 0) % 4) as QuarterTurns;
-  const map = rotateMap(loadMapById(params.get("map") ?? DEFAULT_MAP_ID), rot);
+  // ?map= opens that map (even one still being drawn); otherwise the map is drawn
+  // from the pool by player count and seed, like every other mode.
+  const players = Number(params.get("players") ?? 1);
+  const seed = Number(params.get("seed") ?? 1);
+  const named = params.get("map");
+  const chosen = named ? loadMapById(named) : (drawMap(players, seed) ?? loadMapById(""));
+  const rot = (Number(params.get("rot") ?? (named ? 0 : seed)) % 4) as QuarterTurns;
+  const map = rotateMap(chosen, rot);
   const mode = createLocalMode(map, {
-    players: Number(params.get("players") ?? 1),
-    seed: Number(params.get("seed") ?? 1),
+    players,
+    seed,
     name: playerName,
     difficulty: params.get("cpu") === "hard" ? "hard" : "easy",
   });

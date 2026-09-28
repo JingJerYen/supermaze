@@ -7,7 +7,12 @@ import { RULE_SCENES, ruleText } from "./scenes.js";
 const CSS = `
 .rs-rules{position:fixed;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));bottom:max(12px,env(safe-area-inset-bottom));
   width:min(340px,40vw);display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:16px;z-index:25;
-  background:rgba(16,19,24,.86);border:1px solid rgba(255,255,255,.14);color:#fff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif}
+  background:rgba(16,19,24,var(--rules-alpha,.45));border:1px solid rgba(255,255,255,.14);color:#fff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;
+  text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7)}
+/* Short screens (phones held sideways): a narrower, lighter panel so the scene shows through. */
+@media (max-height:520px){.rs-rules{width:min(280px,34vw);padding:10px 12px;gap:6px;--rules-alpha:.3}
+  .rs-rules button{height:34px;font-size:14px}}
+.rs-rules button{text-shadow:none}
 .rs-rules *{box-sizing:border-box}
 .rs-rules h2{font-size:clamp(17px,2.6vh,21px);font-weight:500;margin:0;color:#ffd23f}
 .rs-rules-page{font-size:12px;color:#c9d2e3}

@@ -2,7 +2,7 @@ import type * as THREE from "three";
 import type { LobbyMessage, MatchStartedMessage } from "@supermaze/protocol";
 import { rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { LobbyUi } from "./lobby/lobbyUi.js";
-import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
+import { drawMap, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
 import { OnlineMatchMode } from "./modes/online.js";
@@ -83,9 +83,14 @@ export class Session {
   /** Single player in the page: no socket involved; the results screen leads back here. */
   private playLocal(name: string, cpus: number, difficulty: "easy" | "hard"): void {
     this.teardownMatch();
-    this.ui.hide();
     const seed = Date.now() >>> 0;
-    const map = rotateMap(loadMapById(DEFAULT_MAP_ID), (seed % 4) as QuarterTurns);
+    const drawn = drawMap(cpus + 1, seed);
+    if (!drawn) {
+      this.ui.showHome(name, `沒有支援 ${cpus + 1} 人的地圖，請改選 CPU 人數`);
+      return;
+    }
+    this.ui.hide();
+    const map = rotateMap(drawn, (seed % 4) as QuarterTurns);
     const mode = createLocalMode(map, {
       players: cpus + 1,
       seed,

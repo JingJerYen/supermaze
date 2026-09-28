@@ -22,6 +22,7 @@ import {
   NO_INPUT,
   CpuController,
   Simulation,
+  pickMap,
   rotateMap,
   type MapData,
   type PlayerInput,
@@ -29,7 +30,7 @@ import {
   type SimulationState,
 } from "@supermaze/sim";
 import { canSwitchTeam, makeRoomCode, rulesFor, shouldCountDown, startBlocker, teamForNewPlayer, type LobbyRules } from "./lobbyLogic.js";
-import { loadMap } from "./mapLoader.js";
+import { loadMap, loadMapPool } from "./mapLoader.js";
 
 /** Developer commands (force a ghost event, ...). On unless the server runs with SUPERMAZE_DEBUG=0. */
 const DEBUG_COMMANDS = process.env["SUPERMAZE_DEBUG"] !== "0";
@@ -57,7 +58,8 @@ export class MazeRoom extends Room {
   private readonly lobby = new Map<string, LobbyPlayer>();
   private rules: LobbyRules = rulesFor("quick", "solo", DEFAULT_TUNING.round.maxParticipants);
 
-  private baseMap!: MapData;
+  /** Maps this room may draw from; validated when the room was created. */
+  private pool: MapData[] = [];
   private map: MapData | null = null;
   private sim: Simulation | null = null;
   /** Drives cpu-controlled players (dropped humans) with the sim's own CPU. */
@@ -74,7 +76,10 @@ export class MazeRoom extends Room {
     this.rules = rulesFor(this.mode, "teams", DEFAULT_TUNING.round.maxParticipants);
     this.maxClients = this.rules.maxPlayers;
     await this.setMetadata({ mode: this.mode, code: this.code });
-    this.baseMap = await loadMap(typeof options.mapId === "string" ? options.mapId : "maze-01");
+    // Every round draws its map from the pool (section 6). A room created with an
+    // explicit mapId (scripted checks) plays that map only.
+    this.pool = typeof options.mapId === "string" ? [await loadMap(options.mapId)] : await loadMapPool();
+    if (this.pool.length === 0) throw new Error("no playable map in content/maps");
     this.clock.start();
 
     this.onMessage<InputMessage>(C2S.input, (client, msg) => {
@@ -263,19 +268,22 @@ export class MazeRoom extends Room {
       this.afterLobbyChange();
       return;
     }
+    const seed = Date.now() >>> 0;
+    const participants = [...this.lobby.values()]
+      .filter((p) => p.connected)
+      .map((p) => ({ id: p.id, teamId: p.teamId, controller: "human" as const, name: p.name }));
+    const drawn = pickMap(this.pool, participants.length, seed);
+    if (!drawn) {
+      this.phase = "lobby";
+      this.notice = `沒有支援 ${participants.length} 人的地圖`;
+      this.afterLobbyChange();
+      return;
+    }
     await this.lock();
     this.phase = "playing";
     this.notice = null;
-    const seed = Date.now() >>> 0;
-    this.map = rotateMap(this.baseMap, (seed % 4) as QuarterTurns);
-    this.sim = new Simulation({
-      seed,
-      map: this.map,
-      teamMode: this.rules.teamMode,
-      participants: [...this.lobby.values()]
-        .filter((p) => p.connected)
-        .map((p) => ({ id: p.id, teamId: p.teamId, controller: "human" as const, name: p.name })),
-    });
+    this.map = rotateMap(drawn, (seed % 4) as QuarterTurns);
+    this.sim = new Simulation({ seed, map: this.map, teamMode: this.rules.teamMode, participants });
     this.sim.start();
     this.cpu = new CpuController(this.sim, seed + 1);
     this.lastSent.clear();
@@ -287,7 +295,7 @@ export class MazeRoom extends Room {
   }
 
   private matchStartedMessage(): MatchStartedMessage {
-    return { mapId: this.map?.id ?? this.baseMap.id, rotation: this.map?.rotation ?? 0, tickRate: DEFAULT_TUNING.tickRate };
+    return { mapId: this.map?.id ?? this.pool[0]?.id ?? "", rotation: this.map?.rotation ?? 0, tickRate: DEFAULT_TUNING.tickRate };
   }
 
   private sendFull(client: Client): void {
