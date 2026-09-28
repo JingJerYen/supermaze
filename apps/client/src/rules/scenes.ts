@@ -9,6 +9,7 @@ import type { Cmd } from "./puppet.js";
 export interface DemoScene {
   id: string;
   title: string;
+  /** Up to three lines. `{name}` placeholders are filled from the live tuning by `ruleText`, so durations never go stale. */
   text: string[];
   map: MapData;
   /** In spawn order: the first stands on the south door, the second on the east one. */
@@ -25,6 +26,20 @@ export interface DemoScene {
   expect: SimEvent["type"][];
   /** Optional two-column table under the text (the scoring card); built from the live tuning so it never goes stale. */
   table?(tuning: Tuning): [string, string][];
+}
+
+/** A card's lines with the real game's numbers filled in (the demos themselves may run on shortened timings). */
+export function ruleText(scene: DemoScene, tuning: Tuning): string[] {
+  const values: Record<string, number> = {
+    obstacleSec: tuning.placeables.lifetimeSec.obstacle,
+    doorSec: tuning.placeables.lifetimeSec.oneWayDoor,
+    trapSec: tuning.placeables.lifetimeSec.trap,
+    trapFreezeSec: tuning.placeables.trapFreezeSec,
+    caughtFreezeSec: tuning.ghostEvent.caughtFreezeSec,
+    ghostWarningSec: tuning.ghostEvent.warningSec,
+    ghostDurationSec: tuning.ghostEvent.durationSec,
+  };
+  return scene.text.map((line) => line.replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole)));
 }
 
 const N = { dx: 0, dy: -1 };
@@ -204,7 +219,7 @@ export const RULE_SCENES: DemoScene[] = [
     title: "障礙物與鐵鎚",
     text: [
       "障礙物放在面前一格，會擋住所有人，包括你自己和隊友。",
-      "它大約十秒後自己消失，或被鐵鎚敲掉。",
+      "它 {obstacleSec} 秒後自己消失，或被鐵鎚敲掉。",
       "鐵鎚可以敲掉面前的障礙物、陷阱、單向門與傳送點。揮空也會消耗掉。",
     ],
     map: map("obstacle", RING, { keys: [[1, 1]], boxes: [[3, 5], [7, 5]] }),
@@ -241,7 +256,7 @@ export const RULE_SCENES: DemoScene[] = [
     text: [
       "單向門放在面前一格，通行方向就是你放下時面對的方向，地上有箭頭。",
       "順著箭頭可以通過，反方向會被擋住。",
-      "對所有人都有效，包括放的人。大約十秒後消失。",
+      "對所有人都有效，包括放的人。{doorSec} 秒後消失。",
     ],
     map: map("door", RING, { keys: [[9, 1]], boxes: [[7, 5]] }),
     participants: solo,
@@ -270,8 +285,8 @@ export const RULE_SCENES: DemoScene[] = [
     id: "trap",
     title: "定身陷阱",
     text: [
-      "陷阱放在面前一格。第一個踩上去的人會被鐵籠罩住，幾秒內不能移動。",
-      "陷阱抓到一個人就消失，沒人踩的話大約十秒後消失。",
+      "陷阱放在面前一格。第一個踩上去的人會被鐵籠罩住，{trapFreezeSec} 秒內不能移動。",
+      "陷阱抓到一個人就消失，沒人踩的話 {trapSec} 秒後消失。",
       "誰踩到都算，包括你自己。抓到別隊的人可以得分。",
     ],
     map: map("trap", RING, { keys: [[1, 1], [7, 1]], boxes: [[3, 5], [5, 1]] }),
@@ -401,8 +416,8 @@ export const RULE_SCENES: DemoScene[] = [
     id: "ghost",
     title: "鬼抓人",
     text: [
-      "每隔一段時間，其中一方會變成鬼，畫面上方會先倒數預告。",
-      "鬼跑得比較快，碰到你就算抓到：你的道具全部消失並被定身幾秒，鑰匙不會掉。",
+      "每隔一段時間，其中一方會變成鬼 {ghostDurationSec} 秒，畫面上方會先倒數 {ghostWarningSec} 秒預告。",
+      "鬼跑得比較快，碰到你就算抓到：你的道具全部消失並被定身 {caughtFreezeSec} 秒，鑰匙不會掉。",
       "當鬼的時候不能撿東西、不能用道具、也不能登塔。已經在塔頂的人不受影響。",
     ],
     map: map("ghost", RING, { keys: [[2, 3], [8, 3]] }),

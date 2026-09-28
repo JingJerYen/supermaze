@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { validateMap } from "@supermaze/sim";
+import { DEFAULT_TUNING, validateMap } from "@supermaze/sim";
 import { DemoRunner } from "../src/rules/runner.js";
-import { RULE_SCENES } from "../src/rules/scenes.js";
+import { RULE_SCENES, ruleText } from "../src/rules/scenes.js";
 
 /** Event types of one full run of a scene, up to the moment it starts over. */
 function play(runner: DemoRunner): string[] {
@@ -29,6 +29,10 @@ describe("rules demos", () => {
 
     it(`${scene.id}: text and duration fit a card`, () => {
       expect(scene.text.length).toBeLessThanOrEqual(3);
+      // Every number in the text comes from the tuning; no placeholder is left unfilled.
+      const lines = ruleText(scene, DEFAULT_TUNING);
+      expect(lines.join("")).not.toMatch(/[{}]/);
+      if (scene.id === "obstacle-hammer") expect(lines.join("")).toContain(`${DEFAULT_TUNING.placeables.lifetimeSec.obstacle} 秒`);
       const runner = new DemoRunner(scene);
       let ticks = 0;
       while (runner.loops === 0 && ticks < 20 * 120) {

@@ -2,7 +2,7 @@ import type * as THREE from "three";
 import { DEFAULT_TUNING } from "@supermaze/sim";
 import { Match } from "../match.js";
 import { createDemoMode } from "./demoMode.js";
-import { RULE_SCENES } from "./scenes.js";
+import { RULE_SCENES, ruleText } from "./scenes.js";
 
 const CSS = `
 .rs-rules{position:fixed;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));bottom:max(12px,env(safe-area-inset-bottom));
@@ -68,7 +68,7 @@ export class RulesScreen {
       <div class="rs-rules-nav"><button id="rs-close">回首頁</button></div>`;
     this.panel.querySelector("h2")!.textContent = scene.title;
     const text = this.panel.querySelector(".rs-rules-text")!;
-    for (const line of scene.text) {
+    for (const line of ruleText(scene, DEFAULT_TUNING)) {
       const p = document.createElement("p");
       p.textContent = line;
       text.appendChild(p);
