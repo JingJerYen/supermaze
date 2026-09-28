@@ -1,5 +1,5 @@
 import { availableAction, canDiscard } from "./actions.js";
-import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState } from "./boxes.js";
+import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState, canDrawItem } from "./boxes.js";
 import type { SimEvent } from "./events.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
@@ -582,10 +582,11 @@ export class Simulation {
     }
     if (p.items.length < this.tuning.inventory.capacity) {
       const box = boxAt(work.boxes, p.mover.from);
-      if (box) {
-        // A team already holding its two teleport nodes cannot draw a third (section 9).
-        const owned = teamNodeCount({ ...work.players, [id]: p }, work.nodes, p.teamId);
-        const excluded: ItemKind[] = owned >= this.tuning.teleport.maxNodesPerTeam ? ["teleportNode"] : [];
+      // A team already holding its two teleport nodes cannot draw a third (section 9).
+      const owned = box ? teamNodeCount({ ...work.players, [id]: p }, work.nodes, p.teamId) : 0;
+      const excluded: ItemKind[] = owned >= this.tuning.teleport.maxNodesPerTeam ? ["teleportNode"] : [];
+      // With nothing left to draw (every weighted kind excluded) the box stays shut.
+      if (box && canDrawItem(this.tuning, excluded)) {
         const item = drawItem(this.rng, this.tuning, excluded);
         const rest = { ...work.boxes };
         delete rest[box.id];

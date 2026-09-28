@@ -1,4 +1,5 @@
 import type * as THREE from "three";
+import { DEFAULT_TUNING } from "@supermaze/sim";
 import { Match } from "../match.js";
 import { createDemoMode } from "./demoMode.js";
 import { RULE_SCENES } from "./scenes.js";
@@ -12,6 +13,9 @@ const CSS = `
 .rs-rules-page{font-size:12px;color:#c9d2e3}
 .rs-rules-text{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:clamp(13px,2.2vh,15px);line-height:1.55;color:#e8ecf4}
 .rs-rules-text p{margin:0}
+.rs-rules-table{width:100%;border-collapse:collapse;font-size:13px}
+.rs-rules-table td{padding:5px 0;border-top:1px solid rgba(255,255,255,.12)}
+.rs-rules-table td:last-child{text-align:right;color:#ffd23f;white-space:nowrap;padding-left:8px}
 .rs-rules-nav{display:flex;gap:8px}
 .rs-rules button{flex:1;height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:15px;cursor:pointer}
 .rs-rules button.primary{background:#ffd23f;color:#412402;border-color:#ffd23f;font-weight:500}
@@ -68,6 +72,16 @@ export class RulesScreen {
       const p = document.createElement("p");
       p.textContent = line;
       text.appendChild(p);
+    }
+    if (scene.table) {
+      const table = document.createElement("table");
+      table.className = "rs-rules-table";
+      for (const [label, value] of scene.table(DEFAULT_TUNING)) {
+        const row = table.insertRow();
+        row.insertCell().textContent = label;
+        row.insertCell().textContent = value;
+      }
+      text.appendChild(table);
     }
     const prev = this.panel.querySelector<HTMLButtonElement>("#rs-prev")!;
     const next = this.panel.querySelector<HTMLButtonElement>("#rs-next")!;

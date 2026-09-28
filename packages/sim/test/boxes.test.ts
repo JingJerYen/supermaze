@@ -159,3 +159,16 @@ describe("using items", () => {
     expect(sim.getState().players["a"]!.items).toEqual(items.slice(1));
   });
 });
+
+describe("nothing to draw", () => {
+  it("leaves the box shut when every weighted item is barred", () => {
+    // Only teleport nodes are in the table and the team already owns two: the third box cannot give anything.
+    const tuning = tuningWith({ itemBoxes: { perParticipant: 3, weights: { oneWayDoor: 0, obstacle: 0, hammer: 0, trap: 0, teleportNode: 1 } } });
+    const map = { ...BOX_MAP, spawns: { ...BOX_MAP.spawns, itemBoxes: [{ x: 2, y: 5, layer: "road" as const }, { x: 2, y: 6, layer: "road" as const }, { x: 1, y: 6, layer: "road" as const }] } };
+    const sim = new Simulation({ seed: 4, map, participants: one, tuning });
+    sim.start();
+    walk(sim, "a", [{ moveX: 0, moveY: 1 }, { moveX: 0, moveY: 1 }, { moveX: -1, moveY: 0 }]); // (2,5), (2,6), (1,6)
+    expect(sim.getState().players["a"]!.items).toEqual(["teleportNode", "teleportNode"]);
+    expect(Object.values(sim.getState().boxes).some((b) => b.pos.x === 1 && b.pos.y === 6)).toBe(true);
+  });
+});

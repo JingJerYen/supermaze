@@ -34,6 +34,11 @@ export function drawItem(rng: SeededRandom, tuning: Tuning, excluded: readonly I
   return rng.pickWeighted(kinds, weights);
 }
 
+/** Whether anything at all can come out of a box for someone barred from `excluded`. */
+export function canDrawItem(tuning: Tuning, excluded: readonly ItemKind[] = []): boolean {
+  return (Object.keys(tuning.itemBoxes.weights) as ItemKind[]).some((k) => !excluded.includes(k) && tuning.itemBoxes.weights[k] > 0);
+}
+
 export function boxAt(boxes: Record<string, BoxState>, tile: TilePos): BoxState | undefined {
   for (const b of Object.values(boxes)) {
     if (b.pos.x === tile.x && b.pos.y === tile.y && b.pos.layer === tile.layer) return b;
