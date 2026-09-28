@@ -75,7 +75,7 @@ export interface LobbyPlayer {
 
 export interface LobbyMessage {
   mode: RoomMode;
-  /** Quick rooms are always `teams` (1v1); a private room's host chooses. */
+  /** Quick rooms are always `solo` (two players, no multiplier); a private room's host chooses. */
   teamMode: TeamMode;
   /** Four-letter join code for private rooms. */
   code: string | null;

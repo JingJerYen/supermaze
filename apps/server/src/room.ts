@@ -55,7 +55,7 @@ export class MazeRoom extends Room {
   private countdownEndsAt: number | null = null;
   private resultsEndAt: number | null = null;
   private readonly lobby = new Map<string, LobbyPlayer>();
-  private rules: LobbyRules = rulesFor("quick", "teams", DEFAULT_TUNING.round.maxParticipants);
+  private rules: LobbyRules = rulesFor("quick", "solo", DEFAULT_TUNING.round.maxParticipants);
 
   private baseMap!: MapData;
   private map: MapData | null = null;

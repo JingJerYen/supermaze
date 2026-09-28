@@ -4,12 +4,12 @@ import { canSwitchTeam, makeRoomCode, rulesFor, shouldCountDown, startBlocker, t
 
 const teams = rulesFor("private", "teams", 6);
 const solo = rulesFor("private", "solo", 6);
-const quick = rulesFor("quick", "solo", 6); // the requested mode is ignored: quick is always 1v1
+const quick = rulesFor("quick", "teams", 6); // the requested mode is ignored: quick is always a two-player solo round
 const p = (id: string, teamId: string, ready = true, connected = true): LobbyPlayer => ({ id, name: id, teamId, ready, connected });
 
 describe("rules per room kind", () => {
-  it("quick match is two players in teams mode; private rooms take up to six in the host's mode", () => {
-    expect(quick).toEqual({ minPlayers: 2, maxPlayers: 2, teamMode: "teams" });
+  it("quick match is two players in solo mode; private rooms take up to six in the host's mode", () => {
+    expect(quick).toEqual({ minPlayers: 2, maxPlayers: 2, teamMode: "solo" });
     expect(teams).toEqual({ minPlayers: 2, maxPlayers: 6, teamMode: "teams" });
     expect(solo).toEqual({ minPlayers: 2, maxPlayers: 6, teamMode: "solo" });
   });

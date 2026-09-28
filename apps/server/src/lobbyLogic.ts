@@ -15,11 +15,12 @@ export interface LobbyRules {
 }
 
 /**
- * Quick match is always two players, one against one. A private room holds up
- * to `maxParticipants` and plays whichever mode its host picked.
+ * Quick match is always two players, one against one, played as a solo round
+ * (ranked by score, no winner multiplier). A private room holds up to
+ * `maxParticipants` and plays whichever mode its host picked.
  */
 export function rulesFor(mode: RoomMode, teamMode: TeamMode, maxParticipants: number): LobbyRules {
-  if (mode === "quick") return { minPlayers: 2, maxPlayers: 2, teamMode: "teams" };
+  if (mode === "quick") return { minPlayers: 2, maxPlayers: 2, teamMode: "solo" };
   return { minPlayers: 2, maxPlayers: maxParticipants, teamMode };
 }
 
