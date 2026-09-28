@@ -128,6 +128,10 @@ export interface Tuning {
     leftoverItem: number;
     /** Awarded to a ghost per successful catch. */
     ghostCatch: number;
+    /** Awarded to a trap's owner when it catches a player of another team. Own team and self score nothing. */
+    trapCatch: number;
+    /** Awarded for flipping a light switch, on or off. */
+    lightSwitch: number;
     /** Multiplier applied to the winning team's round score. */
     winningTeamMultiplier: number;
   };

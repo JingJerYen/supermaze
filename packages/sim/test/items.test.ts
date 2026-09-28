@@ -194,6 +194,7 @@ describe("trap", () => {
     expect(ev).toContain("trapTriggered");
     const a = sim.getState().players["a"]!;
     expect(a.frozenBy).toBe("trap");
+    expect(a.score).toBe(0); // caught in your own trap: nobody scores
     expect(a.mover.from).toEqual({ x: 2, y: 6, layer: "road" });
     expect(Object.values(sim.getState().placeables)).toHaveLength(0);
     // Frozen: pushing does not move.
@@ -202,6 +203,20 @@ describe("trap", () => {
     for (let i = 0; i < 20; i++) sim.step(new Map());
     walk(sim, "a", [E]);
     expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 3, y: 6, layer: "road" });
+  });
+});
+
+describe("trap scoring", () => {
+  it("gives the owner points for catching a player of another team", () => {
+    const sim = armed("trap", {}, 2); // a (team A) on (2,5) facing south; b (team B) on the east entry (3,3)
+    sim.step(new Map([["a", press]])); // trap on (2,6)
+    const events: { type: string }[] = [];
+    // b: (3,3) -> (3,4) -> (2,4) -> (2,5) -> (2,6)
+    for (const d of [S, W, S]) walk(sim, "b", [d]);
+    for (let i = 0; i < STEP_TICKS; i++) events.push(...sim.step(new Map([["b", S]])));
+    expect(events).toContainEqual(expect.objectContaining({ type: "trapTriggered", playerId: "b", ownerId: "a", ownerScored: true }));
+    expect(sim.getState().players["a"]!.score).toBe(sim.tuning.scoring.trapCatch);
+    expect(sim.getState().players["b"]!.frozenBy).toBe("trap");
   });
 });
 

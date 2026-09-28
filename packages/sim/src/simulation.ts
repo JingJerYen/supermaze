@@ -121,6 +121,8 @@ export class Simulation {
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
   private nextNodeIndex = 0;
+  /** Points earned this tick by players other than the one being stepped (trap owners); applied after the player loop. */
+  private pendingScores: { playerId: PlayerId; points: number }[] = [];
 
   constructor(options: SimulationOptions) {
     this.tuning = options.tuning ?? DEFAULT_TUNING;
@@ -388,6 +390,7 @@ export class Simulation {
             const sw = usableSwitchAt(work.switches, p.mover.from) as LightSwitchState;
             work.switches = { ...work.switches, [sw.id]: { ...sw, used: true } };
             work.lightsOn = !work.lightsOn;
+            p = { ...p, score: p.score + this.tuning.scoring.lightSwitch };
             work.events.push({ type: "lightsToggled", tick, playerId: id, switchId: sw.id, lightsOn: work.lightsOn });
           } else if (action === "pickUpNode") {
             p = pickUpNode(work, p);
@@ -401,6 +404,11 @@ export class Simulation {
     }
 
     const players = work.players;
+    for (const s of this.pendingScores) {
+      const scorer = players[s.playerId];
+      if (scorer) players[s.playerId] = { ...scorer, score: scorer.score + s.points };
+    }
+    this.pendingScores = [];
 
     // Catches: a ghost overlapping an unprotected runner freezes them and empties their bag.
     if (ghost.phase === "active" && this.state.status === "running") {
@@ -500,7 +508,11 @@ export class Simulation {
     if (trap?.kind === "trap") {
       delete work.placeables[trap.id];
       const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
-      work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick });
+      // The owner scores only for catching another team; trapping yourself or a teammate is worth nothing.
+      const owner = this.state.players[trap.ownerId];
+      const ownerScored = !!owner && owner.teamId !== p.teamId;
+      if (ownerScored) this.pendingScores.push({ playerId: trap.ownerId, points: this.tuning.scoring.trapCatch });
+      work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick, ownerId: trap.ownerId, ownerScored });
       // Arriving cancels any queued movement; the player stands frozen on the trap tile.
       p = { ...p, frozenUntilTick, frozenBy: "trap", mover: { ...p.mover, target: null, progress: 0 } };
     }

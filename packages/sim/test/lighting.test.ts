@@ -79,6 +79,7 @@ describe("lights in the simulation", () => {
     expect(events).toContainEqual({ type: "lightsToggled", tick: expect.any(Number), playerId: "a", switchId: expect.any(String), lightsOn: false });
     expect(sim.getState().lightsOn).toBe(false);
     expect(Object.values(sim.getState().switches).filter((s) => s.used)).toHaveLength(1);
+    expect(sim.getState().players["a"]!.score).toBe(sim.tuning.scoring.lightSwitch);
 
     // Pressing again on the spent switch does nothing.
     events = sim.step(new Map([["a", press]]));

@@ -93,6 +93,8 @@ export const DEFAULT_TUNING: Tuning = {
     keyFound: 20,
     leftoverItem: 5,
     ghostCatch: 20,
+    trapCatch: 10,
+    lightSwitch: 10,
     winningTeamMultiplier: 2,
   },
 };
