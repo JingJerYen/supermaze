@@ -30,14 +30,24 @@ export class MapGrid {
   readonly width: number;
   readonly height: number;
   private readonly kinds: CellKind[];
-  /** Every key / box / switch candidate tile; placeables may never sit on one (section 9). */
+  /** Every key / box / switch candidate tile. */
   private readonly candidates: ReadonlySet<string>;
+  /** Item-box candidates: boxes reappear on them all round, so placeables never sit on one. */
+  private readonly boxCandidates: ReadonlySet<string>;
+  /**
+   * Tiles placeables must stay off this round (section 9). Fixed once when the
+   * round starts by `reserveForRound`, so nothing is recomputed per tick; until
+   * then every candidate is reserved, which is the safe side.
+   */
+  private reserved: ReadonlySet<string>;
 
-  private constructor(width: number, height: number, kinds: CellKind[], candidates: ReadonlySet<string>) {
+  private constructor(width: number, height: number, kinds: CellKind[], candidates: ReadonlySet<string>, boxCandidates: ReadonlySet<string>) {
     this.width = width;
     this.height = height;
     this.kinds = kinds;
     this.candidates = candidates;
+    this.boxCandidates = boxCandidates;
+    this.reserved = candidates;
   }
 
   static fromMapData(raw: MapData): MapGrid {
@@ -53,7 +63,23 @@ export class MapGrid {
     const candidates = new Set(
       [...data.spawns.keys, ...data.spawns.itemBoxes, ...data.spawns.lightSwitches].map((t) => tileKey(t.x, t.y, t.layer)),
     );
-    return new MapGrid(width, height, kinds, candidates);
+    const boxCandidates = new Set(data.spawns.itemBoxes.map((t) => tileKey(t.x, t.y, t.layer)));
+    return new MapGrid(width, height, kinds, candidates, boxCandidates);
+  }
+
+  /**
+   * Called once the round's keys and light switches have been drawn: those
+   * tiles and every item-box candidate are reserved for the round. Key and
+   * switch candidates that were not drawn become ordinary floor. The keys and
+   * switches stay reserved after they are picked up or used.
+   */
+  reserveForRound(keys: readonly TilePos[], switches: readonly TilePos[]): void {
+    this.reserved = new Set([...this.boxCandidates, ...[...keys, ...switches].map((t) => tileKey(t.x, t.y, t.layer))]);
+  }
+
+  /** Whether placeables must stay off this tile this round. */
+  isReservedTile(x: number, y: number, layer: Layer): boolean {
+    return this.reserved.has(tileKey(x, y, layer));
   }
 
   /** Whether a tile is a spawn candidate for keys, boxes or switches. */

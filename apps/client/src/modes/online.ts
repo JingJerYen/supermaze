@@ -37,6 +37,11 @@ export class OnlineMatchMode implements GameMode {
   }
 
   applyFull(state: SimulationState, at: number): void {
+    // Same reservation the server made when the round started, so the action button agrees with it.
+    this.grid.reserveForRound(
+      Object.values(state.keys).map((k) => k.pos),
+      Object.values(state.switches).map((s) => s.pos),
+    );
     this.current = state;
     this.buffer.push(state, at);
   }

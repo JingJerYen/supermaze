@@ -404,3 +404,64 @@ describe("discarding", () => {
     expect(sim.canDiscard({ ...sim.getState().players["a"]!, items: ["hammer"] })).toBe(false);
   });
 });
+
+describe("reserved tiles", () => {
+  // a spawns on (2,4); the box on (2,5) gives an obstacle; a then stands on (2,5) facing south at (2,6).
+  function facing26(keys: { x: number; y: number }[], switches: { x: number; y: number }[], lightSwitchCount: number, boxes: { x: number; y: number }[] = []) {
+    const road = (t: { x: number; y: number }) => ({ ...t, layer: "road" as const });
+    const map: MapData = {
+      ...TINY_MAP,
+      lightSwitchCount,
+      spawns: { keys: keys.map(road), itemBoxes: [{ x: 2, y: 5, layer: "road" }, ...boxes.map(road)], lightSwitches: switches.map(road) },
+    };
+    for (let seed = 1; seed < 60; seed++) {
+      const sim = new Simulation({ seed, map, participants: [{ id: "a", teamId: "A", controller: "human" }], tuning: onlyItem("obstacle") });
+      sim.start();
+      if (!boxOn(sim, 2, 5)) continue;
+      walk(sim, "a", [S]);
+      return sim;
+    }
+    throw new Error("no seed puts the box on (2,5)");
+  }
+  const onTile = (sim: Simulation, x: number, y: number) => (list: { pos: { x: number; y: number } }[]) => list.some((o) => o.pos.x === x && o.pos.y === y);
+
+  it("a key candidate that was not drawn is ordinary floor", () => {
+    // Two key candidates, one player: find a round where the key is NOT on (2,6).
+    for (let tries = 0; tries < 20; tries++) {
+      const sim = facing26([{ x: 2, y: 6 }, { x: 7, y: 1 }], TINY_MAP.spawns!.lightSwitches!, 2);
+      if (onTile(sim, 2, 6)(Object.values(sim.getState().keys))) break;
+      expect(sim.availableAction(sim.getState().players["a"]!)).toBe("useItem");
+      sim.step(new Map([["a", press]]));
+      expect(Object.values(sim.getState().placeables).map((p) => p.pos)).toEqual([{ x: 2, y: 6, layer: "road" }]);
+      return;
+    }
+    throw new Error("the key landed on (2,6) in every tried round");
+  });
+
+  it("the tile where a key was drawn stays reserved, even after the key is taken", () => {
+    const sim = facing26([{ x: 2, y: 6 }], TINY_MAP.spawns!.lightSwitches!, 2);
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBeNull();
+    walk(sim, "a", [S, N]); // take the key on (2,6), step back to (2,5)
+    expect(sim.getState().players["a"]!.keyId).not.toBeNull();
+    walk(sim, "a", [N, S]); // away and back, to face south again from (2,5)
+    expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 2, y: 5, layer: "road" });
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBeNull();
+  });
+
+  it("a switch candidate that was not drawn is ordinary floor; one that was drawn is not", () => {
+    // Three switch candidates, two drawn. (3,6) and (6,4) touch walls in TINY_MAP; add (1,6)? It touches no wall, so use (4,6) under the wall (4,5).
+    const candidates = [{ x: 3, y: 6 }, { x: 6, y: 4 }, { x: 4, y: 6 }];
+    const sim = facing26([{ x: 7, y: 1 }], candidates, 2);
+    const drawn = Object.values(sim.getState().switches).map((s) => `${s.pos.x},${s.pos.y}`);
+    const free = candidates.find((c) => !drawn.includes(`${c.x},${c.y}`))!;
+    expect(sim.grid.isReservedTile(free.x, free.y, "road")).toBe(false);
+    for (const d of Object.values(sim.getState().switches)) expect(sim.grid.isReservedTile(d.pos.x, d.pos.y, "road")).toBe(true);
+  });
+
+  it("every box candidate is reserved, with or without a box on it", () => {
+    const sim = facing26([{ x: 7, y: 1 }], TINY_MAP.spawns!.lightSwitches!, 2, [{ x: 2, y: 6 }, { x: 1, y: 6 }]);
+    expect(sim.grid.isReservedTile(2, 6, "road")).toBe(true);
+    expect(sim.grid.isReservedTile(1, 6, "road")).toBe(true);
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBeNull();
+  });
+});

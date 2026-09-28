@@ -209,6 +209,7 @@ export class Simulation {
     // real matchmaking fills the room before start).
     if (this.state.status === "running") {
       this.spawnKeys(this.tuning.keys.perParticipant);
+      this.reserveTiles();
       this.spawnBoxes(this.tuning.itemBoxes.perParticipant);
     }
   }
@@ -252,7 +253,16 @@ export class Simulation {
     this.spawnKeys(count);
     this.spawnBoxes(Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
     this.placeFixtures();
+    this.reserveTiles();
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];
+  }
+
+  /** Fix where placeables may not go this round: once, here, never per tick (section 9). */
+  private reserveTiles(): void {
+    this.grid.reserveForRound(
+      Object.values(this.state.keys).map((k) => k.pos),
+      Object.values(this.state.switches).map((s) => s.pos),
+    );
   }
 
   /** Every map fixture, every round: permanent doors, obstacles and traps (section 10.6). */

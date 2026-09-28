@@ -37,7 +37,8 @@ export function placementProblem(grid: MapGrid, work: PlacementContext, tile: Ti
   if (grid.kindAt(tile.x, tile.y) === "bridge") return "不能放在橋上或橋下";
   if (tile.layer === "road" && grid.isTowerEntry(tile.x, tile.y)) return "不能放在塔入口";
   const id = tileId(tile);
-  if (grid.isCandidateTile(tile.x, tile.y, tile.layer)) return "不能放在候選格";
+  // Box candidates, and where this round's keys and switches were drawn; decided at the start of the round.
+  if (grid.isReservedTile(tile.x, tile.y, tile.layer)) return "不能放在候選格";
   if (work.boxTiles.has(id) || work.keyTiles.has(id)) return "該格有物件";
   if (placeableAt(work.placeables, tile) || nodeAt(work.nodes, tile)) return "該格已有放置物";
   for (const other of Object.values(work.players)) {
