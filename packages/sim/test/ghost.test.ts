@@ -103,6 +103,9 @@ describe("ghost rules", () => {
     const a = sim.getState().players["a"]!;
     // Give a a key and an item by state? Not possible; check the decision instead: at an entry with no key nothing; ghosts get null unless a switch is underfoot.
     expect(sim.availableAction(a)).toBeNull();
+    // The bag is locked too: a ghost cannot discard.
+    expect(sim.canDiscard({ ...a, items: ["trap"] })).toBe(false);
+    expect(sim.canDiscard({ ...sim.getState().players["b"]!, items: ["trap"] })).toBe(true);
   });
 
   it("catching freezes the runner, empties the bag, keeps the key, scores the ghost and protects from re-catch", () => {

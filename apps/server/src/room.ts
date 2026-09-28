@@ -78,7 +78,13 @@ export class MazeRoom extends Room {
     this.clock.start();
 
     this.onMessage<InputMessage>(C2S.input, (client, msg) => {
-      this.latestInputs.set(client.sessionId, sanitizeInput(msg));
+      // One-shot presses are latched until a tick consumes them, so a press is
+      // neither lost to a later message nor applied twice.
+      const next = sanitizeInput(msg);
+      const pending = this.latestInputs.get(client.sessionId);
+      if (pending?.action) next.action = true;
+      if (pending?.discard) next.discard = true;
+      this.latestInputs.set(client.sessionId, next);
     });
     this.onMessage<PingMessage>(C2S.ping, (client, msg) => client.send(S2C.pong, msg));
     this.onMessage<DebugMessage>(C2S.debug, (_client, msg) => {
@@ -298,6 +304,10 @@ export class MazeRoom extends Room {
       frame.set(id, p.controller === "human" ? (this.latestInputs.get(id) ?? NO_INPUT) : (this.cpu?.input(id) ?? NO_INPUT));
     }
     sim.step(frame);
+    for (const input of this.latestInputs.values()) {
+      delete input.action;
+      delete input.discard;
+    }
     this.broadcast(S2C.snapshot, this.deltaSnapshot(sim.getState()));
     if (sim.getState().status === "finished") this.endMatch();
   }
@@ -376,5 +386,6 @@ function sanitizeInput(msg: unknown): PlayerInput {
   const clamp = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
   const input: PlayerInput = { moveX: clamp(m.moveX), moveY: clamp(m.moveY) };
   if (m.action === true) input.action = true;
+  if (m.discard === true) input.discard = true;
   return input;
 }

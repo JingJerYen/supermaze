@@ -13,6 +13,7 @@ export type SimEvent =
   | { type: "boxOpened"; tick: Tick; playerId: PlayerId; boxId: string; item: ItemKind }
   | { type: "boxSpawned"; tick: Tick; boxId: string }
   | { type: "itemUsed"; tick: Tick; playerId: PlayerId; item: ItemKind }
+  | { type: "itemDiscarded"; tick: Tick; playerId: PlayerId; item: ItemKind }
   | { type: "placeablePlaced"; tick: Tick; playerId: PlayerId; placeableId: string; kind: PlaceableKind }
   | { type: "placeableExpired"; tick: Tick; placeableId: string; kind: PlaceableKind }
   | { type: "placeableDestroyed"; tick: Tick; playerId: PlayerId; placeableId: string; kind: PlaceableKind }

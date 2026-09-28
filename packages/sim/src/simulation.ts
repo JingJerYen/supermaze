@@ -1,4 +1,4 @@
-import { availableAction } from "./actions.js";
+import { availableAction, canDiscard } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState } from "./boxes.js";
 import type { SimEvent } from "./events.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
@@ -26,6 +26,11 @@ export interface PlayerInput extends MoveIntent {
    * carried item, in that priority. See `availableAction`.
    */
   action?: boolean;
+  /**
+   * Throw away the oldest carried item this tick (section 9). It vanishes; it is
+   * not dropped on the floor. Ignored on a tick that also presses `action`.
+   */
+  discard?: boolean;
 }
 
 export const NO_INPUT: PlayerInput = { moveX: 0, moveY: 0 };
@@ -416,6 +421,10 @@ export class Simulation {
           } else if (action === "useItem") {
             p = useOldestItem(this.grid, this.tuning, work, p);
           }
+        } else if (input.discard && canDiscard({ tick, freezeUntilTick: this.state.freezeUntilTick, ghost }, p)) {
+          const item = p.items[0] as ItemKind;
+          p = { ...p, items: p.items.slice(1) };
+          work.events.push({ type: "itemDiscarded", tick, playerId: id, item });
         }
       }
 
@@ -583,6 +592,11 @@ export class Simulation {
   /** What the context action would do for `p` right now. */
   availableAction(p: PlayerState) {
     return availableAction(this.grid, this.state, p, this.tuning.inventory.capacity);
+  }
+
+  /** Whether `p` could throw away its oldest item right now. */
+  canDiscard(p: PlayerState): boolean {
+    return canDiscard(this.state, p);
   }
 
   /** Whether `p` is currently a ghost. */

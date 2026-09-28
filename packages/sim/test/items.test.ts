@@ -361,3 +361,32 @@ describe("action availability", () => {
     expect(h.availableAction(h.getState().players["a"]!)).toBe("useItem");
   });
 });
+
+describe("discarding", () => {
+  const discard: PlayerInput = { ...still, discard: true };
+
+  it("throws away the oldest item without placing anything, even while walking", () => {
+    const sim = armed("obstacle"); // a on (2,5) holding one obstacle
+    expect(sim.canDiscard(sim.getState().players["a"]!)).toBe(true);
+    const ev = sim.step(new Map([["a", { ...S, discard: true }]]));
+    expect(ev).toContainEqual({ type: "itemDiscarded", tick: expect.any(Number), playerId: "a", item: "obstacle" });
+    expect(sim.getState().players["a"]!.items).toEqual([]);
+    expect(Object.values(sim.getState().placeables)).toHaveLength(0);
+    // Nothing left: the key does nothing and is not offered.
+    expect(sim.canDiscard(sim.getState().players["a"]!)).toBe(false);
+    expect(sim.step(new Map([["a", discard]])).find((e) => e.type === "itemDiscarded")).toBeUndefined();
+  });
+
+  it("gives way to the action key pressed on the same tick", () => {
+    const sim = armed("obstacle");
+    const ev = sim.step(new Map([["a", { ...still, action: true, discard: true }]]));
+    expect(ev.map((e) => e.type)).toContain("placeablePlaced");
+    expect(ev.map((e) => e.type)).not.toContain("itemDiscarded");
+  });
+
+  it("is refused during the start freeze", () => {
+    const sim = new Simulation({ seed: 1, map: TINY_MAP, participants: [{ id: "a", teamId: "A", controller: "human" }], tuning: BASE_TUNING });
+    sim.start();
+    expect(sim.canDiscard({ ...sim.getState().players["a"]!, items: ["hammer"] })).toBe(false);
+  });
+});

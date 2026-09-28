@@ -48,3 +48,14 @@ export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerStat
   if (p.items.length > 0 && canUseOldestItem(grid, placementContextOf(ctx), p)) return "useItem";
   return null;
 }
+
+/**
+ * Whether the discard key would throw away the oldest item: in the maze, with
+ * something in the bag, after the start freeze, and not while a ghost (a
+ * ghost's bag is locked for the chase, section 13). Unlike using an item this
+ * needs no legal tile ahead and works while walking. Shared with the HUD.
+ */
+export function canDiscard(ctx: Pick<ActionContext, "tick" | "freezeUntilTick" | "ghost">, p: PlayerState): boolean {
+  if (ctx.tick < ctx.freezeUntilTick) return false;
+  return p.phase === "maze" && p.items.length > 0 && !isGhost(ctx.ghost, p);
+}

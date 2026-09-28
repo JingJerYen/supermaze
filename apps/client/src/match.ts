@@ -131,6 +131,7 @@ export class Match {
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
       this.input.actionButton.setAction(this.hud.actionLabel(model));
+      this.input.discardButton.setVisible(model.canDiscard);
       if (this.lastToastState !== s.to) {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t);
         this.lastToastState = s.to;
