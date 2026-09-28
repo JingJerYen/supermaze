@@ -6,7 +6,7 @@ import { DEFAULT_MAP_ID, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
 import { OnlineMatchMode } from "./modes/online.js";
-import { Connection, type JoinRequest } from "./net/connection.js";
+import { Connection, ConnectTimeout, type JoinRequest } from "./net/connection.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 
 /**
@@ -111,13 +111,17 @@ export class Session {
         /* storage unavailable */
       }
     }
-    this.ui.showConnecting();
+    const endpoint = this.conn.getEndpoint();
+    this.ui.showConnecting(`連線中... ${endpoint}`);
     try {
       await this.conn.connect(req);
       this.startPing();
     } catch (e) {
-      const msg = (e as Error).message ?? String(e);
-      this.ui.showHome(req.name, req.kind === "join" ? `找不到房間 ${req.code}，請確認代碠` : `無法連線：${msg}`);
+      const local = `ws://${location.hostname}:2567`;
+      const hint = endpoint === local ? "請確認伺服器已啟動（npm run dev）" : `若伺服器在這台電腦上，請把伺服器欄位改成 ${local}`;
+      if (e instanceof ConnectTimeout) this.ui.showHome(req.name, `連不上伺服器 ${endpoint}。${hint}`);
+      else if (req.kind === "join") this.ui.showHome(req.name, `找不到房間 ${req.code}，請確認代碼`);
+      else this.ui.showHome(req.name, `無法連線到 ${endpoint}：${(e as Error).message ?? String(e)}。${hint}`);
     }
   }
 

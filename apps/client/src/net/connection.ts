@@ -16,6 +16,31 @@ import {
 import type { PlayerInput } from "@supermaze/sim";
 
 const TOKEN_KEY = "supermaze.reconnectionToken";
+const CONNECT_TIMEOUT_MS = 6000;
+const RECONNECT_TIMEOUT_MS = 4000;
+
+/** Thrown by `connect` when the server did not answer in time. */
+export class ConnectTimeout extends Error {
+  constructor() {
+    super("timeout");
+  }
+}
+
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new ConnectTimeout()), ms);
+    work.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
 
 export interface ConnectionEvents {
   onWelcome(msg: WelcomeMessage): void;
@@ -63,7 +88,7 @@ export class Connection {
     const token = safeGet(TOKEN_KEY);
     if (!token) return false;
     try {
-      this.attach(await new Client(this.endpoint).reconnect(token));
+      this.attach(await withTimeout(new Client(this.endpoint).reconnect(token), RECONNECT_TIMEOUT_MS));
       return true;
     } catch {
       safeRemove(TOKEN_KEY);
@@ -75,9 +100,10 @@ export class Connection {
     const client = new Client(this.endpoint);
     const opts = { name: req.name };
     let room: Room;
-    if (req.kind === "quick") room = await client.joinOrCreate(ROOM_NAME, { ...opts, mode: "quick" });
-    else if (req.kind === "create") room = await client.create(ROOM_NAME, { ...opts, mode: "private" });
-    else room = await client.join(ROOM_NAME, { ...opts, mode: "private", code: req.code.toUpperCase() });
+    // A dead or mistyped server must not leave the player on "connecting" for ever.
+    if (req.kind === "quick") room = await withTimeout(client.joinOrCreate(ROOM_NAME, { ...opts, mode: "quick" }), CONNECT_TIMEOUT_MS);
+    else if (req.kind === "create") room = await withTimeout(client.create(ROOM_NAME, { ...opts, mode: "private" }), CONNECT_TIMEOUT_MS);
+    else room = await withTimeout(client.join(ROOM_NAME, { ...opts, mode: "private", code: req.code.toUpperCase() }), CONNECT_TIMEOUT_MS);
     this.attach(room);
   }
 
