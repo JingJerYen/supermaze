@@ -15,10 +15,11 @@ const INSTANT: MapData = {
     keys: [
       { x: 2, y: 4, layer: "road" },
       { x: 3, y: 3, layer: "road" },
-      { x: 1, y: 3, layer: "road" }, // third spawn (west entry), for the three-player case
     ],
   },
 };
+/** Same, with a key under the third spawn (west entry) for the three-player case. */
+const INSTANT3: MapData = { ...INSTANT, spawns: { ...INSTANT.spawns, keys: [...INSTANT.spawns!.keys!, { x: 1, y: 3, layer: "road" }] } };
 
 describe("tower platform", () => {
   const grid = MapGrid.fromMapData(TINY_MAP);
@@ -59,7 +60,7 @@ describe("tower platform", () => {
     // A finished round freezes everything, so exercise platform movement on a fresh, still-running sim.
     const solo = new Simulation({
       seed: 3,
-      map: INSTANT,
+      map: INSTANT3,
       tuning: NO_FREEZE,
       participants: [
         { id: "a", teamId: "A", controller: "human" },
