@@ -44,6 +44,8 @@ export class PlayerView {
   private cage: THREE.Group | null = null;
   private readonly cageDrop = new CageDrop();
   private caged = false;
+  /** Caught by a ghost: lying on the ground until the freeze ends. */
+  private downed = false;
 
   constructor(playerId: string, color: number) {
     this.color = color;
@@ -184,9 +186,38 @@ export class PlayerView {
     this.oneShot = action;
   }
 
+  /**
+   * Caught by a ghost: the character falls over (the rig's `die` clip, held on
+   * its last frame) and gets back up when the freeze ends. Without a rig or
+   * the clip, the body is simply tipped onto its back.
+   */
+  setDowned(on: boolean): void {
+    if (on === this.downed) return;
+    this.downed = on;
+    const fall = this.rig?.clip("die") ?? null;
+    if (fall) {
+      if (on) {
+        this.oneShot?.stop();
+        this.oneShot = null;
+        this.base()?.fadeOut(0.1);
+        fall.reset();
+        fall.setLoop(THREE.LoopOnce, 1);
+        fall.clampWhenFinished = true;
+        fall.fadeIn(0.1).play();
+      } else {
+        fall.fadeOut(0.25);
+        this.base()?.reset().fadeIn(0.25).play();
+      }
+      return;
+    }
+    this.body.rotation.x = on ? -Math.PI / 2 : 0;
+    this.body.position.y = on ? 0.18 : 0;
+  }
+
   private setWalking(walking: boolean): void {
     if (!this.rig || walking === this.walking) return;
     this.walking = walking;
+    if (this.downed) return; // getting up resumes the right base clip
     if (this.oneShot) return; // the finished handler resumes the right base clip
     const from = walking ? this.rig.idle : this.rig.walk;
     const to = walking ? this.rig.walk : this.rig.idle;

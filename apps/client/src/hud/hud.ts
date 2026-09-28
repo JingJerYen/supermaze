@@ -36,6 +36,11 @@ const CSS = `
 .hud-slot.empty{border-style:dashed;background:rgba(0,0,0,.25)}
 .hud-toasts{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 84px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
+.hud-toast.big{background:rgba(40,30,0,.78);border:1px solid #ffd23f;color:#fff;font-size:clamp(17px,3vw,24px);font-weight:500;padding:8px 20px;animation-duration:3.4s}
+.hud-gains{position:absolute;left:50%;top:30%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
+.hud-gain{font-size:clamp(28px,6vw,48px);font-weight:600;line-height:1.1;color:#ffd23f;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9);white-space:nowrap;animation:hud-gain 1.9s ease-out forwards}
+.hud-gain span{font-size:.5em;font-weight:500;color:#fff;margin-left:.45em;vertical-align:.18em}
+@keyframes hud-gain{0%{opacity:0;transform:translateY(12px) scale(.6)}14%{opacity:1;transform:scale(1.18)}28%{transform:scale(1)}75%{opacity:1;transform:translateY(-12px)}100%{opacity:0;transform:translateY(-34px)}}
 @keyframes hud-fade{0%{opacity:0;transform:translateY(-6px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 .hud-go{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-size:clamp(72px,16vw,160px);font-weight:500;line-height:1;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.7);pointer-events:none;display:none}
 .hud-go.show{display:block;animation:hud-go-pop .9s ease-out}
@@ -60,6 +65,7 @@ export class Hud {
   private readonly ghost: HTMLDivElement;
   private readonly items: HTMLDivElement;
   private readonly toasts: HTMLDivElement;
+  private readonly gains: HTMLDivElement;
   private readonly dark: HTMLDivElement;
   private readonly myCoord: HTMLDivElement;
   private readonly go: HTMLDivElement;
@@ -83,11 +89,12 @@ export class Hud {
     top.append(this.left, clock, this.right);
     this.items = el("div", "hud-items");
     this.toasts = el("div", "hud-toasts");
+    this.gains = el("div", "hud-gains");
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
     this.myCoord = el("div", "hud-mycoord");
     this.go = el("div", "hud-go");
-    this.root.append(top, this.items, this.toasts, this.dark, this.go);
+    this.root.append(top, this.items, this.toasts, this.gains, this.dark, this.go);
     parent.appendChild(this.root);
   }
 
@@ -166,12 +173,24 @@ export class Hud {
     this.root.remove();
   }
 
-  toast(text: string): void {
-    const t = el("div", "hud-toast");
+  toast(text: string, big = false): void {
+    const t = el("div", big ? "hud-toast big" : "hud-toast");
     t.textContent = text;
     this.toasts.appendChild(t);
-    setTimeout(() => t.remove(), 2300);
+    setTimeout(() => t.remove(), big ? 3500 : 2300);
     while (this.toasts.children.length > 3) this.toasts.firstChild?.remove();
+  }
+
+  /** Big "+20 抓到人" pop-up for the local player's own score gains. */
+  gain(points: number, label: string): void {
+    const g = el("div", "hud-gain");
+    g.textContent = `+${points}`;
+    const why = document.createElement("span");
+    why.textContent = label;
+    g.appendChild(why);
+    this.gains.appendChild(g);
+    setTimeout(() => g.remove(), 2000);
+    while (this.gains.children.length > 4) this.gains.firstChild?.remove();
   }
 }
 
