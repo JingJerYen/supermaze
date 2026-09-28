@@ -1,7 +1,7 @@
 import type { RoundEndReason } from "./events.js";
 import type { PlayerState } from "./simulation.js";
 import type { Tuning } from "./tuning/index.js";
-import type { PlayerId, TeamId, Tick } from "./types.js";
+import type { PlayerId, TeamId, TeamMode, Tick } from "./types.js";
 
 /** Per-team bookkeeping the end-of-round rules need. */
 export interface TeamProgress {
@@ -67,11 +67,35 @@ function leaders(teams: TeamProgress[], f: (t: TeamProgress) => number, mode: "m
   return teams.filter((_, i) => values[i] === best);
 }
 
-/** Apply the winning-team multiplier. Losers keep every point they earned. */
-export function finalScores(players: Record<PlayerId, PlayerState>, winnerTeamId: TeamId | null, tuning: Tuning): Record<PlayerId, number> {
+/**
+ * Apply the winning-team multiplier. Losers keep every point they earned.
+ * Solo rounds have no multiplier: the final score is the score.
+ */
+export function finalScores(
+  players: Record<PlayerId, PlayerState>,
+  winnerTeamId: TeamId | null,
+  tuning: Tuning,
+  teamMode: TeamMode = "teams",
+): Record<PlayerId, number> {
   const out: Record<PlayerId, number> = {};
   for (const p of Object.values(players)) {
-    out[p.id] = p.teamId === winnerTeamId ? Math.round(p.score * tuning.scoring.winningTeamMultiplier) : p.score;
+    const boosted = teamMode === "teams" && p.teamId === winnerTeamId;
+    out[p.id] = boosted ? Math.round(p.score * tuning.scoring.winningTeamMultiplier) : p.score;
   }
   return out;
+}
+
+/**
+ * Solo ranking: the highest score wins; equal scores go to whoever climbed
+ * earlier; a full tie has no winner. Returns the winner's team id (in solo
+ * rounds that is the player's own id).
+ */
+export function decideSoloWinner(players: Record<PlayerId, PlayerState>): TeamId | null {
+  const ranked = Object.values(players).sort(
+    (a, b) => b.score - a.score || (a.towerArrival ?? Number.POSITIVE_INFINITY) - (b.towerArrival ?? Number.POSITIVE_INFINITY),
+  );
+  const [first, second] = ranked;
+  if (!first) return null;
+  if (second && second.score === first.score && second.towerArrival === first.towerArrival) return null;
+  return first.teamId;
 }

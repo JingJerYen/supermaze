@@ -11,9 +11,9 @@ import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
 import { createMover, moverPosition, sameTile, stepMover, type MoveIntent, type MoverState } from "./movement.js";
 import { nodeAt, placeableAt, placeableMoveFilter, type PlaceableState, type TeleportNodeState } from "./placeables.js";
 import { SeededRandom } from "./random/seeded.js";
-import { decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
+import { decideSoloWinner, decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
 import { DEFAULT_TUNING, type ItemKind, type Tuning } from "./tuning/index.js";
-import type { Controller, Participant, PlayerId, PlayerPhase, TeamId, Tick } from "./types.js";
+import type { Controller, Participant, PlayerId, PlayerPhase, TeamId, TeamMode, Tick } from "./types.js";
 
 /**
  * Player intent for one tick. The client and the CPU controller both produce this;
@@ -37,6 +37,8 @@ export interface SimulationOptions {
   tuning?: Tuning;
   /** Developer override of the round length, seconds. Defaults to tuning.round.timeLimitSec. */
   timeLimitSec?: number;
+  /** Two equal teams (default) or everyone for themselves; see `TeamMode`. */
+  teamMode?: TeamMode;
 }
 
 export interface PlayerState extends Participant {
@@ -64,6 +66,8 @@ export type RoundStatus = "lobby" | "running" | "finished";
 export interface SimulationState {
   tick: Tick;
   status: RoundStatus;
+  /** Fixed for the whole round. In `solo` every player's teamId is their own id. */
+  teamMode: TeamMode;
   /** Tick the round started and the tick at which time runs out (exclusive). */
   startTick: Tick;
   endsAtTick: Tick;
@@ -90,7 +94,10 @@ export interface SimulationState {
   ghost: GhostState;
   /** Per team: tick at which its 1st, 2nd, ... member climbed. */
   teamClimbTicks: Record<TeamId, Tick[]>;
-  /** Set the moment the first team has every member on the tower. */
+  /**
+   * Teams: set the moment the first team has every member on the tower. Solo:
+   * null during the round, decided by score when it ends.
+   */
   winnerTeamId: TeamId | null;
   /** Present once status is "finished". */
   result: RoundResult | null;
@@ -110,6 +117,7 @@ export class Simulation {
   private readonly spawns: TilePos[];
   private spawnCursor = 0;
   private readonly timeLimitTicks: number;
+  private readonly teamMode: TeamMode;
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
   private nextNodeIndex = 0;
@@ -130,9 +138,11 @@ export class Simulation {
     const limitSec = options.timeLimitSec ?? this.tuning.round.timeLimitSec;
     this.timeLimitTicks = Math.max(1, Math.round(limitSec * this.tuning.tickRate));
 
+    this.teamMode = options.teamMode ?? "teams";
     this.state = {
       tick: 0,
       status: "lobby",
+      teamMode: this.teamMode,
       startTick: 0,
       endsAtTick: 0,
       freezeUntilTick: 0,
@@ -165,6 +175,8 @@ export class Simulation {
     this.spawnCursor++;
     const player: PlayerState = {
       ...p,
+      // Solo: a team of one, whatever team the lobby had them in.
+      teamId: this.teamMode === "solo" ? p.id : p.teamId,
       mover: createMover(at),
       phase: "maze",
       keyId: null,
@@ -419,7 +431,8 @@ export class Simulation {
     }
 
     // Team completion: every member on the tower. The first complete team wins (CLAUDE.md section 3).
-    if (this.state.status === "running") {
+    // Solo rounds have no such moment; their winner is the top score at the end.
+    if (this.state.status === "running" && this.teamMode === "teams") {
       const previous = teamProgress(this.state.players, this.state.teamClimbTicks);
       for (const team of teamProgress(players, teamClimbTicks)) {
         const wasComplete = previous.find((t) => t.teamId === team.teamId)?.climbed === team.size;
@@ -453,16 +466,25 @@ export class Simulation {
     };
 
     if (next.status === "running") {
-      const everyoneClimbed = Object.values(players).length > 0 && Object.values(players).every((p) => p.phase === "tower");
+      // The round stops once all but one participant (CPUs included) are on the tower:
+      // the last one never gets to climb (section 3). A lone participant must climb.
+      const everyone = Object.values(players);
+      const climbed = everyone.filter((p) => p.phase === "tower").length;
+      const enoughClimbed = everyone.length > 0 && climbed >= Math.max(1, everyone.length - 1);
       const timeUp = tick >= next.endsAtTick;
-      if (everyoneClimbed || timeUp) {
-        let reason: RoundResult["reason"] = "allClimbed";
-        if (winnerTeamId === null) {
+      if (enoughClimbed || timeUp) {
+        let reason: RoundResult["reason"];
+        if (this.teamMode === "solo") {
+          winnerTeamId = decideSoloWinner(players);
+          reason = enoughClimbed ? "solo:score" : "solo:timeout";
+        } else if (winnerTeamId !== null) {
+          reason = enoughClimbed && climbed < everyone.length ? "lastOneLeft" : "allClimbed";
+        } else {
           const decided = decideTimeoutWinner(teamProgress(players, teamClimbTicks), this.tuning);
           winnerTeamId = decided.winnerTeamId;
           reason = decided.reason;
         }
-        const result: RoundResult = { winnerTeamId, reason, finalScores: finalScores(players, winnerTeamId, this.tuning) };
+        const result: RoundResult = { winnerTeamId, reason, finalScores: finalScores(players, winnerTeamId, this.tuning, this.teamMode) };
         next = { ...next, status: "finished", winnerTeamId, result };
         work.events.push({ type: "roundEnded", tick, winnerTeamId, reason });
       }

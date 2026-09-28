@@ -19,5 +19,12 @@ export interface Participant {
   name?: string;
 }
 
+/**
+ * How participants are grouped (CLAUDE.md section 2). `teams`: two teams of
+ * equal size, the first complete team wins and its members' scores are
+ * multiplied. `solo`: everyone is a team of one, ranked by score, no multiplier.
+ */
+export type TeamMode = "teams" | "solo";
+
 /** Where a player is in the round. `tower` is permanent for the rest of the round. */
 export type PlayerPhase = "maze" | "tower";

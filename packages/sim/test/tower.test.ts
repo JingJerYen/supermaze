@@ -15,6 +15,7 @@ const INSTANT: MapData = {
     keys: [
       { x: 2, y: 4, layer: "road" },
       { x: 3, y: 3, layer: "road" },
+      { x: 1, y: 3, layer: "road" }, // third spawn (west entry), for the three-player case
     ],
   },
 };
@@ -62,7 +63,8 @@ describe("tower platform", () => {
       tuning: NO_FREEZE,
       participants: [
         { id: "a", teamId: "A", controller: "human" },
-        { id: "b", teamId: "A", controller: "human" }, // same team: round continues until both are up
+        { id: "b", teamId: "A", controller: "human" },
+        { id: "c", teamId: "A", controller: "human" }, // three players: one climb does not end the round
       ],
     });
     solo.start();

@@ -46,27 +46,50 @@ function make(teams: Record<string, string>, tuning?: Partial<Tuning["round"]>, 
 const climbers = (ids: string[]) => new Map(ids.map((id) => [id, climb]));
 
 describe("round end by everyone climbing", () => {
-  it("first complete team wins, others keep climbing and scoring, round ends when all are up", () => {
+  it("ends as soon as all but one are on the tower; the last one keeps what they earned", () => {
     const sim = make({ a1: "A", a2: "A", b1: "B", b2: "B" });
     let events = sim.step(climbers(["a1", "b1"]));
     expect(events.filter((e) => e.type === "teamCompleted")).toHaveLength(0);
     expect(sim.getState().winnerTeamId).toBeNull();
-
-    events = sim.step(climbers(["a2"]));
-    expect(events).toContainEqual({ type: "teamCompleted", tick: expect.any(Number), teamId: "A", isWinner: true });
-    expect(sim.getState().winnerTeamId).toBe("A");
     expect(sim.getState().status).toBe("running");
 
-    events = sim.step(climbers(["b2"]));
-    expect(events).toContainEqual({ type: "teamCompleted", tick: expect.any(Number), teamId: "B", isWinner: false });
-    expect(events).toContainEqual({ type: "roundEnded", tick: expect.any(Number), winnerTeamId: "A", reason: "allClimbed" });
+    events = sim.step(climbers(["a2"])); // 3 of 4 up: A is complete and the round stops
+    expect(events).toContainEqual({ type: "teamCompleted", tick: expect.any(Number), teamId: "A", isWinner: true });
+    expect(events).toContainEqual({ type: "roundEnded", tick: expect.any(Number), winnerTeamId: "A", reason: "lastOneLeft" });
     expect(sim.getState().status).toBe("finished");
 
+    // b2 never got to climb: no placement, but the key score stays.
+    const b2 = sim.getState().players["b2"]!;
+    expect(b2.phase).toBe("maze");
+    expect(b2.towerArrival).toBeNull();
+    expect(b2.score).toBe(sim.tuning.scoring.keyFound);
+    expect(sim.getState().result!.finalScores["b2"]).toBe(sim.tuning.scoring.keyFound);
+    expect(sim.step(climbers(["b2"]))).toEqual([]);
+  });
+
+  it("after a team has won, the others keep climbing and scoring until one is left", () => {
+    const sim = make({ a1: "A", b1: "B", b2: "B", b3: "B" });
+    let events = sim.step(climbers(["a1"]));
+    expect(events).toContainEqual({ type: "teamCompleted", tick: expect.any(Number), teamId: "A", isWinner: true });
+    expect(sim.getState().status).toBe("running");
+
+    sim.step(climbers(["b1"]));
+    expect(sim.getState().status).toBe("running");
     const placement = sim.tuning.scoring.towerPlacement;
     const key = sim.tuning.scoring.keyFound;
-    const b2 = sim.getState().players["b2"]!;
-    expect(b2.towerArrival).toBe(3);
-    expect(b2.score).toBe(key + placement[3]!);
+    expect(sim.getState().players["b1"]!.score).toBe(key + placement[1]!);
+
+    events = sim.step(climbers(["b2"]));
+    expect(events).toContainEqual({ type: "roundEnded", tick: expect.any(Number), winnerTeamId: "A", reason: "lastOneLeft" });
+    expect(sim.getState().players["b2"]!.towerArrival).toBe(2);
+  });
+
+  it("a single participant has to climb for the round to end", () => {
+    const sim = make({ a1: "A" });
+    for (let i = 0; i < 5; i++) sim.step(new Map());
+    expect(sim.getState().status).toBe("running");
+    const events = sim.step(climbers(["a1"]));
+    expect(events).toContainEqual({ type: "roundEnded", tick: expect.any(Number), winnerTeamId: "A", reason: "allClimbed" });
   });
 
   it("applies the 2x multiplier to the winning team only", () => {
@@ -133,6 +156,59 @@ describe("round end by timeout", () => {
 
   it("ratio metric: the smaller team's higher fraction wins", () => {
     expect(unevenScenario("ratio")).toMatchObject({ winnerTeamId: "A", reason: "timeout:climbed" });
+  });
+});
+
+describe("solo mode: everyone for themselves", () => {
+  function solo(ids: string[], timeLimitSec = 10) {
+    const participants = ids.map((id) => ({ id, teamId: "whatever", controller: "human" as const }));
+    const sim = new Simulation({
+      seed: 5,
+      map: instantMap(ids.length),
+      participants,
+      tuning: { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 } },
+      timeLimitSec,
+      teamMode: "solo",
+    });
+    sim.start();
+    sim.step(new Map());
+    faceTower(sim, ids);
+    return sim;
+  }
+
+  it("puts every player in a team of their own", () => {
+    const sim = solo(["p1", "p2", "p3"]);
+    expect(sim.getState().teamMode).toBe("solo");
+    expect(Object.values(sim.getState().players).map((p) => p.teamId)).toEqual(["p1", "p2", "p3"]);
+  });
+
+  it("has no winner until the end, no multiplier, and ranks by score", () => {
+    const sim = solo(["p1", "p2", "p3"]);
+    let events = sim.step(climbers(["p2"]));
+    expect(events.map((e) => e.type)).toEqual(["towerClimbed"]);
+    expect(sim.getState().winnerTeamId).toBeNull();
+    expect(sim.getState().status).toBe("running");
+
+    events = sim.step(climbers(["p1"])); // 2 of 3 up: the round stops
+    expect(events).toContainEqual({ type: "roundEnded", tick: expect.any(Number), winnerTeamId: "p2", reason: "solo:score" });
+    const st = sim.getState();
+    const { keyFound, towerPlacement } = sim.tuning.scoring;
+    expect(st.result!.finalScores).toEqual({
+      p1: keyFound + towerPlacement[1]!,
+      p2: keyFound + towerPlacement[0]!,
+      p3: keyFound,
+    });
+  });
+
+  it("on timeout the top score wins; nobody climbing is a draw between equal scores", () => {
+    const climbedOne = solo(["p1", "p2", "p3"], 1);
+    climbedOne.step(climbers(["p3"]));
+    for (let i = 0; i < 20; i++) climbedOne.step(new Map());
+    expect(climbedOne.getState().result).toMatchObject({ winnerTeamId: "p3", reason: "solo:timeout" });
+
+    const nobody = solo(["p1", "p2"], 1);
+    for (let i = 0; i < 20; i++) nobody.step(new Map());
+    expect(nobody.getState().result).toMatchObject({ winnerTeamId: null, reason: "solo:timeout" });
   });
 });
 

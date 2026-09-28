@@ -85,10 +85,10 @@ export const DEFAULT_TUNING: Tuning = {
   },
 
   scoring: {
-    towerPlacement: [100, 80, 65, 50, 40, 30, 20, 10],
-    keyFound: 30,
-    leftoverItem: 10,
-    ghostCatch: 40,
+    towerPlacement: [80, 40, 20, 10, 5, 0],
+    keyFound: 20,
+    leftoverItem: 5,
+    ghostCatch: 20,
     winningTeamMultiplier: 2,
   },
 };

@@ -30,6 +30,12 @@ export type SimEvent =
 
 export type RoundEndReason =
   | "allClimbed"
+  /** Teams: all but one participant are on the tower, so the round stops; the first complete team won. */
+  | "lastOneLeft"
+  /** Solo: ended by climbs (all but one up); the highest score wins. */
+  | "solo:score"
+  /** Solo: time ran out; the highest score wins. */
+  | "solo:timeout"
   | "timeout:climbed"
   | "timeout:score"
   | "timeout:earlier"
