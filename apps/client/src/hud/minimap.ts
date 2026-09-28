@@ -1,10 +1,11 @@
 import type { MapGrid, SimulationState } from "@supermaze/sim";
 import { TEAM_COLORS, teamColorIndex } from "../render/teamColors.js";
 import { towerGeometry } from "../render/mapMesh.js";
+import { CLIENT_TUNING } from "../tuning.js";
 
 const CSS = `
 .mm{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(max(var(--dpad-pad,18px),env(safe-area-inset-bottom)) + var(--dpad-size,150px) + 10px);background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:4px;pointer-events:none}
-.mm canvas{display:block;image-rendering:pixelated;width:min(150px,26vh);height:auto}
+.mm canvas{display:block;image-rendering:pixelated;width:calc(var(--mm-box) * var(--mm-wide));height:auto}
 `;
 
 /**
@@ -27,10 +28,16 @@ export class Minimap {
     this.wrap = document.createElement("div");
     this.wrap.className = "mm";
     this.canvas = document.createElement("canvas");
-    this.cell = Math.max(3, Math.floor(150 / Math.max(grid.width, grid.height)));
+    const t = CLIENT_TUNING.minimap;
+    const longest = Math.max(grid.width, grid.height);
+    this.cell = Math.max(3, Math.floor(t.boxPx / longest));
     this.canvas.width = grid.width * this.cell * 2;
     this.canvas.height = grid.height * this.cell * 2;
-    // CSS scales the canvas down on short screens (see .mm canvas); the aspect ratio comes from the buffer.
+    // Fixed footprint whatever the map: the longer side of the map always spans the
+    // same box, the shorter side scales with the aspect ratio. A bigger or rotated
+    // map only gets smaller cells, never a bigger minimap.
+    this.wrap.style.setProperty("--mm-box", `min(${t.boxPx}px, ${t.maxVh}vh)`);
+    this.wrap.style.setProperty("--mm-wide", String(grid.width / longest));
     this.canvas.style.aspectRatio = `${grid.width} / ${grid.height}`;
     this.ctx = this.canvas.getContext("2d")!;
     this.ctx.scale(2, 2);

@@ -100,6 +100,11 @@ export const CLIENT_TUNING = {
     mix: 0.45,
     darken: 0.8,
   },
+  minimap: {
+    /** The map's longer side is drawn this long on screen, whatever the map size; also capped at maxVh of the window height. */
+    boxPx: 150,
+    maxVh: 26,
+  },
   selfMarker: {
     /** Height of the arrow's tip above the feet, world units (the character is 0.9 tall). */
     height: 1.25,
