@@ -2,26 +2,30 @@ import { MAP_DIFFICULTIES, type MapData, type MapDifficulty } from "../map/types
 import type { QuarterTurns } from "../map/transform.js";
 import { SeededRandom } from "../random/seeded.js";
 import type { SimulationState } from "../simulation.js";
-import type { PlayerId } from "../types.js";
 import { DEFAULT_TUNING, type TowerFloor, type Tuning } from "../tuning/index.js";
+import type { PlayerId } from "../types.js";
 
 /**
  * Single-player tower run (CLAUDE.md section 4.1): floor after floor against
- * CPUs, each floor a normal solo round. You pass a floor by climbing within the
- * first half; a failure costs a heart and the floor is played again on a fresh
- * draw. Scores add up over the whole run. Pure functions over a small state, so
- * the client only orchestrates and everything here is testable and replayable.
+ * CPUs, each floor a normal solo round. You pass a floor when your score ranks
+ * in the first half. A failed floor stops the run and shows the total; from
+ * there you may continue to the next floor (the future price of a continue is
+ * an ad or a payment) with the score carried on. Pure functions over a small
+ * state, so the client only orchestrates and everything here is testable.
  */
 export interface TowerRunState {
   /** Run seed; every floor's draw derives from it. */
   seed: number;
-  /** 1-based floor being played (or, once over, the floor the run ended on). */
+  /** 1-based floor being played; after a floor is recorded, the next one to play. */
   floor: number;
-  /** Failed attempts on the current floor, so a retry gets a different draw. */
-  attempt: number;
-  hearts: number;
   totalScore: number;
-  status: "playing" | "cleared" | "over";
+  /**
+   * playing: the next floor is ready. stopped: the last floor was failed; the
+   * run ends here unless you continue. cleared: the last floor has been played.
+   */
+  status: "playing" | "stopped" | "cleared";
+  /** Times the run was continued after a failed floor. */
+  continues: number;
   history: FloorRecord[];
 }
 
@@ -29,8 +33,8 @@ export interface FloorRecord {
   floor: number;
   mapId: string;
   participants: number;
-  /** 1-based climbing place, null when you did not climb. */
-  place: number | null;
+  /** 1-based rank by score, ties broken by who climbed first. */
+  rank: number;
   passRank: number;
   passed: boolean;
   score: number;
@@ -49,15 +53,21 @@ export interface FloorPlan {
   rotation: QuarterTurns;
   /** The run's tuning with this floor's CPU strength applied. */
   tuning: Tuning;
-  /** Climb at this place or better to pass. */
+  /** Rank at this place or better to pass. */
   passRank: number;
 }
 
-export function startTowerRun(seed: number, tuning: Tuning = DEFAULT_TUNING): TowerRunState {
-  return { seed: seed >>> 0, floor: 1, attempt: 0, hearts: tuning.towerRun.hearts, totalScore: 0, status: "playing", history: [] };
+export interface FloorOutcome {
+  rank: number;
+  passed: boolean;
+  score: number;
 }
 
-/** Worst climbing place that still passes: the first half, at least first. */
+export function startTowerRun(seed: number): TowerRunState {
+  return { seed: seed >>> 0, floor: 1, totalScore: 0, status: "playing", continues: 0, history: [] };
+}
+
+/** Worst score rank that still passes: the first half, at least first. */
 export function passRank(participants: number, tuning: Tuning = DEFAULT_TUNING): number {
   return Math.max(1, Math.floor(participants * tuning.towerRun.passShare));
 }
@@ -73,7 +83,7 @@ export function planFloor(run: TowerRunState, maps: readonly MapData[], tuning: 
   const spec = floors[Math.min(run.floor, floors.length) - 1];
   if (!spec) return null;
   const participants = spec.cpus + 1;
-  const seed = floorSeed(run.seed, run.floor, run.attempt);
+  const seed = floorSeed(run.seed, run.floor);
   const rng = new SeededRandom(seed);
 
   const fits = maps.filter((m) => m.difficulty && m.supportedParticipants.includes(participants));
@@ -99,42 +109,41 @@ export function planFloor(run: TowerRunState, maps: readonly MapData[], tuning: 
   };
 }
 
-/** How you did on a finished round. */
-export function judgeFloor(state: SimulationState, playerId: PlayerId, rank: number): { place: number | null; passed: boolean; score: number } {
-  const p = state.players[playerId];
-  const place = p && p.phase === "tower" && p.towerArrival !== null ? p.towerArrival + 1 : null;
-  const score = state.result?.finalScores[playerId] ?? p?.score ?? 0;
-  return { place, passed: place !== null && place <= rank, score };
+/**
+ * How you did on a finished round. Rank follows the solo standings: higher
+ * final score first, then whoever climbed earlier (not climbing counts as
+ * last); players equal on both share a rank.
+ */
+export function judgeFloor(state: SimulationState, playerId: PlayerId, rank: number): FloorOutcome {
+  const final = (id: PlayerId) => state.result?.finalScores[id] ?? state.players[id]?.score ?? 0;
+  const arrival = (id: PlayerId) => state.players[id]?.towerArrival ?? Number.POSITIVE_INFINITY;
+  const score = final(playerId);
+  const ahead = Object.keys(state.players).filter(
+    (id) => id !== playerId && (final(id) > score || (final(id) === score && arrival(id) < arrival(playerId))),
+  ).length;
+  return { rank: ahead + 1, passed: ahead + 1 <= rank, score };
 }
 
-/** The run after a floor: next floor on a pass, a heart less and a fresh draw on a fail. */
-export function recordFloor(
-  run: TowerRunState,
-  plan: FloorPlan,
-  outcome: { place: number | null; passed: boolean; score: number },
-  tuning: Tuning = DEFAULT_TUNING,
-): TowerRunState {
+/** The run after a floor: on to the next floor on a pass, stopped on a fail, cleared after the last floor. */
+export function recordFloor(run: TowerRunState, plan: FloorPlan, outcome: FloorOutcome, tuning: Tuning = DEFAULT_TUNING): TowerRunState {
   if (run.status !== "playing") return run;
   const history = [
     ...run.history,
-    { floor: run.floor, mapId: plan.map.id, participants: plan.participants, place: outcome.place, passRank: plan.passRank, passed: outcome.passed, score: outcome.score },
+    { floor: run.floor, mapId: plan.map.id, participants: plan.participants, rank: outcome.rank, passRank: plan.passRank, passed: outcome.passed, score: outcome.score },
   ];
   const totalScore = run.totalScore + outcome.score;
-  if (outcome.passed) {
-    if (run.floor >= tuning.towerRun.floors.length) return { ...run, history, totalScore, status: "cleared" };
-    return { ...run, history, totalScore, floor: run.floor + 1, attempt: 0 };
-  }
-  const hearts = run.hearts - 1;
-  return { ...run, history, totalScore, hearts, attempt: run.attempt + 1, status: hearts <= 0 ? "over" : "playing" };
+  if (run.floor >= tuning.towerRun.floors.length) return { ...run, history, totalScore, status: "cleared" };
+  return { ...run, history, totalScore, floor: run.floor + 1, status: outcome.passed ? "playing" : "stopped" };
 }
 
-/** Floors cleared so far (the highest floor passed). */
-export function floorsCleared(run: TowerRunState): number {
-  return run.history.reduce((best, r) => (r.passed ? Math.max(best, r.floor) : best), 0);
+/** Carry on after a failed floor: the next floor, score kept. */
+export function continueRun(run: TowerRunState): TowerRunState {
+  if (run.status !== "stopped") return run;
+  return { ...run, status: "playing", continues: run.continues + 1 };
 }
 
-function floorSeed(runSeed: number, floor: number, attempt: number): number {
-  return (runSeed ^ Math.imul(floor, 0x9e3779b1) ^ Math.imul(attempt + 1, 0x85ebca6b)) >>> 0;
+function floorSeed(runSeed: number, floor: number): number {
+  return (runSeed ^ Math.imul(floor, 0x9e3779b1)) >>> 0;
 }
 
 /** Difficulties ordered by distance from `d`; on a tie the harder one first. */

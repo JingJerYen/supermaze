@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
-import { floorsCleared, judgeFloor, passRank, planFloor, recordFloor, startTowerRun, type FloorPlan } from "../src/run/towerRun.js";
+import { continueRun, judgeFloor, passRank, planFloor, recordFloor, startTowerRun, type FloorPlan } from "../src/run/towerRun.js";
 import type { SimulationState } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import { TINY_MAP } from "./fixtures.js";
@@ -13,7 +13,8 @@ const map = (id: string, difficulty: MapData["difficulty"] | null, supported = [
 });
 const POOL = [map("e1", "easy"), map("e2", "easy"), map("m1", "medium", [2, 3, 4]), map("h1", "hard"), map("h2", "hard")];
 
-const outcome = (passed: boolean, score = 50) => ({ place: passed ? 1 : null, passed, score });
+const outcome = (passed: boolean, score = 50) => ({ rank: passed ? 1 : 2, passed, score });
+const plan = (run = startTowerRun(1), tuning: Tuning = DEFAULT_TUNING) => planFloor(run, POOL, tuning) as FloorPlan;
 
 describe("passRank", () => {
   it("is the first half, at least first", () => {
@@ -22,8 +23,8 @@ describe("passRank", () => {
 });
 
 describe("default floor table", () => {
-  const floors = DEFAULT_TUNING.towerRun.floors;
   it("has 20 floors with an odd number of CPUs so the first half is exact", () => {
+    const floors = DEFAULT_TUNING.towerRun.floors;
     expect(floors).toHaveLength(20);
     for (const f of floors) {
       expect(f.cpus % 2).toBe(1);
@@ -35,21 +36,20 @@ describe("default floor table", () => {
 describe("planFloor", () => {
   it("draws the floor's difficulty, sets its CPU strength and is reproducible", () => {
     const run = startTowerRun(42);
-    const a = planFloor(run, POOL)!;
-    expect(a.map.difficulty).toBe(DEFAULT_TUNING.towerRun.floors[0]!.map);
-    expect(a.participants).toBe(DEFAULT_TUNING.towerRun.floors[0]!.cpus + 1);
-    expect(a.tuning.cpu.visionTiles).toBe(DEFAULT_TUNING.towerRun.floors[0]!.cpuVisionTiles);
-    expect(a.tuning.cpu.speedMultiplier).toBe(DEFAULT_TUNING.towerRun.floors[0]!.cpuSpeed);
-    expect(planFloor(run, POOL)).toEqual(a);
+    const first = DEFAULT_TUNING.towerRun.floors[0]!;
+    const a = plan(run);
+    expect(a.map.difficulty).toBe(first.map);
+    expect(a.participants).toBe(first.cpus + 1);
+    expect(a.tuning.cpu.visionTiles).toBe(first.cpuVisionTiles);
+    expect(a.tuning.cpu.speedMultiplier).toBe(first.cpuSpeed);
+    expect(plan(run)).toEqual(a);
   });
 
-  it("gives a retry a different seed and avoids the map just played", () => {
+  it("avoids the map just played when another fits", () => {
     let run = startTowerRun(7);
-    const first = planFloor(run, POOL)!;
-    run = recordFloor(run, first, outcome(false));
-    const retry = planFloor(run, POOL)!;
-    expect(retry.seed).not.toBe(first.seed);
-    expect(retry.map.id).not.toBe(first.map.id);
+    const first = plan(run);
+    run = recordFloor(run, first, outcome(true));
+    expect(plan(run).map.id).not.toBe(first.map.id);
   });
 
   it("falls back to the nearest difficulty, harder first, when a floor has no map", () => {
@@ -58,54 +58,56 @@ describe("planFloor", () => {
       towerRun: { ...DEFAULT_TUNING.towerRun, floors: [{ map: "medium", cpus: 5, cpuVisionTiles: 3, cpuSpeed: 0.5 }] },
     };
     // m1 takes at most 4 players, so six falls back to hard before easy.
-    expect(planFloor(startTowerRun(1), POOL, tuning)!.map.difficulty).toBe("hard");
+    expect(plan(startTowerRun(1), tuning).map.difficulty).toBe("hard");
     // A map without a difficulty never appears.
     expect(planFloor(startTowerRun(1), [map("x", null)], tuning)).toBeNull();
   });
 });
 
-describe("recordFloor", () => {
-  const plan = (run = startTowerRun(1)) => planFloor(run, POOL) as FloorPlan;
-
+describe("recordFloor and continueRun", () => {
   it("moves up a floor on a pass and adds the score", () => {
     const run = recordFloor(startTowerRun(1), plan(), outcome(true, 120));
-    expect(run).toMatchObject({ floor: 2, attempt: 0, hearts: 3, totalScore: 120, status: "playing" });
-    expect(floorsCleared(run)).toBe(1);
+    expect(run).toMatchObject({ floor: 2, totalScore: 120, status: "playing", continues: 0 });
   });
 
-  it("costs a heart on a fail, stays on the floor, and ends the run at zero", () => {
-    let run = startTowerRun(1);
-    for (let i = 1; i <= 3; i++) {
-      run = recordFloor(run, plan(run), outcome(false, 10));
-      expect(run.floor).toBe(1);
-      expect(run.hearts).toBe(3 - i);
-    }
-    expect(run.status).toBe("over");
-    expect(run.totalScore).toBe(30);
-    expect(recordFloor(run, plan(run), outcome(true))).toBe(run);
+  it("stops on a fail; continuing goes on to the next floor with the score kept", () => {
+    let run = recordFloor(startTowerRun(1), plan(), outcome(false, 30));
+    expect(run).toMatchObject({ floor: 2, totalScore: 30, status: "stopped" });
+    expect(recordFloor(run, plan(run), outcome(true))).toBe(run); // nothing is played while stopped
+    run = continueRun(run);
+    expect(run).toMatchObject({ floor: 2, totalScore: 30, status: "playing", continues: 1 });
+    run = recordFloor(run, plan(run), outcome(true, 70));
+    expect(run).toMatchObject({ floor: 3, totalScore: 100, status: "playing", continues: 1 });
+    expect(continueRun(run)).toBe(run); // only a stopped run continues
   });
 
-  it("clears the run after the last floor", () => {
+  it("clears after the last floor, passed or not", () => {
     const tuning: Tuning = { ...DEFAULT_TUNING, towerRun: { ...DEFAULT_TUNING.towerRun, floors: DEFAULT_TUNING.towerRun.floors.slice(0, 2) } };
-    let run = startTowerRun(1, tuning);
-    run = recordFloor(run, planFloor(run, POOL, tuning)!, outcome(true), tuning);
-    run = recordFloor(run, planFloor(run, POOL, tuning)!, outcome(true), tuning);
+    let run = startTowerRun(1);
+    run = recordFloor(run, plan(run, tuning), outcome(true), tuning);
+    run = recordFloor(run, plan(run, tuning), outcome(false), tuning);
     expect(run.status).toBe("cleared");
     expect(run.floor).toBe(2);
   });
 });
 
 describe("judgeFloor", () => {
-  const state = (arrival: number | null) =>
+  /** Players as [id, final score, 0-based tower arrival or null]. */
+  const state = (players: [string, number, number | null][]) =>
     ({
-      players: { me: { phase: arrival === null ? "maze" : "tower", towerArrival: arrival, score: 33 } },
-      result: { winnerTeamId: null, reason: "solo:score", finalScores: { me: 40 } },
+      players: Object.fromEntries(players.map(([id, score, arrival]) => [id, { score, towerArrival: arrival }])),
+      result: { winnerTeamId: null, reason: "solo:score", finalScores: Object.fromEntries(players.map(([id, s]) => [id, s])) },
     }) as unknown as SimulationState;
 
-  it("passes within the rank, fails beyond it or without climbing", () => {
-    expect(judgeFloor(state(0), "me", 2)).toEqual({ place: 1, passed: true, score: 40 });
-    expect(judgeFloor(state(1), "me", 2)).toEqual({ place: 2, passed: true, score: 40 });
-    expect(judgeFloor(state(2), "me", 2)).toEqual({ place: 3, passed: false, score: 40 });
-    expect(judgeFloor(state(null), "me", 2)).toEqual({ place: null, passed: false, score: 40 });
+  it("ranks by score, whoever climbed", () => {
+    const s = state([["me", 60, null], ["a", 100, 0], ["b", 40, 1], ["c", 20, 2]]);
+    expect(judgeFloor(s, "me", 2)).toEqual({ rank: 2, passed: true, score: 60 });
+    expect(judgeFloor(s, "b", 2)).toEqual({ rank: 3, passed: false, score: 40 });
+  });
+
+  it("breaks a score tie by who climbed first, and shares the rank when both are equal", () => {
+    expect(judgeFloor(state([["me", 50, 1], ["a", 50, 0]]), "me", 1)).toMatchObject({ rank: 2, passed: false });
+    expect(judgeFloor(state([["me", 50, 0], ["a", 50, null]]), "me", 1)).toMatchObject({ rank: 1, passed: true });
+    expect(judgeFloor(state([["me", 50, null], ["a", 50, null]]), "me", 1)).toMatchObject({ rank: 1, passed: true });
   });
 });

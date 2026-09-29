@@ -12,7 +12,7 @@ describe("tower run on the bundled maps", () => {
         expect(plan, `floor ${floor}`).not.toBeNull();
         expect(plan!.map.difficulty, `floor ${floor}`).toBe(floors[floor - 1]!.map);
         expect(plan!.map.supportedParticipants).toContain(plan!.participants);
-        run = recordFloor(run, plan!, { place: 1, passed: true, score: 10 });
+        run = recordFloor(run, plan!, { rank: 1, passed: true, score: 10 });
       }
       expect(run.status).toBe("cleared");
     }

@@ -42,7 +42,7 @@ const REASON_TEXT: Record<string, string> = {
 export interface ResultsActions {
   /** Server clock (ms since epoch) when the room returns to the lobby, or null for the sandbox. */
   endsAt: number | null;
-  /** Extra verdict above the table (tower run: passed or not, hearts, run total). */
+  /** Extra verdict above the table (tower run: passed or not, run total). */
   note?: { title: string; lines: string[]; tone: "pass" | "fail" | "info" };
   buttons: { label: string; primary?: boolean; run: () => void }[];
 }

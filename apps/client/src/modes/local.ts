@@ -20,7 +20,7 @@ export interface LocalOptions {
   onFinish?: (state: SimulationState) => void;
   /** Replaces the default result-screen buttons. */
   results?: () => ResultsActions;
-  /** Small line under the clock (tower run: floor and hearts). */
+  /** Small line under the clock (tower run: floor, pass rank, total). */
   caption?: () => string | null;
   /** Result-screen actions; default to reloading the page and going to the site root. */
   onAgain?: () => void;

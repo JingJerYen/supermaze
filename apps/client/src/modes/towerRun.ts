@@ -1,7 +1,7 @@
 import type * as THREE from "three";
 import {
+  continueRun,
   DEFAULT_TUNING,
-  floorsCleared,
   judgeFloor,
   planFloor,
   recordFloor,
@@ -20,9 +20,10 @@ const BEST_KEY = "supermaze.towerBest";
 const PLAYER_ID = "local"; // createLocalMode's id for you
 
 export interface TowerBest {
-  /** Floors cleared. */
-  floors: number;
+  /** Highest run total so far. */
   score: number;
+  /** Floor that run had reached. */
+  floor: number;
 }
 
 /** Best run in this browser, or null (none yet, or storage unavailable). */
@@ -30,7 +31,7 @@ export function loadTowerBest(): TowerBest | null {
   try {
     const raw = localStorage.getItem(BEST_KEY);
     const v = raw ? (JSON.parse(raw) as TowerBest) : null;
-    return v && typeof v.floors === "number" && typeof v.score === "number" ? v : null;
+    return v && typeof v.floor === "number" && typeof v.score === "number" ? v : null;
   } catch {
     return null;
   }
@@ -38,8 +39,9 @@ export function loadTowerBest(): TowerBest | null {
 
 /**
  * Single-player tower run (CLAUDE.md section 4.1). The rules live in the sim
- * (`planFloor`, `judgeFloor`, `recordFloor`); this class only plays one floor
- * after another and turns the run into result-screen text and buttons.
+ * (`planFloor`, `judgeFloor`, `recordFloor`, `continueRun`); this class only
+ * plays one floor after another and turns the run into result-screen text and
+ * buttons. The best run total is kept in this browser.
  */
 export class TowerRun {
   private run: TowerRunState;
@@ -82,7 +84,7 @@ export class TowerRun {
       tuning: plan.tuning,
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
-      caption: () => `第 ${plan.floor} / ${this.floorsTotal} 層　${hearts(this.run.hearts)}　前 ${plan.passRank} 名登塔晉級`,
+      caption: () => `第 ${plan.floor} / ${this.floorsTotal} 層　分數前 ${plan.passRank} 名晉級　總分 ${this.run.totalScore}`,
       onHome: () => this.quit(),
     });
     this.match = new Match(this.root, this.renderer, mode);
@@ -94,44 +96,44 @@ export class TowerRun {
     const outcome = judgeFloor(state, PLAYER_ID, plan.passRank);
     this.run = recordFloor(this.run, plan, outcome);
     const run = this.run;
-    const where = outcome.place === null ? "沒有登上塔" : `第 ${outcome.place} 名登塔`;
-    const status = `${hearts(run.hearts)}　總分 ${run.totalScore}`;
-    const quit = { label: "回首頁", run: () => this.quit() };
+    const best = loadTowerBest();
+    const record = !best || run.totalScore > best.score;
+    if (record) saveBest({ score: run.totalScore, floor: plan.floor });
+    const where = `分數第 ${outcome.rank} 名`;
+    const total = `總分 ${run.totalScore}（到達第 ${plan.floor} 層）`;
+    const bestLine = record ? "新紀錄！" : best ? `最佳紀錄：總分 ${best.score}（到達第 ${best.floor} 層）` : "";
+    const home = { label: "回首頁", run: () => this.quit() };
 
-    if (run.status === "cleared" || run.status === "over") {
-      const best = loadTowerBest();
-      const cleared = floorsCleared(run);
-      const record = !best || cleared > best.floors || (cleared === best.floors && run.totalScore > best.score);
-      if (record) saveBest({ floors: cleared, score: run.totalScore });
+    if (run.status === "cleared") {
       this.verdict = {
         endsAt: null,
         note: {
-          title: run.status === "cleared" ? `登頂成功！通過全部 ${this.floorsTotal} 層` : `挑戰結束：${where}，心用完了`,
-          tone: run.status === "cleared" ? "pass" : "fail",
-          lines: [
-            `通過 ${cleared} 層，總分 ${run.totalScore}`,
-            record ? "新紀錄！" : best ? `最佳紀錄：通過 ${best.floors} 層，${best.score} 分` : "",
-          ].filter(Boolean),
+          title: outcome.passed ? `登頂成功！完成全部 ${this.floorsTotal} 層` : `完成全部 ${this.floorsTotal} 層`,
+          tone: outcome.passed ? "pass" : "info",
+          lines: [total, bestLine].filter(Boolean),
         },
-        buttons: [{ label: "再挑戰一次", primary: true, run: () => this.restart() }, quit],
+        buttons: [{ label: "再挑戰一次", primary: true, run: () => this.restart() }, home],
       };
-    } else if (outcome.passed) {
+    } else if (run.status === "stopped") {
       this.verdict = {
         endsAt: null,
-        note: { title: `晉級！${where}`, tone: "pass", lines: [`下一層：第 ${run.floor} / ${this.floorsTotal} 層　${status}`] },
-        buttons: [{ label: `前往第 ${run.floor} 層`, primary: true, run: () => this.playFloor() }, quit],
+        note: { title: `挑戰結束：${where}，需要前 ${plan.passRank} 名`, tone: "fail", lines: [total, bestLine].filter(Boolean) },
+        buttons: [home, { label: "繼續", primary: true, run: () => void this.continueAfterFail() }],
       };
     } else {
       this.verdict = {
         endsAt: null,
-        note: {
-          title: `未晉級：${where}，需要前 ${plan.passRank} 名`,
-          tone: "fail",
-          lines: [`失去一顆心，重新挑戰第 ${run.floor} 層（換一張地圖）　${status}`],
-        },
-        buttons: [{ label: `重新挑戰第 ${run.floor} 層`, primary: true, run: () => this.playFloor() }, quit],
+        note: { title: `晉級！${where}`, tone: "pass", lines: [`總分 ${run.totalScore}　下一層：第 ${run.floor} / ${this.floorsTotal} 層`] },
+        buttons: [{ label: `前往第 ${run.floor} 層`, primary: true, run: () => this.playFloor() }, home],
       };
     }
+  }
+
+  /** After a failed floor: pass the continue gate, then on to the next floor with the score kept. */
+  private async continueAfterFail(): Promise<void> {
+    if (this.run.status !== "stopped" || !(await continueGate())) return;
+    this.run = continueRun(this.run);
+    this.playFloor();
   }
 
   private restart(): void {
@@ -145,9 +147,12 @@ export class TowerRun {
   }
 }
 
-function hearts(n: number): string {
-  const total = DEFAULT_TUNING.towerRun.hearts;
-  return "❤".repeat(Math.max(0, n)) + "♡".repeat(Math.max(0, total - n));
+/**
+ * What a continue costs. Free for now; once the game ships this is where an ad
+ * or a payment goes, resolving false when the player backs out.
+ */
+async function continueGate(): Promise<boolean> {
+  return true;
 }
 
 function saveBest(best: TowerBest): void {

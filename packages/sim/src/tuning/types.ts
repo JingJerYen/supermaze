@@ -134,11 +134,9 @@ export interface Tuning {
 
   /** Single-player tower run (CLAUDE.md section 4.1). */
   towerRun: {
-    /** Failed floors allowed before the run ends; each failure costs one. */
-    hearts: number;
     /**
-     * Share of the participants who pass a floor, by climbing order: you pass
-     * when you climb within the first max(1, floor(participants x passShare)).
+     * Share of the participants who pass a floor, by score rank: you pass when
+     * you rank within the first max(1, floor(participants x passShare)).
      */
     passShare: number;
     /** Bottom floor first; the run is cleared after the last one. */

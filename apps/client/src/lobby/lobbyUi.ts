@@ -84,7 +84,7 @@ export class LobbyUi {
   }
 
   /** `best` is the tower-run record shown next to its button. */
-  showHome(defaultName: string, error?: string, best?: { floors: number; score: number } | null): void {
+  showHome(defaultName: string, error?: string, best?: { score: number; floor: number } | null): void {
     this.stopTicking();
     this.show();
     this.card.innerHTML = `
@@ -101,7 +101,7 @@ export class LobbyUi {
       </div>
       <div class="lb-row" style="margin-top:14px;border-top:1px solid rgba(255,255,255,.15);padding-top:14px">
         <button id="lb-local">爬塔挑戰</button>
-        <span class="lb-muted">單人對 CPU，20 層，前一半登塔才能晉級${best ? `。最佳紀錄：通過 ${best.floors} 層，${best.score} 分` : ""}</span>
+        <span class="lb-muted">單人對 CPU，20 層，每層分數前一半才能晉級${best ? `。最佳總分 ${best.score}（到達第 ${best.floor} 層）` : ""}</span>
       </div>
       <div class="lb-notice ${error ? "lb-error" : ""}" id="lb-home-notice">${error ?? "同一個伺服器上的朋友輸入四碼代碼就能加入你的私人房"}</div>`;
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;

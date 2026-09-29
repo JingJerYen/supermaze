@@ -29,7 +29,7 @@ export interface GameMode {
   /** States to render between, with a 0..1 blend. */
   sample(now: number, loopAlpha: number): Sample | null;
   hud(): Record<string, string | number>;
-  /** Small line under the clock, e.g. the tower run's floor and hearts; null for none. */
+  /** Small line under the clock, e.g. the tower run's floor and total; null for none. */
   caption?(): string | null;
   /** Large centre-screen message (connection problems etc.), or null when there is nothing to say. */
   banner?(): string | null;
