@@ -417,8 +417,8 @@ export const RULE_SCENES: DemoScene[] = [
     title: "鬼抓人",
     text: [
       "每隔一段時間，其中一方會變成鬼 {ghostDurationSec} 秒，畫面上方會先倒數 {ghostWarningSec} 秒預告。",
-      "鬼跑得比較快，碰到你就算抓到：你的道具全部消失並被定身 {caughtFreezeSec} 秒，鑰匙不會掉。",
-      "當鬼的時候不能撿東西、不能用道具、也不能登塔。已經在塔頂的人不受影響。",
+      "鬼跑得比較快，碰到你就算抓到：道具全部消失、定身 {caughtFreezeSec} 秒。沒有鑰匙的鬼還會偷走你的鑰匙。",
+      "當鬼的時候不能撿東西、不能用道具、也不能登塔。已經在塔頂的人不受影響，所以有鑰匙就早點登塔。",
     ],
     map: map("ghost", RING, { keys: [[2, 3], [8, 3]] }),
     participants: duo,

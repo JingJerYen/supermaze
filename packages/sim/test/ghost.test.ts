@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
 import { moverPosition } from "../src/movement.js";
-import { Simulation, type PlayerInput } from "../src/simulation.js";
+import { chooseGhostTeam, type GhostState } from "../src/ghost.js";
+import { Simulation, type PlayerInput, type PlayerState } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import { TINY_MAP } from "./fixtures.js";
 
@@ -159,5 +160,81 @@ describe("developer shortcut", () => {
     expect(sim.debugForceGhost(1)).toEqual([]); // already warning
     run(sim, T);
     expect(sim.getState().ghost.phase).toBe("active");
+  });
+});
+
+describe("schedule follows the round length", () => {
+  it("first warning after a fifth of the round, then a fifth between events", () => {
+    const tuning: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 } };
+    expect(tuning.ghostEvent.intervalSec).toBeNull();
+    const sim = new Simulation({ seed: 3, map: MAP, participants: two, tuning, timeLimitSec: 100 });
+    sim.start();
+    const g = tuning.ghostEvent;
+    const at = (type: string, events: { type: string; tick: number }[]) => events.filter((e) => e.type === type).map((e) => e.tick / T);
+    const events = run(sim, 90 * T);
+    // 100 s round: warning at 20 s, chase from 20 + warning, over after the duration, next warning 20 s later.
+    const firstEnd = 20 + g.warningSec + g.durationSec;
+    expect(at("ghostWarning", events)).toEqual([20, firstEnd + 20]);
+    expect(at("ghostStarted", events)[0]).toBe(20 + g.warningSec);
+    expect(at("ghostEnded", events)[0]).toBe(firstEnd);
+  });
+});
+
+describe("stealing keys", () => {
+  /** a (team A) on the south door (2,4), b (team B) on the east door (3,3). Keys where the test puts them. */
+  function chase(keys: { x: number; y: number }[]) {
+    const map: MapData = { ...TINY_MAP, spawns: { ...TINY_MAP.spawns, keys: keys.map((k) => ({ ...k, layer: "road" as const })) } };
+    const sim = new Simulation({ seed: 3, map, participants: two, tuning: FAST });
+    sim.start();
+    run(sim, 2 * T); // idle + warning -> active
+    expect(sim.getState().ghost).toMatchObject({ phase: "active", teamId: "A" });
+    run(sim, 7, new Map([["b", { moveX: 1, moveY: 0 }]])); // b settles on (4,3)
+    run(sim, 16, new Map([["a", { moveX: 1, moveY: 0 }]])); // a to (4,4)
+    const events = run(sim, 12, new Map([["a", { moveX: 0, moveY: -1 }]])); // a north onto b
+    return { sim, caught: events.find((e) => e.type === "playerCaught") };
+  }
+
+  it("a ghost without a key takes the runner's, for the catch score only", () => {
+    // b starts on a key; the other key is far away, so a has none.
+    const { sim, caught } = chase([{ x: 3, y: 3 }, { x: 7, y: 6 }]);
+    const st = sim.getState();
+    const keyId = Object.values(st.keys).find((k) => k.pos.x === 3 && k.pos.y === 3)!.id;
+    expect(caught).toMatchObject({ ghostId: "a", runnerId: "b", stolenKeyId: keyId });
+    expect(st.players["a"]).toMatchObject({ keyId, keyScored: false, score: FAST.scoring.ghostCatch });
+    expect(st.players["b"]).toMatchObject({ keyId: null, keyScored: true, score: FAST.scoring.keyFound });
+    expect(st.keys[keyId]!.ownerId).toBe("a");
+  });
+
+  it("a ghost that has a key leaves the runner's alone", () => {
+    const { sim, caught } = chase([{ x: 3, y: 3 }, { x: 2, y: 4 }]); // both start on a key
+    expect(caught).toMatchObject({ ghostId: "a", runnerId: "b", stolenKeyId: null });
+    expect(sim.getState().players["b"]!.keyId).not.toBeNull();
+    expect(sim.getState().players["a"]!.score).toBe(FAST.scoring.keyFound + FAST.scoring.ghostCatch);
+  });
+
+  it("the robbed player can find another key, without scoring for it again", () => {
+    const { sim } = chase([{ x: 3, y: 3 }, { x: 5, y: 3 }]); // the spare key lies one tile east of where b is caught
+    expect(sim.getState().players["b"]!.keyId).toBeNull();
+    run(sim, 25); // the one-second freeze wears off; b's own turn as a ghost has not begun yet
+    run(sim, 12, new Map([["b", { moveX: 1, moveY: 0 }]]));
+    const b = sim.getState().players["b"]!;
+    expect(b.keyId).not.toBeNull();
+    expect(b.score).toBe(FAST.scoring.keyFound);
+    expect(sim.getState().players["a"]!.keyId).not.toBeNull(); // the thief keeps what it took
+  });
+});
+
+describe("who goes next", () => {
+  const player = (id: string, teamId: string, keyId: string | null) => ({ id, teamId, keyId, phase: "maze" }) as unknown as PlayerState;
+  const players = { a: player("a", "A", "k0"), b: player("b", "B", null) };
+  const state = (counts: Record<string, number>, lastTeamId: string | null): GhostState => ({ phase: "idle", teamId: null, phaseEndsAtTick: 0, counts, lastTeamId, intervalTicks: 1 });
+
+  it("fewest turns first; then the side with fewer keys, even twice in a row; then not the last; then id order", () => {
+    expect(chooseGhostTeam(state({ A: 1, B: 0 }, "A"), players)).toBe("B");
+    expect(chooseGhostTeam(state({ A: 0, B: 1 }, "B"), players)).toBe("A"); // turns outrank keys
+    expect(chooseGhostTeam(state({ A: 1, B: 1 }, "B"), players)).toBe("B"); // tied: B has no key
+    const even = { a: player("a", "A", null), b: player("b", "B", null) };
+    expect(chooseGhostTeam(state({ A: 1, B: 1 }, "B"), even)).toBe("A"); // keys tied too: not the last one
+    expect(chooseGhostTeam(state({}, null), even)).toBe("A"); // nothing to tell them apart: id order
   });
 });

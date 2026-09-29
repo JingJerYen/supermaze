@@ -17,17 +17,28 @@ export interface GhostState {
   phaseEndsAtTick: Tick;
   /** How many times each team has been the ghosts, for fair rotation. */
   counts: Record<TeamId, number>;
-  /** Team that was the ghosts most recently; never picked again while another candidate is tied. */
+  /** Team that was the ghosts most recently; passed over while another candidate is otherwise tied. */
   lastTeamId: TeamId | null;
+  /** Wait between the end of one event and the next warning, ticks; fixed when the round starts. */
+  intervalTicks: Tick;
 }
 
-export function initialGhostState(startTick: Tick, tuning: Tuning): GhostState {
+/**
+ * The schedule for a round of `roundTicks`. By default it follows the round
+ * length (section 13): the first warning after `firstWarningShare` of it, then
+ * `intervalShare` of it between events, so short and long maps both see a few
+ * events. `intervalSec`, when set, fixes both waits in seconds instead.
+ */
+export function initialGhostState(startTick: Tick, tuning: Tuning, roundTicks: number): GhostState {
+  const g = tuning.ghostEvent;
+  const fixed = g.intervalSec === null ? null : sec(g.intervalSec, tuning);
   return {
     phase: "idle",
     teamId: null,
-    phaseEndsAtTick: startTick + sec(tuning.ghostEvent.intervalSec, tuning),
+    phaseEndsAtTick: startTick + (fixed ?? Math.max(1, Math.round(roundTicks * g.firstWarningShare))),
     counts: {},
     lastTeamId: null,
+    intervalTicks: fixed ?? Math.max(1, Math.round(roundTicks * g.intervalShare)),
   };
 }
 
@@ -37,12 +48,13 @@ export function isGhost(ghost: GhostState, p: PlayerState): boolean {
 
 /**
  * Advance the schedule by one tick. Returns the new state and any events.
- * Fair rotation, fully deterministic: the team with the fewest turns as ghosts
- * goes next; among ties the most recent ghost team is skipped and the first
- * team id in sorted order wins, so the very first ghosts are always the first
- * team alphabetically and two teams alternate strictly. Teams with nobody left
- * in the maze are skipped; with fewer than two eligible teams the event waits
- * another interval.
+ * Fair rotation, fully deterministic, no dice: the team with the fewest turns
+ * as ghosts goes next; among ties the team holding fewer keys (as a share of
+ * its members) goes first, which hands the chance to steal a key to whoever is
+ * behind; then the most recent ghost team is passed over; then the first team
+ * id in sorted order. Turns never differ by more than one. Teams with nobody
+ * left in the maze are skipped; with fewer than two eligible teams the event
+ * waits another interval.
  */
 export function stepGhost(
   ghost: GhostState,
@@ -61,7 +73,7 @@ export function stepGhost(
     const teamId = ghost.teamId as TeamId;
     if (!eligibleTeams(players).includes(teamId) || eligibleTeams(players).length < 2) {
       // The announced team climbed out (or everyone else did): skip this round of tag.
-      return { ghost: { ...ghost, phase: "idle", teamId: null, phaseEndsAtTick: tick + sec(tuning.ghostEvent.intervalSec, tuning) }, events };
+      return { ghost: { ...ghost, phase: "idle", teamId: null, phaseEndsAtTick: tick + ghost.intervalTicks }, events };
     }
     const endsAtTick = tick + sec(tuning.ghostEvent.durationSec, tuning);
     events.push({ type: "ghostStarted", tick, teamId, endsAtTick });
@@ -79,7 +91,7 @@ export function stepGhost(
 
   // active -> idle
   events.push({ type: "ghostEnded", tick, teamId: ghost.teamId as TeamId });
-  return { ghost: { ...ghost, phase: "idle", teamId: null, phaseEndsAtTick: tick + sec(tuning.ghostEvent.intervalSec, tuning) }, events };
+  return { ghost: { ...ghost, phase: "idle", teamId: null, phaseEndsAtTick: tick + ghost.intervalTicks }, events };
 }
 
 /** Next ghost team by the fair-rotation rule, or null when fewer than two teams are in the maze. */
@@ -88,8 +100,19 @@ export function chooseGhostTeam(ghost: GhostState, players: Record<PlayerId, Pla
   if (teams.length < 2) return null;
   const fewest = Math.min(...teams.map((t) => ghost.counts[t] ?? 0));
   let candidates = teams.filter((t) => (ghost.counts[t] ?? 0) === fewest).sort();
+  if (candidates.length > 1) {
+    const share = new Map(candidates.map((t) => [t, keyShare(players, t)]));
+    const least = Math.min(...share.values());
+    candidates = candidates.filter((t) => (share.get(t) as number) <= least + 1e-9);
+  }
   if (candidates.length > 1 && ghost.lastTeamId !== null) candidates = candidates.filter((t) => t !== ghost.lastTeamId);
   return candidates[0] ?? null;
+}
+
+/** Share of a team's members who hold a key (those on the tower used theirs to get there). */
+function keyShare(players: Record<PlayerId, PlayerState>, teamId: TeamId): number {
+  const members = Object.values(players).filter((p) => p.teamId === teamId);
+  return members.length === 0 ? 0 : members.filter((p) => p.keyId !== null).length / members.length;
 }
 
 /**
@@ -104,7 +127,7 @@ export function beginWarning(
   warningTicks: number,
 ): { ghost: GhostState; events: SimEvent[] } {
   const teamId = chooseGhostTeam(ghost, players);
-  if (!teamId) return { ghost: { ...ghost, phaseEndsAtTick: tick + sec(tuning.ghostEvent.intervalSec, tuning) }, events: [] };
+  if (!teamId) return { ghost: { ...ghost, phaseEndsAtTick: tick + ghost.intervalTicks }, events: [] };
   const startsAtTick = tick + Math.max(1, warningTicks);
   return {
     ghost: { ...ghost, phase: "warning", teamId, phaseEndsAtTick: startsAtTick },

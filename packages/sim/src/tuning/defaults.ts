@@ -67,11 +67,13 @@ export const DEFAULT_TUNING: Tuning = {
   },
 
   ghostEvent: {
-    intervalSec: 60,
-    warningSec: 20,
-    durationSec: 20,
+    intervalSec: null,
+    firstWarningShare: 0.2,
+    intervalShare: 0.2,
+    warningSec: 10,
+    durationSec: 15,
     speedMultiplier: 1.5,
-    caughtFreezeSec: 10,
+    caughtFreezeSec: 8,
     caughtProtectionSec: 10,
     catchRadiusTiles: 0.6,
   },

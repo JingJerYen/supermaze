@@ -188,9 +188,11 @@ export class CpuController {
         .filter((o) => {
           const q = moverPosition(o.mover);
           return Math.hypot(q.x - me.x, q.y - me.y) <= r;
-        })
-        .map((o) => o.mover.target ?? o.mover.from);
-      if (runners.length > 0) return { goal: "chase", isGoal: (t) => runners.some((q) => sameTile(q, t)) };
+        });
+      // Without a key of its own it goes for the runners it could rob, when it sees any.
+      const rich = p.keyId === null ? runners.filter((o) => o.keyId !== null) : [];
+      const targets = (rich.length > 0 ? rich : runners).map((o) => o.mover.target ?? o.mover.from);
+      if (targets.length > 0) return { goal: "chase", isGoal: (t) => targets.some((q) => sameTile(q, t)) };
     } else if (p.keyId === null) {
       const keys = Object.values(state.keys)
         .filter((k) => k.ownerId === null && mem.seenKeys.has(k.id))

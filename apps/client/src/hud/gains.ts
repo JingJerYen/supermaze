@@ -27,7 +27,7 @@ export function diffGains(prev: SimulationState | null, next: SimulationState, m
     out.push({ points, label });
   };
 
-  if (a.keyId === null && b.keyId !== null) take(scoring.keyFound, "拿到鑰匙");
+  if (!a.keyScored && b.keyScored) take(scoring.keyFound, "拿到鑰匙");
 
   if (a.phase === "maze" && b.phase === "tower" && b.towerArrival !== null) {
     const table = scoring.towerPlacement;

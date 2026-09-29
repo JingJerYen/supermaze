@@ -26,7 +26,13 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
   }
   for (const p of Object.values(next.players)) {
     const before = prev.players[p.id];
-    if (before && before.keyId === null && p.keyId !== null) out.push(p.id === meId ? "🔑 你拿到鑰匙" : `🔑 ${name(p.id)} 拿到鑰匙`);
+    if (!before || before.keyId !== null || p.keyId === null) continue;
+    // A key that already had an owner was taken by a ghost, not found.
+    const victim = prev.keys[p.keyId]?.ownerId ?? null;
+    if (victim === null) out.push(p.id === meId ? "🔑 你拿到鑰匙" : `🔑 ${name(p.id)} 拿到鑰匙`);
+    else if (p.id === meId) out.push({ text: `👻 你偷走了 ${name(victim)} 的鑰匙`, big: true });
+    else if (victim === meId) out.push({ text: `👻 ${name(p.id)} 偷走了你的鑰匙`, big: true });
+    else out.push(`👻 ${name(p.id)} 偷走了 ${name(victim)} 的鑰匙`);
   }
   if (prev.lightsOn !== next.lightsOn) out.push(next.lightsOn ? "燈亮了" : "全圖進入黑暗");
   if (meId) {
@@ -47,7 +53,7 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
   if (meId) {
     const a = prev.players[meId];
     const b = next.players[meId];
-    if (a && b && b.protectedUntilTick > a.protectedUntilTick) out.push("被鬼抓到了，道具全失");
+    if (a && b && b.protectedUntilTick > a.protectedUntilTick && !(a.keyId !== null && b.keyId === null)) out.push("被鬼抓到了，道具全失");
   }
   return out;
 }

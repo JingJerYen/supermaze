@@ -89,8 +89,16 @@ export interface Tuning {
   };
 
   ghostEvent: {
-    /** Time between the end of one event and the start of the next warning, seconds. */
-    intervalSec: number;
+    /**
+     * Fixed schedule override, seconds: the wait before the first warning and
+     * between the end of one event and the next warning. Null (the default)
+     * uses the shares below, so the schedule follows the length of the round.
+     */
+    intervalSec: number | null;
+    /** First warning after this share of the round length (0.2 = a fifth of the way in). */
+    firstWarningShare: number;
+    /** Wait between the end of one event and the next warning, as a share of the round length. */
+    intervalShare: number;
     /** Countdown shown before the ghost team becomes active, seconds. */
     warningSec: number;
     /** Active chase duration, seconds. */

@@ -25,7 +25,7 @@ export type SimEvent =
   | { type: "ghostWarning"; tick: Tick; teamId: TeamId; startsAtTick: Tick }
   | { type: "ghostStarted"; tick: Tick; teamId: TeamId; endsAtTick: Tick }
   | { type: "ghostEnded"; tick: Tick; teamId: TeamId }
-  | { type: "playerCaught"; tick: Tick; ghostId: PlayerId; runnerId: PlayerId; frozenUntilTick: Tick }
+  | { type: "playerCaught"; tick: Tick; ghostId: PlayerId; runnerId: PlayerId; frozenUntilTick: Tick; stolenKeyId: string | null }
   | { type: "teamCompleted"; tick: Tick; teamId: TeamId; isWinner: boolean }
   | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason };
 

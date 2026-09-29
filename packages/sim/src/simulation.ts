@@ -52,6 +52,8 @@ export interface SimulationOptions {
 export interface PlayerState extends Participant {
   mover: MoverState;
   phase: PlayerPhase;
+  /** Whether the score for finding a key has been given; it is given once per round, whatever happens to the key later. */
+  keyScored: boolean;
   /** Key this player holds (or used to climb). Bound for the whole round; never transferable. */
   keyId: string | null;
   /** 0-based order of arrival on the tower top, null while still in the maze. */
@@ -163,7 +165,7 @@ export class Simulation {
       boxes: {},
       placeables: {},
       nodes: {},
-      ghost: { phase: "idle", teamId: null, phaseEndsAtTick: 0, counts: {}, lastTeamId: null },
+      ghost: { phase: "idle", teamId: null, phaseEndsAtTick: 0, counts: {}, lastTeamId: null, intervalTicks: 0 },
       teamClimbTicks: {},
       winnerTeamId: null,
       result: null,
@@ -203,6 +205,7 @@ export class Simulation {
       frozenBy: null,
       teleportImmunity: null,
       protectedUntilTick: 0,
+      keyScored: false,
     };
     this.state = { ...this.state, players: { ...this.state.players, [p.id]: player } };
     // Keep "keys == participants" if someone joins after the round started (dev-only path;
@@ -248,7 +251,7 @@ export class Simulation {
       endsAtTick: this.state.tick + this.timeLimitTicks(),
       freezeUntilTick: this.state.tick + Math.round(this.tuning.round.startFreezeSec * this.tuning.tickRate),
       switches,
-      ghost: initialGhostState(this.state.tick, this.tuning),
+      ghost: initialGhostState(this.state.tick, this.tuning, this.timeLimitTicks()),
     };
     this.spawnKeys(count);
     // The map's own box count when it has one, otherwise so many per participant (section 9).
@@ -471,17 +474,25 @@ export class Simulation {
           if (Math.hypot(rp.x - gp.x, rp.y - gp.y) > radius) continue;
           const frozenUntilTick = tick + Math.round(this.tuning.ghostEvent.caughtFreezeSec * this.tuning.tickRate);
           const protectedUntilTick = frozenUntilTick + Math.round(this.tuning.ghostEvent.caughtProtectionSec * this.tuning.tickRate);
+          // A ghost without a key takes the runner's (section 13); a ghost that has one leaves it.
+          const scorer = players[g.id] as PlayerState;
+          const stolenKeyId = scorer.keyId === null ? r.keyId : null;
           players[r.id] = {
             ...r,
-            items: [], // everything carried is lost, teleport nodes included; the key is kept
+            items: [], // everything carried is lost, teleport nodes included
+            keyId: stolenKeyId === null ? r.keyId : null,
             frozenUntilTick,
             frozenBy: "ghost",
             protectedUntilTick,
             mover: { ...r.mover, target: null, progress: 0 },
           };
-          const scorer = players[g.id] as PlayerState;
-          players[g.id] = { ...scorer, score: scorer.score + this.tuning.scoring.ghostCatch };
-          work.events.push({ type: "playerCaught", tick, ghostId: g.id, runnerId: r.id, frozenUntilTick });
+          // Stealing pays the catch only, never the finder's score.
+          players[g.id] = { ...scorer, keyId: stolenKeyId ?? scorer.keyId, score: scorer.score + this.tuning.scoring.ghostCatch };
+          if (stolenKeyId !== null) {
+            const key = work.keys[stolenKeyId];
+            if (key) work.keys = { ...work.keys, [stolenKeyId]: { ...key, ownerId: g.id } };
+          }
+          work.events.push({ type: "playerCaught", tick, ghostId: g.id, runnerId: r.id, frozenUntilTick, stolenKeyId });
         }
       }
     }
@@ -587,7 +598,8 @@ export class Simulation {
       const key = unownedKeyAt(work.keys, p.mover.from);
       if (key) {
         work.keys = { ...work.keys, [key.id]: { ...key, ownerId: id } };
-        p = { ...p, keyId: key.id, score: p.score + this.tuning.scoring.keyFound };
+        // The finder's score is given once per round: a key found after being robbed is worth nothing more.
+        p = { ...p, keyId: key.id, keyScored: true, score: p.score + (p.keyScored ? 0 : this.tuning.scoring.keyFound) };
         work.events.push({ type: "keyPickedUp", tick, playerId: id, keyId: key.id });
       }
     }
