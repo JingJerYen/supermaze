@@ -1,4 +1,4 @@
-import type { FixtureSpec, ItemKind, MapData, SimEvent, Tuning } from "@supermaze/sim";
+import { passRank, type FixtureSpec, type ItemKind, type MapData, type SimEvent, type Tuning } from "@supermaze/sim";
 import type { Cmd } from "./puppet.js";
 
 /**
@@ -38,6 +38,7 @@ export function ruleText(scene: DemoScene, tuning: Tuning): string[] {
     caughtFreezeSec: tuning.ghostEvent.caughtFreezeSec,
     ghostWarningSec: tuning.ghostEvent.warningSec,
     ghostDurationSec: tuning.ghostEvent.durationSec,
+    floors: tuning.towerRun.floors.length,
   };
   return scene.text.map((line) => line.replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole)));
 }
@@ -464,5 +465,44 @@ export const RULE_SCENES: DemoScene[] = [
       ["登塔時每件剩餘道具", `+${t.scoring.leftoverItem}`],
       ["勝隊加成（兩隊對戰）", `×${t.scoring.winningTeamMultiplier}`],
     ],
+  },
+  {
+    id: "tower-run",
+    title: "爬塔挑戰（單機）",
+    text: [
+      "單機是 {floors} 層的爬塔挑戰：每層是一局對 CPU 的個人對戰，越往上地圖越難、CPU 越強。",
+      "每層結束時分數排在前一半就晉級，同分時先登塔的排前面。每層的分數一路累加成總分。",
+      "沒晉級挑戰就結算總分；也可以按「繼續」直接進入下一層，總分照算。",
+    ],
+    map: map("tower-run", RING, { keys: [[9, 5], [1, 1]] }),
+    participants: duo,
+    me: "me",
+    teamMode: "solo",
+    seed: 1,
+    tuning: quiet,
+    scripts: {
+      me: [{ do: "wait", sec: 1.2 }, { do: "goto", x: 9, y: 5 }, { do: "wait", sec: 0.3 }, { do: "goto", x: 5, y: 4 }, { do: "face", ...N }, { do: "wait", sec: 0.4 }, { do: "act" }],
+      foe: [{ do: "wait", sec: 0.3 }, { do: "goto", x: 1, y: 1 }, { do: "goto", x: 4, y: 1 }],
+    },
+    holdSec: 4.5,
+    expect: ["keyPickedUp", "keyPickedUp", "towerClimbed"],
+    table: (t) => {
+      const floors = t.towerRun.floors;
+      const label = { easy: "簡單", medium: "中等", hard: "困難" } as const;
+      const bands: [string, string][] = [];
+      for (let i = 0; i < floors.length; ) {
+        let j = i;
+        while (j + 1 < floors.length && floors[j + 1]!.map === floors[i]!.map) j++;
+        bands.push([`第 ${i + 1}～${j + 1} 層`, `${label[floors[i]!.map]}地圖`]);
+        i = j + 1;
+      }
+      const cpus = floors.map((f) => f.cpus);
+      const sizes = [...new Set(cpus.map((c) => c + 1))].sort((a, b) => a - b);
+      return [
+        ["晉級名次", sizes.map((n) => `${n} 人前 ${passRank(n, t)} 名`).join("・")],
+        ["CPU", `${Math.min(...cpus)}～${Math.max(...cpus)} 個，越往上越強`],
+        ...bands,
+      ];
+    },
   },
 ];
