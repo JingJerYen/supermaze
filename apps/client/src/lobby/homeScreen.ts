@@ -1,3 +1,4 @@
+import { NAME_MAX_CHARS } from "@supermaze/protocol";
 import { ICONS } from "./homeIcons.js";
 
 /**
@@ -28,13 +29,10 @@ export const HOME_CSS = `
 .hm-title span{background:linear-gradient(#f4fbff,#9cc6ee 55%,#5f8fc4);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.05em #16213d;filter:drop-shadow(0 .06em 0 #0b1122)}
 .hm-title span+span{background-image:linear-gradient(#fff3b0,#ffc53a 50%,#d98a0c)}
 .hm-panel{background:linear-gradient(180deg,rgba(20,30,52,.9),rgba(10,16,32,.92));border:.18em solid #3d4658;border-radius:1.1em;box-shadow:inset 0 0 0 .12em #10151f,inset 0 0 1.6em rgba(80,150,255,.12),0 .6em 2em rgba(0,0,0,.5);padding:1.3em 1.5em;display:flex;flex-direction:column;gap:.85em}
-.hm-head{display:flex;align-items:center;gap:.6em}
-.hm-head>svg{font-size:2.2em;color:#ffc53a}
-.hm-head b{display:block;font-size:1.9em;font-weight:900;letter-spacing:.05em}
-.hm-head small{display:block;color:#b8c6e0;font-size:1em;margin-top:.1em}
 .hm-field{display:flex;align-items:center;gap:.7em}
 .hm-field label{display:flex;align-items:center;gap:.4em;width:5.2em;flex:none;color:#8fb6ff;font-size:1.05em}
 .hm-field label svg{font-size:1.3em;color:#c9d3e6}
+.hm-fields{display:flex;flex-direction:column;gap:.6em}
 .lb .hm input{flex:1;min-width:0;height:2.6em;font-size:1em;border-radius:.5em;border:1px solid #3a4560;background:rgba(4,8,18,.75);color:#fff;padding:0 .8em}
 .lb .hm button{font-family:inherit;color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;gap:.5em;border-radius:0}
 .lb .hm button:hover{filter:brightness(1.1)}
@@ -47,6 +45,7 @@ export const HOME_CSS = `
 .hm-join{display:flex;flex-direction:column;gap:.5em}
 .hm-code{position:relative;display:flex;align-items:center}
 .hm-code svg{position:absolute;left:.7em;color:#8fa0c0}
+.lb .hm #lb-name{flex:none;width:8.5em}
 .lb .hm .hm-code input{padding-left:2.2em;text-transform:uppercase;letter-spacing:.2em}
 .hm-note{color:#ffd66b;font-size:.92em;text-align:center;min-height:1.3em}
 .hm-note.err{color:#ff8a8a}
@@ -65,10 +64,8 @@ export const HOME_CSS = `
   .hm{font-size:clamp(10px,3.1vh,14px);gap:.5em;padding-top:.8em;padding-bottom:.8em;width:min(40em,58vw)}
   .hm-logo img{width:2.8em;height:2.8em;border-radius:.6em}
   .hm-title{font-size:2.2em}
-  .hm-head small{display:none}
-  .hm-head b{font-size:1.4em}
   .hm-panel{padding:.8em 1em;gap:.55em}
-  .hm-fields{display:grid;grid-template-columns:1fr 1.4fr;gap:.6em}
+  .hm-fields{gap:.45em}
   .hm-field label{width:auto}
   .hm-field label span{display:none}
   .lb .hm-gold{--bh:3.1em}
@@ -88,9 +85,8 @@ export function homeHtml(v: HomeView): string {
   return `
     <div class="hm-logo"><img src="${ICON}" alt="" /><div class="hm-title"><span>SUPER</span> <span>MAZE</span></div></div>
     <div class="hm-panel">
-      <div class="hm-head">${ICONS.flag}<div><b>開始遊戲</b><small>選擇你的迷宮挑戰</small></div></div>
       <div class="hm-fields">
-        <div class="hm-field"><label for="lb-name">${ICONS.user}<span>暱稱</span></label><input id="lb-name" maxlength="12" placeholder="你的暱稱" /></div>
+        <div class="hm-field"><label for="lb-name">${ICONS.user}<span>暱稱</span></label><input id="lb-name" maxlength="${NAME_MAX_CHARS}" placeholder="你的暱稱" /></div>
         <div class="hm-field"><label for="lb-server">${ICONS.server}<span>伺服器</span></label><input id="lb-server" placeholder="wss://…" /></div>
       </div>
       <button class="hm-gold" id="lb-quick">${ICONS.swords}快速配對</button>

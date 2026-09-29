@@ -15,6 +15,14 @@ export const PROTOCOL_VERSION = 3;
 
 export const ROOM_NAME = "maze";
 
+/** Longest display name, in characters; the client input and the server both cap it. */
+export const NAME_MAX_CHARS = 6;
+
+/** Cut a display name to NAME_MAX_CHARS characters (not UTF-16 units, so emoji stay whole). */
+export function capName(s: string): string {
+  return Array.from(s).slice(0, NAME_MAX_CHARS).join("");
+}
+
 /** Client -> server message names. */
 export const C2S = {
   input: "input",

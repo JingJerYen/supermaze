@@ -6,7 +6,6 @@ const svg = (body: string) =>
   `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
 export const ICONS = {
-  flag: svg(`<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5" fill="currentColor" fill-opacity=".85"/>`),
   user: svg(`<circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5" fill="currentColor"/>`),
   server: svg(`<rect x="4" y="3" width="16" height="7" rx="2"/><rect x="4" y="14" width="16" height="7" rx="2"/><path d="M8 6.5h.01M8 17.5h.01"/>`),
   swords: svg(`<path d="M4 4l10 10M4 4h4M4 4v4"/><path d="M20 4L10 14M20 4h-4M20 4v4"/><path d="M12 16l-3 3M8 13l-3 3M5 16l3 3M12 16l3 3M16 13l3 3M19 16l-3 3"/>`),

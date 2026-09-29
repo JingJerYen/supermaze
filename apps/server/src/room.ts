@@ -17,6 +17,7 @@ import {
   type RoomMode,
   type SetTeamModeMessage,
   type WelcomeMessage,
+  capName,
 } from "@supermaze/protocol";
 import {
   DEFAULT_TUNING,
@@ -356,7 +357,7 @@ export class MazeRoom extends Room {
 /** Display names are cosmetic but still untrusted: trim, cap the length, never empty. */
 function sanitizeName(raw: unknown): string {
   const s = typeof raw === "string" ? raw.replace(/[\u0000-\u001f]/g, "").trim() : "";
-  return (s || "玩家").slice(0, 12);
+  return capName(s || "玩家");
 }
 
 /** Never trust client numbers: clamp to the unit square and drop NaN. */

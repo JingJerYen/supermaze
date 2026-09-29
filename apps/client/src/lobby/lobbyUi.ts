@@ -1,4 +1,4 @@
-import type { LobbyMessage, TeamMode } from "@supermaze/protocol";
+import { capName, type LobbyMessage, type TeamMode } from "@supermaze/protocol";
 import type { JoinRequest } from "../net/connection.js";
 import { HOME_CSS, homeHtml } from "./homeScreen.js";
 
@@ -92,8 +92,8 @@ export class LobbyUi {
     this.card.className = "hm";
     this.card.innerHTML = homeHtml({ error, best });
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
-    nameEl.value = defaultName;
-    const name = () => nameEl.value.trim() || defaultName;
+    nameEl.value = capName(defaultName);
+    const name = () => capName(nameEl.value.trim() || defaultName);
     const serverEl = this.card.querySelector<HTMLInputElement>("#lb-server")!;
     serverEl.value = this.server;
     const server = () => serverEl.value.trim();
