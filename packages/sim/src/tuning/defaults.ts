@@ -13,6 +13,7 @@ export const DEFAULT_TUNING: Tuning = {
     maxParticipants: 6,
     timeoutClimbMetric: "count",
     startFreezeSec: 3,
+    introSec: 3,
   },
 
   teams: {

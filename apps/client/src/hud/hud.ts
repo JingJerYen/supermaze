@@ -34,6 +34,8 @@ const CSS = `
 .hud-ghost.active{display:inline-block;background:rgba(226,75,74,.92);color:#fff;animation:hud-pulse 1s infinite}
 .hud-ghost.active.me{background:rgba(120,30,160,.95)}
 .hud-badge.frozen{color:#9fd3ff}
+.hud-top,.hud-items{transition:opacity .5s}
+.hud.intro .hud-top,.hud.intro .hud-items{opacity:0;transition:none}
 .hud-items{position:absolute;right:calc(max(24px,env(safe-area-inset-right)) + 84px + 14px);bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:10px;align-items:center}
 .hud-slot{width:clamp(48px,9vh,60px);height:clamp(48px,9vh,60px);border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
 .hud-slot svg{width:80%;height:80%;display:block}
@@ -109,6 +111,7 @@ export class Hud {
   }
 
   update(m: HudModel): void {
+    this.root.classList.toggle("intro", m.introSec > 0);
     const s = Math.max(0, Math.ceil(m.remainingSec));
     this.time.textContent = m.status === "lobby" ? "--:--" : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);

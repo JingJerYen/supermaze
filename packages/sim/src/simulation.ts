@@ -89,8 +89,9 @@ export interface SimulationState {
   endsAtTick: Tick;
   /**
    * Start freeze: until this tick nobody moves or acts (section 4). Set by
-   * `start()` from `round.startFreezeSec`; 0 in the lobby. Clients derive the
-   * opening countdown from it, so no event is needed when it ends.
+   * `start()` from `round.introSec` + `round.startFreezeSec`; 0 in the lobby.
+   * Clients derive the opening fly-in and countdown from it, so no event is
+   * needed when it ends.
    */
   freezeUntilTick: Tick;
   players: Record<PlayerId, PlayerState>;
@@ -252,14 +253,17 @@ export class Simulation {
     if (this.state.status !== "lobby") return [];
     const count = Object.keys(this.state.players).length * this.tuning.keys.perParticipant;
     const switches = createLightSwitches(this.rng, this.grid, this.map.spawns.lightSwitches, this.map.lightSwitchCount);
+    // The opening fly-in comes first and is not part of the round: the clock and the ghost schedule start after it.
+    const introTicks = Math.round(this.tuning.round.introSec * this.tuning.tickRate);
+    const clockStart = this.state.tick + introTicks;
     this.state = {
       ...this.state,
       status: "running",
       startTick: this.state.tick,
-      endsAtTick: this.state.tick + this.timeLimitTicks(),
-      freezeUntilTick: this.state.tick + Math.round(this.tuning.round.startFreezeSec * this.tuning.tickRate),
+      endsAtTick: clockStart + this.timeLimitTicks(),
+      freezeUntilTick: clockStart + Math.round(this.tuning.round.startFreezeSec * this.tuning.tickRate),
       switches,
-      ghost: initialGhostState(this.state.tick, this.tuning, this.timeLimitTicks()),
+      ghost: initialGhostState(clockStart, this.tuning, this.timeLimitTicks()),
     };
     this.spawnKeys(count);
     // The map's own box count when it has one, otherwise so many per participant (section 9).

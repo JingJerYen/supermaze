@@ -35,7 +35,7 @@ function instantMap(playerCount: number): MapData {
 
 function make(teams: Record<string, string>, tuning?: Partial<Tuning["round"]>, timeLimitSec?: number) {
   const participants = Object.entries(teams).map(([id, teamId]) => ({ id, teamId, controller: "human" as const }));
-  const t: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, ...tuning } };
+  const t: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0, ...tuning } };
   const sim = new Simulation({ seed: 5, map: instantMap(participants.length), participants, tuning: t, timeLimitSec: timeLimitSec ?? 10 });
   sim.start();
   sim.step(new Map()); // everyone picks up the key under their feet
@@ -180,7 +180,8 @@ describe("round length", () => {
     const sim = new Simulation({ seed: 1, map: { ...instantMap(4), timeLimitSec: 180 }, participants: players(4) });
     sim.start();
     const st = sim.getState();
-    expect(st.endsAtTick - st.startTick).toBe((180 + 60) * DEFAULT_TUNING.tickRate);
+    // The opening fly-in comes before the round clock starts.
+    expect(st.endsAtTick - st.startTick).toBe((DEFAULT_TUNING.round.introSec + 180 + 60) * DEFAULT_TUNING.tickRate);
   });
 });
 
@@ -191,7 +192,7 @@ describe("solo mode: everyone for themselves", () => {
       seed: 5,
       map: instantMap(ids.length),
       participants,
-      tuning: { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 } },
+      tuning: { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0 } },
       timeLimitSec,
       teamMode: "solo",
       ...(endWhenClimbed ? { endWhenClimbed } : {}),

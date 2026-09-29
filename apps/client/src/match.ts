@@ -16,6 +16,8 @@ import type { GameMode } from "./modes/mode.js";
 import { BoxViews } from "./render/boxes.js";
 import { FollowCamera } from "./render/camera.js";
 import { ClimbCamera } from "./render/climbCamera.js";
+import { platformTopY } from "./render/elevation.js";
+import { openingOf, type Opening } from "./opening.js";
 import { KeyViews } from "./render/keys.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
@@ -123,6 +125,7 @@ export class Match {
 
     const s = this.mode.sample(now, alpha);
     const meId = this.mode.localPlayerId();
+    let opening: Opening | null = null;
     if (s) {
       const ghostIds = new Set(Object.values(s.to.players).filter((p) => isGhost(s.to.ghost, p)).map((p) => p.id));
       this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt, meId, ghostIds, s.nudge ?? null);
@@ -134,12 +137,9 @@ export class Match {
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
       this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : themeFor(this.mode.theme).sky);
-      const freezeTicks = s.to.freezeUntilTick - s.to.startTick;
-      const freeze =
-        s.to.status === "running" && freezeTicks > 0 && s.to.tick < s.to.freezeUntilTick + 2
-          ? Math.min(1, (s.to.tick - s.to.startTick) / freezeTicks)
-          : null;
-      this.mapMesh.update(now / 1000, this.players.activeClimbs(), freeze);
+      opening = openingOf(s.to, this.mode.tickRate);
+      // The doors open with the countdown, after the fly-in.
+      this.mapMesh.update(now / 1000, this.players.activeClimbs(), opening.countdownProgress);
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
@@ -166,6 +166,10 @@ export class Match {
     this.lighting.setRadius(onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
     if (mePos) {
       this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2 + shot.lift), dt);
+      // Opening fly-in: from far in front of the tower down to the follow view.
+      if (s && opening && opening.introTicks > 0 && opening.introLeftSec > 0) {
+        this.follow.applyIntro((s.to.tick - s.to.startTick + s.alpha) / opening.introTicks, this.mapMesh.towerCenter, platformTopY());
+      }
       this.lighting.follow(mePos);
     }
     // The tower turns see-through while it stands between the camera and the local player.

@@ -18,7 +18,7 @@ const two = [
   { id: "a", teamId: "A", controller: "human" as const },
   { id: "b", teamId: "B", controller: "human" as const },
 ];
-const freezeTicks = (t: Tuning) => Math.round(t.round.startFreezeSec * t.tickRate);
+const freezeTicks = (t: Tuning) => Math.round((t.round.introSec + t.round.startFreezeSec) * t.tickRate);
 
 function run(sim: Simulation, ticks: number, inputs = new Map<string, PlayerInput>()) {
   const events = [];
@@ -27,7 +27,7 @@ function run(sim: Simulation, ticks: number, inputs = new Map<string, PlayerInpu
 }
 
 describe("start freeze (CLAUDE.md section 4)", () => {
-  it("is 0 in the lobby and startTick + round.startFreezeSec after start()", () => {
+  it("is 0 in the lobby and startTick + round.introSec + round.startFreezeSec after start()", () => {
     const sim = new Simulation({ seed: 1, map: INSTANT, participants: two });
     expect(sim.getState().freezeUntilTick).toBe(0);
     run(sim, 5);
@@ -36,6 +36,9 @@ describe("start freeze (CLAUDE.md section 4)", () => {
     expect(st.startTick).toBe(5);
     expect(st.freezeUntilTick).toBe(5 + freezeTicks(DEFAULT_TUNING));
     expect(DEFAULT_TUNING.round.startFreezeSec).toBe(3);
+    // The round clock starts after the fly-in, so the fly-in costs no playing time.
+    const intro = Math.round(DEFAULT_TUNING.round.introSec * DEFAULT_TUNING.tickRate);
+    expect(st.endsAtTick - st.startTick - intro).toBe(Math.round(INSTANT.timeLimitSec * DEFAULT_TUNING.tickRate));
   });
 
   it("nobody moves, turns, picks up or acts while frozen; ticks still advance", () => {

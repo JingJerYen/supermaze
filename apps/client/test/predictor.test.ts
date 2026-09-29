@@ -6,7 +6,7 @@ import { RULE_SCENES } from "../src/rules/scenes.js";
 
 const tuning: Tuning = {
   ...DEFAULT_TUNING,
-  round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 },
+  round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0 },
   itemBoxes: { ...DEFAULT_TUNING.itemBoxes, perParticipant: 0 },
   ghostEvent: { ...DEFAULT_TUNING.ghostEvent, intervalSec: 9999 },
 };

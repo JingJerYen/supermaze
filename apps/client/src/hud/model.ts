@@ -1,12 +1,15 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
 import { availableAction, canDiscard, isGhost } from "@supermaze/sim";
+import { openingOf } from "../opening.js";
 import { teamColorIndex } from "../render/teamColors.js";
 
 /** Everything the HUD draws, derived from authoritative state; no rules live here. */
 export interface HudModel {
   remainingSec: number;
-  /** Seconds until players may move after the round starts; 0 once the freeze is over. */
+  /** Seconds of the 3-2-1 countdown left; 0 during the opening fly-in and once play has begun. */
   freezeSec: number;
+  /** Seconds of the opening fly-in left; the HUD stays out of the shot meanwhile. */
+  introSec: number;
   status: SimulationState["status"];
   /** Everyone for themselves: rosters carry no team headers and labels are player names. */
   solo: boolean;
@@ -85,10 +88,12 @@ export function buildHudModel(
     }))
     .sort((a, b) => a.colorIndex - b.colorIndex);
 
+  const opening = openingOf(state, tickRate);
   const remainingTicks = state.status === "running" ? Math.max(0, state.endsAtTick - state.tick) : 0;
   return {
     remainingSec: state.status === "lobby" ? 0 : remainingTicks / tickRate,
-    freezeSec: state.status === "running" ? Math.max(0, state.freezeUntilTick - state.tick) / tickRate : 0,
+    freezeSec: opening.countdownSec,
+    introSec: opening.introLeftSec,
     status: state.status,
     solo,
     climbed: state.towerArrivals.length,

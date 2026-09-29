@@ -57,7 +57,7 @@ const weights = (...kinds: ItemKind[]): Tuning["itemBoxes"]["weights"] => {
 /** Demos start at once (no 3-2-1) and, unless a scene says otherwise, without boxes or ghost events. */
 const quiet = (base: Tuning): Tuning => ({
   ...base,
-  round: { ...base.round, startFreezeSec: 0 },
+  round: { ...base.round, startFreezeSec: 0, introSec: 0 },
   itemBoxes: { ...base.itemBoxes, perParticipant: 0 },
   ghostEvent: { ...base.ghostEvent, intervalSec: 9999 },
 });

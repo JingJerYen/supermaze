@@ -60,6 +60,27 @@ export class FollowCamera {
     this.swingPerSec = swingPerSec;
   }
 
+  /**
+   * Opening fly-in, applied after `update`: at `progress` 0 a wide shot from far
+   * in front of (south of) the tower with all of it in frame, easing into the
+   * follow view by 1. A short hold on the wide shot comes first.
+   */
+  applyIntro(progress: number, tower: THREE.Vector3, towerTopY: number): void {
+    if (progress >= 1) return;
+    const t = CLIENT_TUNING.intro;
+    const p = Math.min(1, Math.max(0, (progress - t.holdShare) / (1 - t.holdShare)));
+    const k = p * p * (3 - 2 * p);
+    const h = towerTopY + t.headroom;
+    const tan = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+    const dist = (h * 0.5 * t.margin) / tan;
+    const probe = new THREE.PerspectiveCamera();
+    probe.position.set(tower.x, h * t.eyeShare, tower.z + dist);
+    probe.lookAt(tower.x, h * 0.5, tower.z);
+    const followPos = this.focus.clone().add(this.offset);
+    this.camera.position.lerpVectors(probe.position, followPos, k);
+    this.camera.quaternion.slerpQuaternions(probe.quaternion, this.followQuat, k);
+  }
+
   /** Recompute the overview pose so the whole map fits at the current aspect ratio. */
   private setMapSize(w: number, h: number): void {
     this.mapW = w;

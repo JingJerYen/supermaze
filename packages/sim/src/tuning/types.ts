@@ -29,6 +29,12 @@ export interface Tuning {
      * `freezeUntilTick` lets clients draw the 3-2-1 countdown.
      */
     startFreezeSec: number;
+    /**
+     * Opening fly-in before the countdown (CLAUDE.md section 4): added in front of
+     * the start freeze, so nobody moves during it either. The round clock and the
+     * ghost schedule start after it, so it costs no playing time. Seconds.
+     */
+    introSec: number;
   };
 
   teams: {

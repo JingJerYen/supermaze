@@ -19,6 +19,15 @@ export const CLIENT_TUNING = {
     /** Seconds the overview swing gets before the result screen may cover it. */
     settleSec: 1.8,
   },
+  intro: {
+    /** Opening fly-in (its length is the sim's round.introSec): share of it spent holding the wide shot before moving. */
+    holdShare: 0.25,
+    /** Room above the tower top in the wide shot, world units, and how much larger than the tower the frame is. */
+    headroom: 1.5,
+    margin: 1.35,
+    /** Camera height in the wide shot as a share of the framed height. */
+    eyeShare: 0.45,
+  },
   overview: {
     /** Extra room around the map when looking straight down from the tower, as a factor. */
     margin: 1.08,

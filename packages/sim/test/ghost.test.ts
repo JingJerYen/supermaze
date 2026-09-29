@@ -9,7 +9,7 @@ import { TINY_MAP } from "./fixtures.js";
 /** Short event timings so tests stay fast: 1 s idle, 1 s warning, 2 s active at 20 Hz. */
 const FAST: Tuning = {
   ...DEFAULT_TUNING,
-  round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 },
+  round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0 },
   ghostEvent: { ...DEFAULT_TUNING.ghostEvent, intervalSec: 1, warningSec: 1, durationSec: 2, caughtFreezeSec: 1, caughtProtectionSec: 1 },
 };
 const T = FAST.tickRate;
@@ -165,7 +165,7 @@ describe("developer shortcut", () => {
 
 describe("schedule follows the round length", () => {
   it("first warning after a fifth of the round, then a fifth between events", () => {
-    const tuning: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 } };
+    const tuning: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0 } };
     expect(tuning.ghostEvent.intervalSec).toBeNull();
     const sim = new Simulation({ seed: 3, map: MAP, participants: two, tuning, timeLimitSec: 100 });
     sim.start();
