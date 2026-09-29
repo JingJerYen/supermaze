@@ -1,10 +1,11 @@
 import type { LobbyMessage, TeamMode } from "@supermaze/protocol";
 import type { JoinRequest } from "../net/connection.js";
+import { HOME_CSS, homeHtml } from "./homeScreen.js";
 
 const CSS = `
 .lb{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#101318;color:#fff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;z-index:30}
 .lb *{box-sizing:border-box}
-.lb-card{width:min(720px,94vw);background:#1b2030;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px 24px}
+.lb-card{position:relative;width:min(720px,94vw);background:rgba(16,24,44,.9);border:1px solid rgba(140,170,230,.25);border-radius:16px;padding:22px 24px;box-shadow:0 12px 40px rgba(0,0,0,.5);backdrop-filter:blur(4px)}
 .lb h1{font-size:22px;font-weight:500;margin:0 0 16px}
 .lb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .lb input{height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:#0f131c;color:#fff;padding:0 12px;font-size:16px}
@@ -56,7 +57,7 @@ export class LobbyUi {
 
   constructor(parent: HTMLElement, private readonly handlers: LobbyUiHandlers) {
     const style = document.createElement("style");
-    style.textContent = CSS;
+    style.textContent = CSS + HOME_CSS;
     document.head.appendChild(style);
     this.root = document.createElement("div");
     this.root.className = "lb";
@@ -87,23 +88,9 @@ export class LobbyUi {
   showHome(defaultName: string, error?: string, best?: { score: number; floor: number } | null): void {
     this.stopTicking();
     this.show();
-    this.card.innerHTML = `
-      <div class="lb-head"><h1 style="margin:0">Super Maze</h1><button id="lb-rules">遊戲規則</button></div>
-      <div class="lb-row"><label class="lb-muted">暱稱</label><input id="lb-name" maxlength="12" placeholder="你的暱稱" /></div>
-      <div class="lb-row"><label class="lb-muted">伺服器</label><input id="lb-server" placeholder="wss://…" style="flex:1;min-width:12em" /></div>
-      <div class="lb-row">
-        <button class="primary" id="lb-quick">快速配對</button>
-        <button id="lb-create">建立私人房</button>
-      </div>
-      <div class="lb-row">
-        <input id="lb-code" maxlength="4" placeholder="房間代碼" style="width:9em;text-transform:uppercase" />
-        <button id="lb-join">加入私人房</button>
-      </div>
-      <div class="lb-row" style="margin-top:14px;border-top:1px solid rgba(255,255,255,.15);padding-top:14px">
-        <button id="lb-local">爬塔挑戰</button>
-        <span class="lb-muted">單人對 CPU，20 層，每層分數前一半才能晉級${best ? `。最佳總分 ${best.score}（到達第 ${best.floor} 層）` : ""}</span>
-      </div>
-      <div class="lb-notice ${error ? "lb-error" : ""}" id="lb-home-notice">${error ?? "同一個伺服器上的朋友輸入四碼代碼就能加入你的私人房"}</div>`;
+    this.root.classList.add("home");
+    this.card.className = "hm";
+    this.card.innerHTML = homeHtml({ error, best });
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
     nameEl.value = defaultName;
     const name = () => nameEl.value.trim() || defaultName;
@@ -126,14 +113,14 @@ export class LobbyUi {
 
   showConnecting(text = "連線中..."): void {
     this.stopTicking();
-    this.show();
+    this.showCard();
     this.card.innerHTML = `<h1>Super Maze</h1><div class="lb-muted">${text}</div>`;
   }
 
   /** Render the room; called on every lobby message and once a second for the countdowns. */
   showLobby(msg: LobbyMessage): void {
     this.lastMsg = msg;
-    this.show();
+    this.showCard();
     const me = msg.players.find((p) => p.id === this.meId);
     const isHost = msg.hostId === this.meId;
     const connected = msg.players.filter((p) => p.connected).length;
@@ -201,6 +188,13 @@ export class LobbyUi {
     if ((msg.phase === "countdown" || msg.phase === "results") && this.tickTimer === null) {
       this.tickTimer = window.setInterval(() => this.lastMsg && this.showLobby(this.lastMsg), 1000);
     } else if (msg.phase !== "countdown" && msg.phase !== "results") this.stopTicking();
+  }
+
+  /** Every screen but home: the centred card over the background. */
+  private showCard(): void {
+    this.show();
+    this.root.classList.remove("home");
+    this.card.className = "lb-card";
   }
 
   private stopTicking(): void {
