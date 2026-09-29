@@ -14,21 +14,25 @@ export class PlayerViews {
   /** Eased on-screen offset of each player from the separation pass. */
   private readonly spread = new Map<string, { x: number; z: number }>();
   private lastTick = -1;
+  /**
+   * Seconds of drawn frames. Climbs are timed on this clock, not on ticks: the
+   * simulation stops ticking once the round ends, and a climb that ends the
+   * round must still play out.
+   */
+  private clockSec = 0;
   /** Climbs being animated: where the player stood, which face, and when it began. */
-  private readonly climbs = new Map<string, { face: Face; from: { x: number; y: number }; startTick: number }>();
-  private tickRate = 20;
+  private readonly climbs = new Map<string, { face: Face; from: { x: number; y: number }; startSec: number }>();
   private towerCenter = { x: 0, z: 0 };
 
-  /** Needed to turn ticks into seconds and tiles into faces. */
-  configure(tickRate: number, towerCenter: { x: number; z: number }): void {
-    this.tickRate = tickRate;
+  /** Needed to turn tiles into tower faces. */
+  configure(towerCenter: { x: number; z: number }): void {
     this.towerCenter = towerCenter;
   }
 
   /** Climbs in progress for the tower animation, with seconds elapsed. */
-  activeClimbs(tick: number): { face: Face; t: number }[] {
+  activeClimbs(): { face: Face; t: number }[] {
     const out: { face: Face; t: number }[] = [];
-    for (const c of this.climbs.values()) out.push({ face: c.face, t: (tick - c.startTick) / this.tickRate });
+    for (const c of this.climbs.values()) out.push({ face: c.face, t: this.clockSec - c.startSec });
     return out;
   }
 
@@ -46,17 +50,20 @@ export class PlayerViews {
     nudge: { x: number; y: number } | null = null,
   ): void {
     const newTick = tick !== this.lastTick;
+    // Ticks going back means a new round (or a rules demo starting over): drop leftover climbs.
+    if (tick < this.lastTick) this.climbs.clear();
     this.lastTick = tick;
+    this.clockSec += dtSec;
     for (const [id, p] of Object.entries(to)) {
       const view = this.views.get(id) ?? this.create(id, p.teamId);
       if (newTick) triggerOneShots(view, from[id], p);
       const prevState = from[id];
       if (newTick && prevState && prevState.phase === "maze" && p.phase === "tower") {
-        this.climbs.set(id, { face: faceOf(prevState.mover.from, this.towerCenter), from: prevState.mover.from, startTick: tick });
+        this.climbs.set(id, { face: faceOf(prevState.mover.from, this.towerCenter), from: prevState.mover.from, startSec: this.clockSec });
       }
       const climb = this.climbs.get(id);
       if (climb) {
-        const t = (tick - climb.startTick) / this.tickRate;
+        const t = this.clockSec - climb.startSec;
         if (t >= climbTotalSec()) {
           this.climbs.delete(id);
         } else {
