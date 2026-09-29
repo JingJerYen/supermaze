@@ -298,14 +298,15 @@ def spread_pick(pool, n, min_gap, score, taken, taken_gap=None, quad_cap=None, c
 
 def auto_candidates(rows, n_keys=11, n_boxes=24, n_box_top=3, n_switch=6, n_road_keys=5, key_gap=7,
                     wall_cap=2, fixed_keys=(), road_cap=3, box_gap=5, switch_gap=12,
-                    key_filter=None, switch_filter=None, keys_on_dead_ends=True):
+                    key_filter=None, switch_filter=None, keys_on_dead_ends=True, box_filter=None):
     """Stamp key / item-box / switch markers onto a finished terrain.
 
     Keys go on the dead ends that take longest to walk to (fixtures respected,
     no hammer): n_keys - n_road_keys on wall tops (at most wall_cap per quadrant),
     the rest on the road (at most 3 per quadrant). fixed_keys are (x, y, 'r'|'w')
     placed first. Boxes and switches are spread over straight corridor tiles.
-    key_filter(x, y, layer) and switch_filter(x, y) restrict where those may go.
+    key_filter(x, y, layer), switch_filter(x, y) and box_filter(x, y) (road boxes)
+    restrict where those may go.
     keys_on_dead_ends=False lets keys sit anywhere (small loopy maps have few dead ends)."""
     m = Map(rows)
     m.check(verbose=False)
@@ -335,7 +336,8 @@ def auto_candidates(rows, n_keys=11, n_boxes=24, n_box_top=3, n_switch=6, n_road
 
     corridor = [p for p in road if deg(*p, "r") == 2 and p not in taken]
     rnd = random.Random(7)
-    boxes = spread_pick(corridor, n_boxes - n_box_top, box_gap, lambda p: rnd.random(), taken, 3)
+    box_pool = [p for p in corridor if box_filter(*p)] if box_filter else corridor
+    boxes = spread_pick(box_pool, n_boxes - n_box_top, box_gap, lambda p: rnd.random(), taken, 3)
     taken += boxes
     box_tops = spread_pick([p for p in top if p not in taken], n_box_top, 8, lambda p: rnd.random(), taken, 3)
     taken += box_tops

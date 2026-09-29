@@ -23,7 +23,7 @@ npm run validate-maps                          # 最後仍以正式驗證器為�
 | `fixtures.py` | 自動擺放單向門、障礙物、陷阱，每放一個就重新檢查整張圖 |
 | `finish.py` | 每張產生式地圖共用的收尾：樓梯、橋、手放固定物 → 自動固定物 → 候選點 → 檢查 → 寫檔 |
 | `check.py` | 對任何地圖做檢查、列出鑰匙步數、輸出預覽 |
-| `maps/maze_0N.py` | 各地圖的產生腳本；檔頭註解寫該圖的設計概念 |
+| `maps/maze_NN.py` | 各地圖（maze-04～14）的產生腳本；檔頭註解寫該圖的設計概念；加 `--explore` 只看地形與可放樓梯的位置 |
 
 ## `check.py` 比驗證器多檢查的事
 
@@ -33,14 +33,16 @@ npm run validate-maps                          # 最後仍以正式驗證器為�
 
 ## 做一張新圖的流程
 
-1. 複製一個 `maps/maze_0N.py`，改地形：`Canvas` 從全牆開始，`c.tower()` 放塔與塔周一圈廣場，
+1. 複製一個 `maps/maze_NN.py`，改地形：`Canvas` 從全牆開始，`c.tower()` 放塔與塔周一圈廣場，
    `c.maze(cells, seed, bias, loops)` 挖迷宮，或用 `put`、`hline`、`vline`、`rect` 手畫。
    格點慣例同 `content/maps/AUTHORING.md` 第 4 節：奇數座標是路口，走道自然一格寬。
-2. 先不呼叫 `finish`，印出 `mk.Map(rows).stair_spots()` 與 `mk.ruler(rows)`，看每個牆頂區可以在哪裡放樓梯。
+2. 先用 `--explore` 執行（腳本裡呼叫 `explore(id, rows)`），看每個牆頂區可以在哪裡放樓梯，預覽寫在 `out/<id>-terrain.png`。
    `loops` 越多，道路迴圈越多，牆頂也被切成越多塊島。
 3. 呼叫 `finish(...)`：`stairs`、`bridges` 是座標列表；`manual` 是手放的固定物 `(x, y, 字元)`；
    `doors`、`traps`、`obstacles` 是自動擺放的上限（找不到公平的位置就少放）；`candidates` 傳給
-   `auto_candidates`，例如 `n_keys`、`n_road_keys`（其餘放牆頂）、`wall_cap`（每象限牆頂鑰匙上限）、`fixed_keys`。
+   `auto_candidates`，例如 `n_keys`、`n_road_keys`（其餘放牆頂）、`wall_cap`（每象限牆頂鑰匙上限）、`fixed_keys`、
+   `key_filter`／`box_filter`／`switch_filter`（限定範圍）、`keys_on_dead_ends=False`（小圖死路不夠時）；`meta` 寫進地圖 JSON，
+   例如 `difficulty`、`boxes`（`itemBoxCount`）、`switches`（`lightSwitchCount`）。`c.maze(..., algo="prim")` 產生短死路很多的迷宮。
 4. 看 `out/` 的預覽與鑰匙步數，再以 CPU 對局試跑確認破得了、時間夠。
 
 同一個腳本在任何機器上重跑都產生完全相同的地圖（亂數都有固定種子，走訪順序也固定）。
