@@ -185,7 +185,7 @@ describe("round length", () => {
 });
 
 describe("solo mode: everyone for themselves", () => {
-  function solo(ids: string[], timeLimitSec = 10) {
+  function solo(ids: string[], timeLimitSec = 10, endWhenClimbed?: string) {
     const participants = ids.map((id) => ({ id, teamId: "whatever", controller: "human" as const }));
     const sim = new Simulation({
       seed: 5,
@@ -194,6 +194,7 @@ describe("solo mode: everyone for themselves", () => {
       tuning: { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0 } },
       timeLimitSec,
       teamMode: "solo",
+      ...(endWhenClimbed ? { endWhenClimbed } : {}),
     });
     sim.start();
     sim.step(new Map());
@@ -222,6 +223,21 @@ describe("solo mode: everyone for themselves", () => {
       p1: keyFound + towerPlacement[1]!,
       p2: keyFound + towerPlacement[0]!,
       p3: keyFound,
+    });
+  });
+
+  it("with endWhenClimbed, ends the moment that player climbs", () => {
+    const sim = solo(["p1", "p2", "p3", "p4"], 10, "p1");
+    sim.step(climbers(["p2"])); // someone else climbing does not end it
+    expect(sim.getState().status).toBe("running");
+    const events = sim.step(climbers(["p1"]));
+    expect(events).toContainEqual({ type: "roundEnded", tick: expect.any(Number), winnerTeamId: "p2", reason: "solo:climbed" });
+    const { keyFound, towerPlacement } = sim.tuning.scoring;
+    expect(sim.getState().result!.finalScores).toEqual({
+      p1: keyFound + towerPlacement[1]!,
+      p2: keyFound + towerPlacement[0]!,
+      p3: keyFound,
+      p4: keyFound,
     });
   });
 

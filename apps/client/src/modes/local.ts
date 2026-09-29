@@ -16,6 +16,8 @@ export interface LocalOptions {
   difficulty?: CpuDifficulty;
   /** Full tuning for the round; wins over `difficulty` (the tower run sets each floor's CPU strength). */
   tuning?: Tuning;
+  /** End the round the moment you climb instead of waiting for the CPUs (tower run). */
+  endWhenYouClimb?: boolean;
   /** Called once, on the tick the round finishes. */
   onFinish?: (state: SimulationState) => void;
   /** Replaces the default result-screen buttons. */
@@ -42,6 +44,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     seed: options.seed ?? 1,
     map,
     teamMode: "solo",
+    ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
     tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
     participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你" }, ...idle],
   });

@@ -32,6 +32,7 @@ const REASON_TEXT: Record<string, string> = {
   allClimbed: "全員登頂",
   lastOneLeft: "只剩一人未登塔，回合結束；最先全員登頂的隊伍獲勝",
   "solo:score": "只剩一人未登塔，回合結束；分數最高者獲勝",
+  "solo:climbed": "你已登塔，回合立即結算；分數最高者獲勝",
   "solo:timeout": "時間到；分數最高者獲勝",
   "timeout:climbed": "時間到，登塔人數較多",
   "timeout:score": "時間到，登塔人數相同，總分較高",

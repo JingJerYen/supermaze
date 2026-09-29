@@ -82,6 +82,7 @@ export class TowerRun {
       seed: plan.seed,
       name: this.name,
       tuning: plan.tuning,
+      endWhenYouClimb: true,
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
       caption: () => `第 ${plan.floor} / ${this.floorsTotal} 層　分數前 ${plan.passRank} 名晉級　總分 ${this.run.totalScore}`,

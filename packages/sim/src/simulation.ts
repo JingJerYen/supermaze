@@ -48,6 +48,11 @@ export interface SimulationOptions {
   timeLimitSec?: number;
   /** Two equal teams (default) or everyone for themselves; see `TeamMode`. */
   teamMode?: TeamMode;
+  /**
+   * Solo only: the round ends the moment this player climbs, without waiting
+   * for the others (the tower run ends a floor when you climb; section 4.1).
+   */
+  endWhenClimbed?: PlayerId;
 }
 
 export interface PlayerState extends Participant {
@@ -129,6 +134,7 @@ export class Simulation {
   private spawnCursor = 0;
   private readonly timeLimitOverrideSec: number | undefined;
   private readonly teamMode: TeamMode;
+  private readonly endWhenClimbed: PlayerId | undefined;
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
   private nextNodeIndex = 0;
@@ -151,6 +157,7 @@ export class Simulation {
     this.timeLimitOverrideSec = options.timeLimitSec;
 
     this.teamMode = options.teamMode ?? "teams";
+    this.endWhenClimbed = this.teamMode === "solo" ? options.endWhenClimbed : undefined;
     this.state = {
       tick: 0,
       status: "lobby",
@@ -536,12 +543,13 @@ export class Simulation {
       const everyone = Object.values(players);
       const climbed = everyone.filter((p) => p.phase === "tower").length;
       const enoughClimbed = everyone.length > 0 && climbed >= Math.max(1, everyone.length - 1);
+      const keyClimbed = this.endWhenClimbed !== undefined && players[this.endWhenClimbed]?.phase === "tower";
       const timeUp = tick >= next.endsAtTick;
-      if (enoughClimbed || timeUp) {
+      if (enoughClimbed || keyClimbed || timeUp) {
         let reason: RoundResult["reason"];
         if (this.teamMode === "solo") {
           winnerTeamId = decideSoloWinner(players);
-          reason = enoughClimbed ? "solo:score" : "solo:timeout";
+          reason = enoughClimbed ? "solo:score" : keyClimbed ? "solo:climbed" : "solo:timeout";
         } else if (winnerTeamId !== null) {
           reason = enoughClimbed && climbed < everyone.length ? "lastOneLeft" : "allClimbed";
         } else {

@@ -35,6 +35,8 @@ export type RoundEndReason =
   | "lastOneLeft"
   /** Solo: ended by climbs (all but one up); the highest score wins. */
   | "solo:score"
+  /** Solo: the player named by `endWhenClimbed` climbed (tower run); the highest score wins. */
+  | "solo:climbed"
   /** Solo: time ran out; the highest score wins. */
   | "solo:timeout"
   | "timeout:climbed"
