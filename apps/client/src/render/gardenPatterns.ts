@@ -24,7 +24,7 @@ export function paintHedge(ctx: CanvasRenderingContext2D, size: number, shade: S
     }
   }
   speckle(ctx, size, shade(top ? 0.7 : 0.5), top ? 40 : 70, 2.2, rnd);
-  if (growth) flowers(ctx, size, growth, rnd, top ? 3 : 5);
+  if (growth) flowers(ctx, size, growth, rnd, top ? 4 : 6);
 }
 
 export function paintFlagstone(ctx: CanvasRenderingContext2D, size: number, shade: Shade, rnd: () => number): void {
@@ -85,29 +85,37 @@ function leaf(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, an
   ctx.fill();
 }
 
-/** Small five-petal flowers in clusters: the accent colour mixed with white, yellow centres. */
+/**
+ * Five-petal flowers in clusters: the accent colour, a lighter tint and white,
+ * with a dark rim so they stand out against the leaves, and yellow centres.
+ */
 function flowers(ctx: CanvasRenderingContext2D, size: number, color: number, rnd: () => number, clusters: number): void {
   const c = new THREE.Color(color);
-  const petal = [`#${c.getHexString()}`, `#${c.clone().lerp(new THREE.Color(0xffffff), 0.45).getHexString()}`, "#fff8ee"];
+  const petal = [`#${c.getHexString()}`, `#${c.clone().lerp(new THREE.Color(0xffffff), 0.3).getHexString()}`, "#fffaf2"];
+  const rim = `#${c.clone().multiplyScalar(0.45).getHexString()}`;
   for (let i = 0; i < clusters; i++) {
     const cx = rnd() * size;
     const cy = rnd() * size;
-    for (let k = 0; k < 5; k++) {
-      const x = cx + (rnd() - 0.5) * 40;
-      const y = cy + (rnd() - 0.5) * 30;
-      const r = 3 + rnd() * 2.5;
+    const count = 4 + Math.floor(rnd() * 3);
+    for (let k = 0; k < count; k++) {
+      const x = cx + (rnd() - 0.5) * 72;
+      const y = cy + (rnd() - 0.5) * 54;
+      const r = 7 + rnd() * 4;
       const col = petal[Math.floor(rnd() * petal.length)] as string;
+      const turn = rnd() * Math.PI;
       wrapped(size, x, y, r * 3, (px, py) => {
-        ctx.fillStyle = col;
-        for (let p = 0; p < 5; p++) {
-          const a = (p / 5) * Math.PI * 2;
-          ctx.beginPath();
-          ctx.arc(px + Math.cos(a) * r, py + Math.sin(a) * r, r * 0.75, 0, Math.PI * 2);
-          ctx.fill();
+        for (const [fill, grow] of [[rim, 1.25], [col, 1]] as const) {
+          ctx.fillStyle = fill;
+          for (let p = 0; p < 5; p++) {
+            const a = turn + (p / 5) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.arc(px + Math.cos(a) * r, py + Math.sin(a) * r, r * 0.75 * grow, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
-        ctx.fillStyle = "#ffd23f";
+        ctx.fillStyle = "#ffcc2e";
         ctx.beginPath();
-        ctx.arc(px, py, r * 0.55, 0, Math.PI * 2);
+        ctx.arc(px, py, r * 0.5, 0, Math.PI * 2);
         ctx.fill();
       });
     }

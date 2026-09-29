@@ -41,9 +41,12 @@ export function buildMapMesh(
   const floorMat = lambert(theme.floor, patternTexture(theme.floorPattern, theme.floor));
   const plazaMat = lambert(theme.plaza, patternTexture(theme.floorPattern, theme.plaza));
   const sideMat = lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide));
-  // A second side material with moss, used on a share of inner walls to break repetition.
+  // A second side material with moss or flowers, used on a share of inner walls to
+  // break repetition. Flowers are baked into a white material so the green wall
+  // colour does not darken them.
+  const flowers = theme.wallPattern === "hedge";
   const sideGrowthMat = theme.growth
-    ? lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide, theme.growth))
+    ? lambert(flowers ? 0xffffff : theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide, theme.growth, flowers))
     : sideMat;
   const outerSideMat = lambert(theme.outerWall, patternTexture(theme.wallPattern, theme.outerWall));
   const topMat = lambert(theme.wallTop, patternTexture(theme.topPattern, theme.wallTop));

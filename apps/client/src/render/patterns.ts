@@ -11,11 +11,14 @@ const textureCache = new Map<string, THREE.CanvasTexture | null>();
 
 /**
  * Tileable 256 px pattern in shades of `base`; null for "none" so the plain
- * colour is used. `growth` > 0 adds moss to the pattern.
+ * colour is used. `growth` > 0 adds moss to the pattern. `baked` multiplies
+ * `base` into the texture itself, for a white material: the pattern looks the
+ * same, but growth colours (flowers) keep their true colour instead of being
+ * tinted by the material.
  */
-export function patternTexture(kind: PatternKind, base: number, growth = 0): THREE.CanvasTexture | null {
+export function patternTexture(kind: PatternKind, base: number, growth = 0, baked = false): THREE.CanvasTexture | null {
   if (kind === "none") return null;
-  const key = `${kind}:${base}:${growth}`;
+  const key = `${kind}:${base}:${growth}:${baked}`;
   const cached = textureCache.get(key);
   if (cached !== undefined) return cached;
 
@@ -25,7 +28,7 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0): THR
   canvas.height = size;
   const ctx = canvas.getContext("2d")!;
   const c = new THREE.Color(base);
-  const shade = (k: number) => `#${c.clone().multiplyScalar(k).getHexString()}`;
+  const shade = (k: number) => `#${(baked ? c.clone().multiply(c) : c.clone()).multiplyScalar(k).getHexString()}`;
   const rnd = seeded(kind.length * 977 + base);
   ctx.fillStyle = shade(1);
   ctx.fillRect(0, 0, size, size);

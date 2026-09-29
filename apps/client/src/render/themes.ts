@@ -114,7 +114,7 @@ export const THEMES: Record<string, Theme> = {
     topPattern: "hedgeTop",
     floorPattern: "flagstone",
     growth: 0xf2709f,
-    growthShare: 0.45,
+    growthShare: 0.6,
     torchEvery: 7,
     torchFlame: 0xffd57a,
     lightStyle: "lantern",
