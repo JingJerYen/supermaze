@@ -7,7 +7,7 @@ const CSS = `
 .hud{position:fixed;inset:0;pointer-events:none;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#fff;
   --pad:max(12px,env(safe-area-inset-left));}
 .hud *{box-sizing:border-box}
-.hud.demo .hud-team,.hud.demo .hud-time,.hud.demo .hud-sub,.hud.demo .hud-go,.hud.demo .hud-mycoord{display:none}
+.hud.demo .hud-team,.hud.demo .hud-time,.hud.demo .hud-sub,.hud.demo .hud-go{display:none}
 .hud.demo .hud-items{right:max(24px,env(safe-area-inset-right))}
 .hud-top{position:absolute;top:max(10px,env(safe-area-inset-top));left:var(--pad);right:max(12px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hud-team{display:flex;flex-direction:column;gap:5px;min-width:0}
@@ -22,8 +22,6 @@ const CSS = `
 .hud-badge{font-size:10px;padding:2px 4px;border-radius:4px;background:rgba(255,255,255,.15);color:#ffe08a}
 .hud-badge.tower{color:#fff;background:rgba(139,255,122,.28);font-size:11px;font-weight:500}.hud-badge.cpu{color:#ff9f7a}
 .hud-score{font-size:12px;color:#c9d2e3;min-width:2.5em;text-align:right}
-.hud-coord{font-size:11px;color:#9be7ff;font-variant-numeric:tabular-nums}
-.hud-mycoord{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:clamp(16px,3vw,22px);font-weight:500;color:#9be7ff;text-shadow:0 1px 3px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
 .hud-clock{text-align:center;flex:none}
 .hud-time{font-size:clamp(34px,6vw,48px);font-weight:500;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
@@ -72,7 +70,6 @@ export class Hud {
   private readonly toasts: HTMLDivElement;
   private readonly gains: HTMLDivElement;
   private readonly dark: HTMLDivElement;
-  private readonly myCoord: HTMLDivElement;
   private readonly go: HTMLDivElement;
   private lastGoText = "";
   private lastRosterKey = "";
@@ -97,7 +94,6 @@ export class Hud {
     this.gains = el("div", "hud-gains");
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
-    this.myCoord = el("div", "hud-mycoord");
     this.go = el("div", "hud-go");
     this.root.append(top, this.items, this.toasts, this.gains, this.dark, this.go);
     parent.appendChild(this.root);
@@ -117,12 +113,12 @@ export class Hud {
     else if (g.phase === "active") this.ghost.textContent = g.iAmGhost ? `你是鬼，去抓人 ${gs} 秒` : g.myTeamIsGhost ? `我方是鬼 ${gs} 秒` : `鬼抓人！躲開 ${g.teamLabel} ${gs} 秒`;
 
 
-    // Rosters change rarely (coordinates only shown on the tower); rebuild only when content changes.
-    const rosterKey = JSON.stringify([m.myTeam, m.otherTeams, m.showCoords]);
+    // Rosters change rarely; rebuild only when content changes.
+    const rosterKey = JSON.stringify([m.myTeam, m.otherTeams]);
     if (rosterKey !== this.lastRosterKey) {
       this.lastRosterKey = rosterKey;
-      renderTeam(this.left, m.myTeam ? [m.myTeam] : [], true, m.showCoords);
-      renderTeam(this.right, m.otherTeams, false, m.showCoords);
+      renderTeam(this.left, m.myTeam ? [m.myTeam] : [], true);
+      renderTeam(this.right, m.otherTeams, false);
     }
 
     this.items.replaceChildren();
@@ -207,7 +203,7 @@ export class Hud {
   }
 }
 
-function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean, showCoords: boolean): void {
+function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean): void {
   container.replaceChildren();
   for (const team of teams) {
     // Solo rounds have no team names: the rows alone are the roster.
@@ -235,11 +231,6 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean, sho
       }
       if (p.cpu) badges.push(badge("cpu", "CPU"));
       if (p.frozen) badges.push(badge("frozen", "定身"));
-      if (showCoords && p.coord && !p.isMe) {
-        const c = el("span", "hud-coord");
-        c.textContent = p.coord;
-        badges.push(c);
-      }
       const score = el("span", "hud-score");
       score.textContent = String(p.score);
       if (mine) row.append(dot, label, ...badges, score);

@@ -1,5 +1,5 @@
 import type { MapGrid, SimulationState } from "@supermaze/sim";
-import { TEAM_COLORS, teamColorIndex } from "../render/teamColors.js";
+import { minimapDots } from "./minimapModel.js";
 import { towerGeometry } from "../render/mapMesh.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
@@ -9,9 +9,9 @@ const CSS = `
 `;
 
 /**
- * Minimap (CLAUDE.md section 7). In the maze it is deliberately bare: the map's
- * outline, your own dot and the tower icon, nothing else. On the tower top it
- * becomes the full layout with every player, matching the overview camera.
+ * Minimap (CLAUDE.md section 7): the map's outline, the tower, and a dot for
+ * every player. The same picture in the maze and on the tower top; it never
+ * shows the layout, keys, boxes or switches.
  */
 export class Minimap {
   private readonly wrap: HTMLDivElement;
@@ -48,12 +48,8 @@ export class Minimap {
   }
 
   update(state: SimulationState, meId: string | null): void {
-    const me = meId ? state.players[meId] : undefined;
-    if (!me) return;
-    const onTower = me.phase === "tower";
-    const key = onTower
-      ? `T|${Object.values(state.players).map((p) => `${p.id}:${p.mover.from.x},${p.mover.from.y},${p.phase}`).join(";")}|${state.lightsOn}`
-      : `M|${me.mover.from.x},${me.mover.from.y}`;
+    const dots = minimapDots(state, meId);
+    const key = dots.map((d) => `${d.id}:${d.x},${d.y},${d.onTower ? 1 : 0},${d.color}`).join(";");
     if (key === this.lastKey) return;
     this.lastKey = key;
 
@@ -62,36 +58,18 @@ export class Minimap {
     const W = this.grid.width * c;
     const H = this.grid.height * c;
     ctx.clearRect(0, 0, W, H);
-
-    if (onTower) {
-      for (let y = 0; y < this.grid.height; y++) {
-        for (let x = 0; x < this.grid.width; x++) {
-          const kind = this.grid.kindAt(x, y);
-          if (kind === "void") continue;
-          ctx.fillStyle =
-            kind === "wall" ? "#8e9bb3" : kind === "tower" ? "#d9534f" : kind === "stairs" ? "#c2a96a" : kind === "bridge" ? "#b08a5a" : "#3a4356";
-          ctx.fillRect(x * c, y * c, c, c);
-        }
-      }
-      ctx.fillStyle = "#9be7ff";
-      for (const s of Object.values(state.switches)) {
-        if (!s.used) ctx.fillRect(s.pos.x * c + c / 3, s.pos.y * c + c / 3, c / 3, c / 3);
-      }
-      for (const p of Object.values(state.players)) {
-        if (p.phase === "tower") continue;
-        const color = `#${(TEAM_COLORS[teamColorIndex(p.teamId) % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
-        dot(ctx, p.mover.from.x * c + c / 2, p.mover.from.y * c + c / 2, c * 0.4, color);
-      }
-      return;
-    }
-
-    // Maze view: outline, tower icon, own dot. No layout, no one else.
     ctx.strokeStyle = "rgba(255,255,255,.25)";
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
     ctx.fillStyle = "#d9534f";
     ctx.fillRect((this.tower.x - this.tower.w / 2 + 0.5) * c, (this.tower.z - this.tower.d / 2 + 0.5) * c, this.tower.w * c, this.tower.d * c);
-    dot(ctx, me.mover.from.x * c + c / 2, me.mover.from.y * c + c / 2, c * 0.5, "#ffffff");
+
+    const t = CLIENT_TUNING.minimap;
+    for (const d of dots) {
+      // Your own dot is bigger and ringed in white, so you find yourself among team-mates of the same colour.
+      const r = c * (d.self ? t.selfDot : t.otherDot) * (d.onTower ? t.towerDotScale : 1);
+      dot(ctx, d.x * c + c / 2, d.y * c + c / 2, r, d.color, d.self ? "#ffffff" : "rgba(0,0,0,.6)");
+    }
   }
 
   dispose(): void {
@@ -99,12 +77,12 @@ export class Minimap {
   }
 }
 
-function dot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): void {
+function dot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, rim: string): void {
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "rgba(0,0,0,.6)";
+  ctx.strokeStyle = rim;
   ctx.lineWidth = 1;
   ctx.stroke();
 }

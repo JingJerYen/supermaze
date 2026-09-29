@@ -118,6 +118,13 @@ export const CLIENT_TUNING = {
     /** The map's longer side is drawn this long on screen, whatever the map size; also capped at maxVh of the window height. */
     boxPx: 150,
     maxVh: 26,
+    /** Dot radius as a share of one map cell: yours, everyone else's, and the factor for players on the tower. */
+    selfDot: 0.62,
+    otherDot: 0.45,
+    towerDotScale: 0.7,
+    /** Everyone for themselves: your colour and the colour of all the others. Two teams use the team colours. */
+    soloSelfColor: 0xffd23f,
+    soloOtherColor: 0xff6b6b,
   },
   selfMarker: {
     /** Height of the arrow's tip above the feet, world units (the character is 0.9 tall). */

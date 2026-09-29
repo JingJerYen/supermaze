@@ -1,5 +1,5 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
-import { availableAction, canDiscard, isGhost, tileLabel } from "@supermaze/sim";
+import { availableAction, canDiscard, isGhost } from "@supermaze/sim";
 import { teamColorIndex } from "../render/teamColors.js";
 
 /** Everything the HUD draws, derived from authoritative state; no rules live here. */
@@ -21,10 +21,6 @@ export interface HudModel {
   /** Whether the discard button would throw away the oldest item. */
   canDiscard: boolean;
   onTower: boolean;
-  /** Board coordinate of the local player's tile, e.g. "C7"; null on the tower. */
-  myCoord: string | null;
-  /** Whether rosters may show everyone's coordinates (only the tower top sees the whole map). */
-  showCoords: boolean;
   ghost: {
     phase: "idle" | "warning" | "active";
     teamLabel: string | null;
@@ -52,8 +48,6 @@ export interface PlayerRow {
   arrival: number | null;
   cpu: boolean;
   score: number;
-  /** Board coordinate while in the maze; null once on the tower. */
-  coord: string | null;
   ghost: boolean;
   frozen: boolean;
 }
@@ -107,8 +101,6 @@ export function buildHudModel(
     action: me ? availableAction(grid, state, me, capacity) : null,
     canDiscard: !!me && canDiscard(state, me),
     onTower: me?.phase === "tower",
-    myCoord: me && me.phase === "maze" ? tileLabel(me.mover.from.x, me.mover.from.y) : null,
-    showCoords: me?.phase === "tower",
     ghost: {
       phase: state.ghost.phase,
       teamLabel: state.ghost.teamId ? nameOfTeam(state.ghost.teamId) : null,
@@ -129,7 +121,6 @@ function toRow(state: SimulationState, p: PlayerState, isMe: boolean): PlayerRow
     arrival: p.towerArrival,
     cpu: p.controller === "cpu",
     score: p.score,
-    coord: p.phase === "maze" ? tileLabel(p.mover.from.x, p.mover.from.y) : null,
     ghost: isGhost(state.ghost, p),
     frozen: p.frozenUntilTick > state.tick,
   };
