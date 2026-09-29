@@ -402,8 +402,8 @@ def load_rows(map_id):
     return json.loads((MAPS_DIR / f"{map_id}.json").read_text())["rows"]
 
 
-def write_map(map_id, rows, time=240, participants=(2, 3, 4, 5, 6), switches=4, boxes=12):
-    d = {"id": map_id, "name": map_id.replace("maze-", "Maze "), "theme": "stone",
+def write_map(map_id, rows, time=240, participants=(2, 3, 4, 5, 6), switches=4, boxes=12, difficulty="hard"):
+    d = {"id": map_id, "name": map_id.replace("maze-", "Maze "), "theme": "stone", "difficulty": difficulty,
          "supportedParticipants": list(participants), "plazaRadius": 1, "timeLimitSec": time,
          "lightSwitchCount": switches, "itemBoxCount": boxes, "rows": rows}
     (MAPS_DIR / f"{map_id}.json").write_text(json.dumps(d, indent=2, ensure_ascii=False) + "\n")

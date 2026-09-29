@@ -22,3 +22,4 @@ export * from "./actions.js";
 export * from "./simulation.js";
 export * from "./cpu/pathfind.js";
 export * from "./cpu/controller.js";
+export * from "./run/towerRun.js";

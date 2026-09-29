@@ -1,4 +1,5 @@
-import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState, type Tuning } from "@supermaze/sim";
+import type { ResultsActions } from "../hud/results.js";
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
 
@@ -13,6 +14,14 @@ export interface LocalOptions {
   name?: string;
   /** CPU strength preset (tuning `cpu.difficulties`); easy when omitted. */
   difficulty?: CpuDifficulty;
+  /** Full tuning for the round; wins over `difficulty` (the tower run sets each floor's CPU strength). */
+  tuning?: Tuning;
+  /** Called once, on the tick the round finishes. */
+  onFinish?: (state: SimulationState) => void;
+  /** Replaces the default result-screen buttons. */
+  results?: () => ResultsActions;
+  /** Small line under the clock (tower run: floor and hearts). */
+  caption?: () => string | null;
   /** Result-screen actions; default to reloading the page and going to the site root. */
   onAgain?: () => void;
   onHome?: () => void;
@@ -33,12 +42,13 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     seed: options.seed ?? 1,
     map,
     teamMode: "solo",
-    tuning: withCpuDifficulty(options.difficulty ?? "easy"),
+    tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
     participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你" }, ...idle],
   });
   sim.start();
   const cpu = new CpuController(sim, (options.seed ?? 1) + 1);
   let prev: SimulationState = sim.getState();
+  let finished = false;
 
   return {
     label: "local",
@@ -53,7 +63,12 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
       const inputs = cpu.inputs();
       inputs.set(id, input);
       sim.step(inputs);
+      if (!finished && sim.getState().status === "finished") {
+        finished = true;
+        options.onFinish?.(sim.getState());
+      }
     },
+    caption: () => options.caption?.() ?? null,
     sample(_now, alpha) {
       return { from: prev, to: sim.getState(), alpha };
     },
@@ -76,12 +91,12 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     debug: (cmd) => {
       if (cmd === "ghost") sim.debugForceGhost();
     },
-    results: () => ({
+    results: options.results ?? (() => ({
       endsAt: null,
       buttons: [
         { label: "再玩一次", primary: true, run: options.onAgain ?? (() => location.reload()) },
         { label: "回首頁", run: options.onHome ?? (() => (location.href = location.pathname)) },
       ],
-    }),
+    })),
   };
 }

@@ -17,6 +17,10 @@
  */
 export type Layer = "road" | "wallTop" | "towerTop";
 
+export type MapDifficulty = "easy" | "medium" | "hard";
+
+export const MAP_DIFFICULTIES: readonly MapDifficulty[] = ["easy", "medium", "hard"];
+
 export interface TilePos {
   x: number;
   y: number;
@@ -72,6 +76,12 @@ export interface MapData {
    * Every participant beyond the second adds tuning.round.extraSecPerParticipant.
    */
   timeLimitSec: number;
+  /**
+   * How hard the map is on its own (size, how far the keys are, fixtures),
+   * chosen by its author. The tower run (single player) draws each floor's map
+   * from one difficulty; a map without it never appears there.
+   */
+  difficulty?: MapDifficulty;
   /**
    * Doors, obstacles and traps present from the start of every round and never
    * timing out; only a hammer removes them (a trap also goes when it fires).

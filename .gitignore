@@ -6,3 +6,4 @@ coverage/
 .vite/
 .claude/worktrees/
 tools/map-drafter/out/
+__pycache__/

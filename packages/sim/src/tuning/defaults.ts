@@ -1,4 +1,4 @@
-import type { CpuDifficulty, Tuning } from "./types.js";
+import type { CpuDifficulty, TowerFloor, Tuning } from "./types.js";
 
 /**
  * Initial playtest values. Nothing here is final; see CLAUDE.md sections 3, 8-13.
@@ -90,6 +90,35 @@ export const DEFAULT_TUNING: Tuning = {
     },
   },
 
+  towerRun: {
+    hearts: 3,
+    passShare: 0.5,
+    // map difficulty, CPUs, CPU vision (tiles), CPU speed. CPU counts are odd so the
+    // participants are even and "the first half" is exact. Medium maps take at most 4.
+    floors: floors([
+      ["easy", 1, 2, 0.45],
+      ["easy", 1, 2, 0.5],
+      ["easy", 3, 2, 0.45],
+      ["easy", 3, 3, 0.5],
+      ["medium", 1, 3, 0.5],
+      ["medium", 3, 3, 0.5],
+      ["medium", 3, 3, 0.55],
+      ["hard", 1, 3, 0.5],
+      ["hard", 1, 3, 0.55],
+      ["hard", 3, 3, 0.55],
+      ["hard", 3, 4, 0.55],
+      ["hard", 3, 4, 0.6],
+      ["hard", 5, 4, 0.55],
+      ["hard", 5, 4, 0.6],
+      ["hard", 3, 4, 0.65],
+      ["hard", 5, 4, 0.65],
+      ["hard", 3, 5, 0.7],
+      ["hard", 5, 5, 0.7],
+      ["hard", 5, 5, 0.75],
+      ["hard", 5, 6, 0.8],
+    ]),
+  },
+
   scoring: {
     towerPlacement: [80, 40, 20, 10, 5, 0],
     keyFound: 20,
@@ -100,6 +129,10 @@ export const DEFAULT_TUNING: Tuning = {
     winningTeamMultiplier: 2,
   },
 };
+
+function floors(rows: [TowerFloor["map"], number, number, number][]): TowerFloor[] {
+  return rows.map(([map, cpus, cpuVisionTiles, cpuSpeed]) => ({ map, cpus, cpuVisionTiles, cpuSpeed }));
+}
 
 /** `base` with the CPU strength preset for `level` applied (single-player difficulty). */
 export function withCpuDifficulty(level: CpuDifficulty, base: Tuning = DEFAULT_TUNING): Tuning {

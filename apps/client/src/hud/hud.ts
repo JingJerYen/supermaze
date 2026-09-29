@@ -27,6 +27,8 @@ const CSS = `
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
 @keyframes hud-pulse{50%{transform:scale(1.08)}}
 .hud-sub{font-size:12px;color:#c9d2e3;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.hud-caption{font-size:12px;color:#ffe08a;margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
+.hud-caption:empty{display:none}
 .hud-ghost{margin-top:6px;font-size:14px;font-weight:500;padding:4px 12px;border-radius:14px;display:none;text-shadow:none}
 .hud-ghost.warning{display:inline-block;background:rgba(255,210,63,.9);color:#412402}
 .hud-ghost.active{display:inline-block;background:rgba(226,75,74,.92);color:#fff;animation:hud-pulse 1s infinite}
@@ -65,6 +67,7 @@ export class Hud {
   private readonly right: HTMLDivElement;
   private readonly time: HTMLDivElement;
   private readonly sub: HTMLDivElement;
+  private readonly caption: HTMLDivElement;
   private readonly ghost: HTMLDivElement;
   private readonly items: HTMLDivElement;
   private readonly toasts: HTMLDivElement;
@@ -85,8 +88,9 @@ export class Hud {
     const clock = el("div", "hud-clock");
     this.time = el("div", "hud-time");
     this.sub = el("div", "hud-sub");
+    this.caption = el("div", "hud-caption");
     this.ghost = el("div", "hud-ghost");
-    clock.append(this.time, this.sub, this.ghost);
+    clock.append(this.time, this.sub, this.caption, this.ghost);
     this.right = el("div", "hud-team right");
     top.append(this.left, clock, this.right);
     this.items = el("div", "hud-items");
@@ -97,6 +101,11 @@ export class Hud {
     this.go = el("div", "hud-go");
     this.root.append(top, this.items, this.toasts, this.gains, this.dark, this.go);
     parent.appendChild(this.root);
+  }
+
+  /** Small line under the clock; null hides it. */
+  setCaption(text: string | null): void {
+    if (this.caption.textContent !== (text ?? "")) this.caption.textContent = text ?? "";
   }
 
   update(m: HudModel): void {

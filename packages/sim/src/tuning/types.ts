@@ -1,3 +1,5 @@
+import type { MapDifficulty } from "../map/types.js";
+
 /**
  * Every balance-affecting number lives here (CLAUDE.md section 12).
  * Units are in the field names or comments. Values in `defaults.ts` are
@@ -130,6 +132,19 @@ export interface Tuning {
     difficulties: Record<CpuDifficulty, { visionTiles: number; speedMultiplier: number }>;
   };
 
+  /** Single-player tower run (CLAUDE.md section 4.1). */
+  towerRun: {
+    /** Failed floors allowed before the run ends; each failure costs one. */
+    hearts: number;
+    /**
+     * Share of the participants who pass a floor, by climbing order: you pass
+     * when you climb within the first max(1, floor(participants x passShare)).
+     */
+    passShare: number;
+    /** Bottom floor first; the run is cleared after the last one. */
+    floors: TowerFloor[];
+  };
+
   scoring: {
     /** Score by tower-top arrival order; index 0 is first. Beyond the array length use the last value. */
     towerPlacement: number[];
@@ -149,6 +164,18 @@ export interface Tuning {
 }
 
 export type CpuDifficulty = "easy" | "hard";
+
+/** One floor of the tower run: which maps, how many CPUs and how strong. */
+export interface TowerFloor {
+  /** Map difficulty the floor draws from (map JSON `difficulty`). */
+  map: MapDifficulty;
+  /** CPU opponents; participants are these plus you. */
+  cpus: number;
+  /** Replaces `cpu.visionTiles` on this floor, tiles. */
+  cpuVisionTiles: number;
+  /** Replaces `cpu.speedMultiplier` on this floor. */
+  cpuSpeed: number;
+}
 
 export type ItemKind = "oneWayDoor" | "obstacle" | "hammer" | "trap" | "teleportNode";
 

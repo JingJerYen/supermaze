@@ -2,6 +2,7 @@
   "id": "maze-05",
   "name": "Maze 05",
   "theme": "stone",
+  "difficulty": "hard",
   "supportedParticipants": [
     2,
     3,

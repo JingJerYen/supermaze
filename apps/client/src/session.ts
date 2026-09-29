@@ -1,11 +1,11 @@
 import type * as THREE from "three";
 import type { LobbyMessage, MatchStartedMessage } from "@supermaze/protocol";
-import { rotateMap, type QuarterTurns } from "@supermaze/sim";
+import { rotateMap } from "@supermaze/sim";
 import { LobbyUi } from "./lobby/lobbyUi.js";
-import { drawMap, loadMapById } from "./maps.js";
+import { loadMapById } from "./maps.js";
 import { Match } from "./match.js";
-import { createLocalMode } from "./modes/local.js";
 import { OnlineMatchMode } from "./modes/online.js";
+import { loadTowerBest, TowerRun } from "./modes/towerRun.js";
 import { Connection, ConnectTimeout, type JoinRequest } from "./net/connection.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 
@@ -19,6 +19,7 @@ export class Session {
   private meId: string | null = null;
   private match: Match | null = null;
   private rules: RulesScreen | null = null;
+  private towerRun: TowerRun | null = null;
   private matchMode: OnlineMatchMode | null = null;
   private pendingStart: MatchStartedMessage | null = null;
   private lastLobby: LobbyMessage | null = null;
@@ -32,7 +33,7 @@ export class Session {
   ) {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
-      onLocal: (name, cpus, difficulty) => this.playLocal(name, cpus, difficulty),
+      onTowerRun: (name) => this.playTowerRun(name),
       onRules: () => this.showRules(),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
@@ -67,7 +68,7 @@ export class Session {
       this.startPing();
       return; // lobby / matchStarted / full will arrive and drive the UI
     }
-    this.ui.showHome(this.defaultName);
+    this.showHome(this.defaultName);
   }
 
   /** Rules cards over demo scenes; closing returns to the home screen. */
@@ -77,33 +78,23 @@ export class Session {
     this.rules = new RulesScreen(this.root, this.renderer, () => {
       this.rules?.dispose();
       this.rules = null;
-      this.ui.showHome(this.defaultName);
+      this.showHome(this.defaultName);
     });
   }
 
-  /** Single player in the page: no socket involved; the results screen leads back here. */
-  private playLocal(name: string, cpus: number, difficulty: "easy" | "hard"): void {
+  /** Single-player tower run in the page: no socket involved; quitting leads back here. */
+  private playTowerRun(name: string): void {
     this.teardownMatch();
-    const seed = Date.now() >>> 0;
-    const drawn = drawMap(cpus + 1, seed);
-    if (!drawn) {
-      this.ui.showHome(name, `沒有支援 ${cpus + 1} 人的地圖，請改選 CPU 人數`);
-      return;
-    }
     this.ui.hide();
-    const map = rotateMap(drawn, (seed % 4) as QuarterTurns);
-    const mode = createLocalMode(map, {
-      players: cpus + 1,
-      seed,
-      name,
-      difficulty,
-      onAgain: () => this.playLocal(name, cpus, difficulty),
-      onHome: () => {
-        this.teardownMatch();
-        this.ui.showHome(name);
-      },
+    this.towerRun = new TowerRun(this.root, this.renderer, name, (notice) => {
+      this.teardownMatch();
+      this.showHome(name, notice);
     });
-    this.match = new Match(this.root, this.renderer, mode);
+    this.towerRun.start();
+  }
+
+  private showHome(name: string, notice?: string): void {
+    this.ui.showHome(name, notice, loadTowerBest());
   }
 
   private async join(req: JoinRequest): Promise<void> {
@@ -134,7 +125,7 @@ export class Session {
   private async leave(): Promise<void> {
     await this.conn.leave();
     this.teardownMatch();
-    this.ui.showHome(this.defaultName);
+    this.showHome(this.defaultName);
   }
 
   private onLobby(m: LobbyMessage): void {
@@ -174,6 +165,8 @@ export class Session {
   }
 
   private teardownMatch(): void {
+    this.towerRun?.dispose();
+    this.towerRun = null;
     this.match?.dispose();
     this.match = null;
     this.matchMode = null;
@@ -182,7 +175,7 @@ export class Session {
   private onDisconnected(code: number): void {
     this.stopPing();
     this.teardownMatch();
-    this.ui.showHome(this.defaultName, code === 4000 ? undefined : `連線中斷（代碼 ${code}）`);
+    this.showHome(this.defaultName, code === 4000 ? undefined : `連線中斷（代碼 ${code}）`);
     void this.lastLobby;
   }
 

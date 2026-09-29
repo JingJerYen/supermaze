@@ -10,6 +10,7 @@
   "id": "maze-01",                       // 檔名與 id 一致，網址用 ?map=maze-01 選它
   "name": "Maze 01",
   "theme": "stone",                      // 外觀主題：目前只有 stone
+  "difficulty": "easy",                  // easy / medium / hard：地圖本身的難度，爬塔挑戰依它分層抽圖；不填就不會出現在爬塔挑戰
   "supportedParticipants": [2, 3, 4, 5, 6],   // 這張圖允許的參賽人數
   "plazaRadius": 1,                      // 塔周圍幾格內豁免「走道一格寬」規則
   "lightSwitchCount": 4,                 // 每局放幾個開關：偶數、至少 2

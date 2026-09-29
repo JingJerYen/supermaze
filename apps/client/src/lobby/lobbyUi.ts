@@ -30,8 +30,8 @@ const CSS = `
 
 export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
-  /** Single player against `cpus` CPU opponents, run inside the page. */
-  onLocal(name: string, cpus: number, difficulty: "easy" | "hard"): void;
+  /** Single-player tower run against CPUs, run inside the page. */
+  onTowerRun(name: string): void;
   /** Open the rules cards. */
   onRules(): void;
   onReady(ready: boolean): void;
@@ -83,7 +83,8 @@ export class LobbyUi {
     this.server = url;
   }
 
-  showHome(defaultName: string, error?: string): void {
+  /** `best` is the tower-run record shown next to its button. */
+  showHome(defaultName: string, error?: string, best?: { floors: number; score: number } | null): void {
     this.stopTicking();
     this.show();
     this.card.innerHTML = `
@@ -99,11 +100,8 @@ export class LobbyUi {
         <button id="lb-join">加入私人房</button>
       </div>
       <div class="lb-row" style="margin-top:14px;border-top:1px solid rgba(255,255,255,.15);padding-top:14px">
-        <button id="lb-local">單機個人對戰</button>
-        <label class="lb-muted">CPU</label>
-        <select id="lb-cpus">${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n} 人</option>`).join("")}</select>
-        <label class="lb-muted">強度</label>
-        <select id="lb-cpu-level"><option value="easy">簡單</option><option value="hard">困難</option></select>
+        <button id="lb-local">爬塔挑戰</button>
+        <span class="lb-muted">單人對 CPU，20 層，前一半登塔才能晉級${best ? `。最佳紀錄：通過 ${best.floors} 層，${best.score} 分` : ""}</span>
       </div>
       <div class="lb-notice ${error ? "lb-error" : ""}" id="lb-home-notice">${error ?? "同一個伺服器上的朋友輸入四碼代碼就能加入你的私人房"}</div>`;
     const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
@@ -115,11 +113,7 @@ export class LobbyUi {
     this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), server: server() }));
     this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), server: server() }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
-    this.card.querySelector("#lb-local")!.addEventListener("click", () => {
-      const cpus = Number(this.card.querySelector<HTMLSelectElement>("#lb-cpus")!.value) || 1;
-      const level = this.card.querySelector<HTMLSelectElement>("#lb-cpu-level")!.value === "hard" ? "hard" : "easy";
-      this.handlers.onLocal(name(), cpus, level);
-    });
+    this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun(name()));
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {
       const code = this.card.querySelector<HTMLInputElement>("#lb-code")!.value.trim().toUpperCase();
       if (code.length !== 4) {

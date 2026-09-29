@@ -2,6 +2,7 @@
   "id": "maze-01",
   "name": "Maze 01",
   "theme": "stone",
+  "difficulty": "easy",
   "supportedParticipants": [
     2,
     3,

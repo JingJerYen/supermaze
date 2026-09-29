@@ -1,7 +1,7 @@
 import { DEFAULT_TUNING, type Tuning } from "../tuning/index.js";
 import { ALL_DIRS, DIRS, MapGrid, tileKey } from "./grid.js";
 import { normalizeMap } from "./normalize.js";
-import type { MapData, NormalizedMapData, TilePos } from "./types.js";
+import { MAP_DIFFICULTIES, type MapData, type NormalizedMapData, type TilePos } from "./types.js";
 
 /**
  * Structural checks a hand-made map must pass (CLAUDE.md section 6).
@@ -134,6 +134,9 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
   if (switches % 2 !== 0) errors.push(`lightSwitchCount ${switches} must be even so the map ends lit`);
   if (typeof data.timeLimitSec !== "number" || !Number.isFinite(data.timeLimitSec) || data.timeLimitSec < 30 || data.timeLimitSec > 3600) {
     errors.push(`timeLimitSec is required: the round length in seconds for two participants, 30 to 3600 (got ${String(data.timeLimitSec)})`);
+  }
+  if (data.difficulty !== undefined && !MAP_DIFFICULTIES.includes(data.difficulty)) {
+    errors.push(`difficulty must be one of ${MAP_DIFFICULTIES.join(", ")} (got ${String(data.difficulty)})`);
   }
 
   return errors;
