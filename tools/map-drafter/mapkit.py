@@ -57,19 +57,25 @@ class Canvas:
     def rows(self):
         return ["".join(r) for r in self.g]
 
-    def maze(self, cells, seed, bias=None, loops=0, start=None):
+    def maze(self, cells, seed, bias=None, loops=0, start=None, algo="dfs"):
         """Carve a depth-first lattice maze over a set of (odd, odd) junctions.
 
         bias(a, b) weights the step a -> b (higher is preferred), e.g. to make
         corridors follow rings. `loops` extra walls between junctions are then
-        opened, each one adding a cycle (and splitting the rooftop)."""
+        opened, each one adding a cycle (and splitting the rooftop).
+        algo="prim" grows the maze from random frontier cells instead: many
+        short side branches and dead ends rather than long corridors."""
         rnd = random.Random(seed)
         cells = set(cells)
         for x, y in cells:
             self.put(x, y)
         start = start or min(cells)
         seen = {start}
-        stack = [start]
+        if algo == "prim":
+            self._prim(cells, seen, rnd)
+            stack = []
+        else:
+            stack = [start]
         while stack:
             cx, cy = stack[-1]
             nb = [(cx + dx, cy + dy) for dx, dy in [(2, 0), (-2, 0), (0, 2), (0, -2)]
@@ -85,6 +91,23 @@ class Canvas:
                  if b in cells and self.get((a[0] + b[0]) // 2, (a[1] + b[1]) // 2) == "#"]
         for x, y in rnd.sample(sorted(walls), min(loops, len(walls))):
             self.put(x, y)
+
+
+    def _prim(self, cells, seen, rnd):
+        steps = [(2, 0), (-2, 0), (0, 2), (0, -2)]
+        frontier = sorted({(a[0] + dx, a[1] + dy) for a in seen for dx, dy in steps} & cells - seen)
+        while frontier:
+            n = frontier.pop(rnd.randrange(len(frontier)))
+            if n in seen:
+                continue
+            links = [(n[0] + dx, n[1] + dy) for dx, dy in steps if (n[0] + dx, n[1] + dy) in seen]
+            a = rnd.choice(links)
+            self.put((a[0] + n[0]) // 2, (a[1] + n[1]) // 2)
+            seen.add(n)
+            for dx, dy in steps:
+                m = (n[0] + dx, n[1] + dy)
+                if m in cells and m not in seen and m not in frontier:
+                    frontier.append(m)
 
 
 def stamp(rows, cells):
@@ -274,13 +297,16 @@ def spread_pick(pool, n, min_gap, score, taken, taken_gap=None, quad_cap=None, c
 
 
 def auto_candidates(rows, n_keys=11, n_boxes=24, n_box_top=3, n_switch=6, n_road_keys=5, key_gap=7,
-                    wall_cap=2, fixed_keys=()):
+                    wall_cap=2, fixed_keys=(), road_cap=3, box_gap=5, switch_gap=12,
+                    key_filter=None, switch_filter=None, keys_on_dead_ends=True):
     """Stamp key / item-box / switch markers onto a finished terrain.
 
     Keys go on the dead ends that take longest to walk to (fixtures respected,
     no hammer): n_keys - n_road_keys on wall tops (at most wall_cap per quadrant),
     the rest on the road (at most 3 per quadrant). fixed_keys are (x, y, 'r'|'w')
-    placed first. Boxes and switches are spread over straight corridor tiles."""
+    placed first. Boxes and switches are spread over straight corridor tiles.
+    key_filter(x, y, layer) and switch_filter(x, y) restrict where those may go.
+    keys_on_dead_ends=False lets keys sit anywhere (small loopy maps have few dead ends)."""
     m = Map(rows)
     m.check(verbose=False)
     d = m.fwd
@@ -292,26 +318,31 @@ def auto_candidates(rows, n_keys=11, n_boxes=24, n_box_top=3, n_switch=6, n_road
     deg = lambda x, y, layer: sum(1 for _ in m.moves(x, y, layer, True))
     road = sorted((x, y) for (x, y, l) in d if l == "r" and m.cell(x, y) == "." and free(x, y))
     top = sorted((x, y) for (x, y, l) in d if l == "w" and m.cell(x, y) == "#" and free(x, y))
-    road_ends = [p for p in road if deg(*p, "r") == 1]
-    top_ends = [p for p in top if deg(*p, "w") == 1]
+    road_ends = [p for p in road if deg(*p, "r") == 1 or not keys_on_dead_ends]
+    top_ends = [p for p in top if deg(*p, "w") == 1 or not keys_on_dead_ends]
+    if key_filter:
+        road_ends = [p for p in road_ends if key_filter(p[0], p[1], "r")]
+        top_ends = [p for p in top_ends if key_filter(p[0], p[1], "w")]
 
     keys = list(fixed_keys)
     kw = spread_pick(top_ends, n_keys - n_road_keys, key_gap, lambda p: d[(p[0], p[1], "w")],
                      [(k[0], k[1]) for k in keys], quad_cap=wall_cap, centre=centre)
     keys += [(x, y, "w") for x, y in kw]
     kr = spread_pick(road_ends, n_keys - len(keys), key_gap, lambda p: d[(p[0], p[1], "r")],
-                     [(k[0], k[1]) for k in keys], quad_cap=3, centre=centre)
+                     [(k[0], k[1]) for k in keys], quad_cap=road_cap, centre=centre)
     keys += [(x, y, "r") for x, y in kr]
     taken = [(k[0], k[1]) for k in keys]
 
     corridor = [p for p in road if deg(*p, "r") == 2 and p not in taken]
     rnd = random.Random(7)
-    boxes = spread_pick(corridor, n_boxes - n_box_top, 5, lambda p: rnd.random(), taken, 3)
+    boxes = spread_pick(corridor, n_boxes - n_box_top, box_gap, lambda p: rnd.random(), taken, 3)
     taken += boxes
     box_tops = spread_pick([p for p in top if p not in taken], n_box_top, 8, lambda p: rnd.random(), taken, 3)
     taken += box_tops
     sw_pool = [p for p in corridor if p not in taken and any(m.cell(p[0] + a, p[1] + b) == "#" for a, b in D4)]
-    switches = spread_pick(sw_pool, n_switch, 12, lambda p: rnd.random(), taken, 2)
+    if switch_filter:
+        sw_pool = [p for p in sw_pool if switch_filter(*p)]
+    switches = spread_pick(sw_pool, n_switch, switch_gap, lambda p: rnd.random(), taken, 2)
 
     for x, y, layer in keys:
         g[y][x] = "K" if layer == "r" else "k"
