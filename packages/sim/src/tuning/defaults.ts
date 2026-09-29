@@ -39,11 +39,11 @@ export const DEFAULT_TUNING: Tuning = {
   itemBoxes: {
     perParticipant: 2,
     weights: {
-      oneWayDoor: 20,
-      obstacle: 25,
-      hammer: 20,
-      trap: 20,
-      teleportNode: 15,
+      oneWayDoor: 18,
+      obstacle: 22,
+      hammer: 30,
+      trap: 17,
+      teleportNode: 13,
     },
   },
 
