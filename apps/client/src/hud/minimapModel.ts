@@ -22,10 +22,13 @@ const css = (hex: number) => `#${hex.toString(16).padStart(6, "0")}`;
  * Two teams: each team in its team colour. Everyone for themselves: you in one
  * colour, all the others in another. Others first, you last, so your own dot
  * is drawn on top. No terrain, keys, boxes or switches are ever part of it.
+ * While the map is dark only your own dot is left: darkness hides the others
+ * on the minimap as it does on screen.
  */
 export function minimapDots(state: SimulationState, meId: string | null): MinimapDot[] {
   const t = CLIENT_TUNING.minimap;
-  const dots = Object.values(state.players).map((p): MinimapDot => {
+  const visible = Object.values(state.players).filter((p) => state.lightsOn || p.id === meId);
+  const dots = visible.map((p): MinimapDot => {
     const self = p.id === meId;
     const color =
       state.teamMode === "solo" ? css(self ? t.soloSelfColor : t.soloOtherColor) : css(TEAM_COLORS[teamColorIndex(p.teamId) % TEAM_COLORS.length] as number);

@@ -43,6 +43,14 @@ describe("minimapDots", () => {
     expect(colour("p3")).toBe(css(CLIENT_TUNING.minimap.soloOtherColor));
   });
 
+  it("in the dark only your own dot is left, for players in the maze and on the tower alike", () => {
+    const lit = stateOf("teams", { a1: "A", b1: "B", a2: "A", b2: "B" });
+    const dark = { ...lit, lightsOn: false, players: { ...lit.players, b1: { ...lit.players["b1"]!, phase: "tower" as const } } };
+    expect(minimapDots(dark, "a1").map((d) => d.id)).toEqual(["a1"]);
+    expect(minimapDots(dark, "b1").map((d) => d.id)).toEqual(["b1"]);
+    expect(minimapDots({ ...dark, lightsOn: true }, "a1")).toHaveLength(4);
+  });
+
   it("is the same list for a player on the tower and one in the maze", () => {
     const state = stateOf("solo", { p1: "p1", p2: "p2" });
     const raised = { ...state, players: { ...state.players, p1: { ...state.players["p1"]!, phase: "tower" as const } } };
