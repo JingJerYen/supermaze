@@ -137,6 +137,12 @@ export const CLIENT_TUNING = {
     bobHz: 1.1,
     opacity: 0.95,
   },
+  prediction: {
+    /** A corrected prediction is eased into place at this rate, per second. */
+    easePerSec: 12,
+    /** Corrections larger than this many tiles are shown at once instead (teleports, long stalls). */
+    snapBeyondTiles: 1.5,
+  },
   separation: {
     /**
      * Purely visual: characters closer than `radius` (tiles) are spread out on

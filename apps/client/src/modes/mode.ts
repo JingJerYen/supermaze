@@ -1,6 +1,18 @@
 import { normalizeMap, type MapData, type MapGrid, type PlayerInput, type SimulationState } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 
+/** The two states to draw between. */
+export interface Sample {
+  from: SimulationState;
+  to: SimulationState;
+  alpha: number;
+  /**
+   * Offset in tiles added to where the local player is drawn. Online play uses
+   * it to ease a corrected prediction into place instead of jumping there.
+   */
+  nudge?: { x: number; y: number };
+}
+
 /** What main.ts needs from a game mode; local and online implement it identically from the outside. */
 export interface GameMode {
   label: string;
@@ -15,7 +27,7 @@ export interface GameMode {
   /** Called at the fixed tick rate with the current intent. */
   tick(input: PlayerInput): void;
   /** States to render between, with a 0..1 blend. */
-  sample(now: number, loopAlpha: number): { from: SimulationState; to: SimulationState; alpha: number } | null;
+  sample(now: number, loopAlpha: number): Sample | null;
   hud(): Record<string, string | number>;
   /** Large centre-screen message (connection problems etc.), or null when there is nothing to say. */
   banner?(): string | null;

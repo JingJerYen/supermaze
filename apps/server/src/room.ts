@@ -1,9 +1,11 @@
 import { CloseCode, Room, type Client } from "@colyseus/core";
 import {
   C2S,
+  InputQueue,
   PROTOCOL_VERSION,
   S2C,
   SnapshotDelta,
+  type AckMessage,
   type DebugMessage,
   type FullStateMessage,
   type InputMessage,
@@ -63,7 +65,10 @@ export class MazeRoom extends Room {
   private sim: Simulation | null = null;
   /** Drives cpu-controlled players (dropped humans) with the sim's own CPU. */
   private cpu: CpuController | null = null;
-  private readonly latestInputs = new Map<string, PlayerInput>();
+  /** Each client's inputs waiting to be applied, in order, one per tick. */
+  private readonly inputQueues = new Map<string, InputQueue>();
+  /** Last acknowledgement sent to each client, so an unchanged one is not sent again. */
+  private readonly ackSent = new Map<string, number>();
   /** What this match last broadcast; a fresh one per match. */
   private delta = new SnapshotDelta();
   private countdownTimer: { clear(): void } | null = null;
@@ -83,13 +88,9 @@ export class MazeRoom extends Room {
     this.clock.start();
 
     this.onMessage<InputMessage>(C2S.input, (client, msg) => {
-      // One-shot presses are latched until a tick consumes them, so a press is
-      // neither lost to a later message nor applied twice.
-      const next = sanitizeInput(msg);
-      const pending = this.latestInputs.get(client.sessionId);
-      if (pending?.action) next.action = true;
-      if (pending?.discard) next.discard = true;
-      this.latestInputs.set(client.sessionId, next);
+      let queue = this.inputQueues.get(client.sessionId);
+      if (!queue) this.inputQueues.set(client.sessionId, (queue = new InputQueue()));
+      queue.push(sanitizeInput(msg));
     });
     this.onMessage<PingMessage>(C2S.ping, (client, msg) => client.send(S2C.pong, msg));
     this.onMessage<DebugMessage>(C2S.debug, (_client, msg) => {
@@ -155,7 +156,8 @@ export class MazeRoom extends Room {
   }
 
   override async onLeave(client: Client, code?: number): Promise<void> {
-    this.latestInputs.delete(client.sessionId);
+    this.inputQueues.delete(client.sessionId);
+    this.ackSent.delete(client.sessionId);
     const p = this.lobby.get(client.sessionId);
     if (!p) return;
 
@@ -287,7 +289,8 @@ export class MazeRoom extends Room {
     this.sim.start();
     this.cpu = new CpuController(this.sim, seed + 1);
     this.delta = new SnapshotDelta();
-    this.latestInputs.clear();
+    this.inputQueues.clear();
+    this.ackSent.clear();
     this.broadcastLobby();
     this.broadcast(S2C.matchStarted, this.matchStartedMessage());
     for (const client of this.clients) this.sendFull(client);
@@ -309,14 +312,17 @@ export class MazeRoom extends Room {
     if (!sim) return;
     const frame = new Map<string, PlayerInput>();
     for (const [id, p] of Object.entries(sim.getState().players)) {
-      frame.set(id, p.controller === "human" ? (this.latestInputs.get(id) ?? NO_INPUT) : (this.cpu?.input(id) ?? NO_INPUT));
+      frame.set(id, p.controller === "human" ? (this.inputQueues.get(id)?.take() ?? NO_INPUT) : (this.cpu?.input(id) ?? NO_INPUT));
     }
     sim.step(frame);
-    for (const input of this.latestInputs.values()) {
-      delete input.action;
-      delete input.discard;
-    }
     this.broadcast(S2C.snapshot, this.delta.next(sim.getState(), Date.now()));
+    // After the state, tell each client which of its inputs that state includes.
+    for (const client of this.clients) {
+      const acked = this.inputQueues.get(client.sessionId)?.acked ?? 0;
+      if (acked === 0 || this.ackSent.get(client.sessionId) === acked) continue;
+      this.ackSent.set(client.sessionId, acked);
+      client.send(S2C.ack, { seq: acked } satisfies AckMessage);
+    }
     if (sim.getState().status === "finished") this.endMatch();
   }
 
@@ -354,10 +360,11 @@ function sanitizeName(raw: unknown): string {
 }
 
 /** Never trust client numbers: clamp to the unit square and drop NaN. */
-function sanitizeInput(msg: unknown): PlayerInput {
+function sanitizeInput(msg: unknown): InputMessage {
   const m = (msg ?? {}) as Partial<InputMessage>;
   const clamp = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
-  const input: PlayerInput = { moveX: clamp(m.moveX), moveY: clamp(m.moveY) };
+  const input: InputMessage = { moveX: clamp(m.moveX), moveY: clamp(m.moveY) };
+  if (typeof m.seq === "number" && Number.isInteger(m.seq) && m.seq > 0) input.seq = m.seq;
   if (m.action === true) input.action = true;
   if (m.discard === true) input.discard = true;
   return input;

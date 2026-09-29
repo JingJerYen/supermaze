@@ -7,8 +7,11 @@ export type { TeamMode };
  * Message *names* are the constants below; payload shapes are the interfaces.
  * Only the shapes matter to the simulation; the transport can change.
  */
-/** 2: per-tick messages carry packed movers and only the players whose other data changed. */
-export const PROTOCOL_VERSION = 2;
+/**
+ * 2: per-tick messages carry packed movers and only the players whose other data changed.
+ * 3: inputs are numbered and applied in order, one per tick; the server acknowledges them.
+ */
+export const PROTOCOL_VERSION = 3;
 
 export const ROOM_NAME = "maze";
 
@@ -48,10 +51,25 @@ export const S2C = {
   full: "full",
   /** Per-tick update: players always, other sections only when they changed. */
   snapshot: "snapshot",
+  /** To one client: which of its inputs the snapshot just sent includes. */
+  ack: "ack",
   pong: "pong",
 } as const;
 
-export type InputMessage = PlayerInput;
+/**
+ * One tick of intent. `seq` numbers the inputs of a client from 1; the server
+ * applies them in order, one per tick, and reports the last one applied, which
+ * lets the client predict its own movement and check it (section 17.3).
+ */
+export interface InputMessage extends PlayerInput {
+  seq?: number;
+}
+
+/** Sent to one client after a tick that applied one of its inputs. */
+export interface AckMessage {
+  /** The last input of this client that the state just broadcast includes. */
+  seq: number;
+}
 
 export interface PingMessage {
   /** Client clock at send time, ms. Echoed back untouched. */
@@ -235,3 +253,5 @@ export class SnapshotDelta {
 }
 
 export type PongMessage = PingMessage;
+
+export * from "./inputQueue.js";

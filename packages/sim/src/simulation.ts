@@ -2,13 +2,14 @@ import { availableAction, canDiscard } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState, canDrawItem } from "./boxes.js";
 import type { SimEvent } from "./events.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
+import { movePlayer } from "./playerMove.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
 import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys.js";
 import { createLightSwitches, usableSwitchAt, type LightSwitchState } from "./lighting.js";
 import { MapGrid } from "./map/grid.js";
 import { normalizeMap } from "./map/normalize.js";
 import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
-import { createMover, moverPosition, sameTile, stepMover, type MoveIntent, type MoverState } from "./movement.js";
+import { createMover, moverPosition, sameTile, type MoveIntent, type MoverState } from "./movement.js";
 import { nodeAt, placeableAt, placeableMoveFilter, type PlaceableState, type TeleportNodeState } from "./placeables.js";
 import { SeededRandom } from "./random/seeded.js";
 import { decideSoloWinner, decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
@@ -317,9 +318,6 @@ export class Simulation {
   step(inputs: ReadonlyMap<PlayerId, PlayerInput>): SimEvent[] {
     if (this.state.status === "finished") return [];
     const tick = this.state.tick + 1;
-    const speed = this.tuning.movement.speedTilesPerSec / this.tuning.tickRate;
-    const turnTicks = Math.round(this.tuning.movement.turnDelaySec * this.tuning.tickRate);
-
     const work: ItemWork & {
       keys: Record<string, KeyState>;
       boxes: Record<string, BoxState>;
@@ -364,6 +362,8 @@ export class Simulation {
       }
     }
 
+    const moveCtx = { tick, status: this.state.status, freezeUntilTick: this.state.freezeUntilTick, ghost, placeables: work.placeables };
+
     // Sorted ids make simultaneous pickups resolve identically on every replay.
     for (const id of Object.keys(this.state.players).sort()) {
       let p = this.state.players[id] as PlayerState;
@@ -376,16 +376,14 @@ export class Simulation {
 
       if (p.phase === "tower") {
         // On the platform the commander walks freely (section 5); nothing else applies up there.
-        work.players[id] = { ...p, mover: stepMover(p.mover, input, this.grid, speed, undefined, turnTicks) };
+        work.players[id] = { ...p, mover: movePlayer(this.grid, this.tuning, moveCtx, p, input) };
         continue;
       }
 
       const ghostly = isGhost(ghost, p);
       if (tick >= p.frozenUntilTick) {
         const before = p.mover.from;
-        const base = p.controller === "cpu" ? speed * this.tuning.cpu.speedMultiplier : speed;
-        const mySpeed = ghostly ? base * this.tuning.ghostEvent.speedMultiplier : base;
-        p = { ...p, mover: stepMover(p.mover, input, this.grid, mySpeed, placeableMoveFilter(work.placeables), turnTicks) };
+        p = { ...p, mover: movePlayer(this.grid, this.tuning, moveCtx, p, input) };
         if (!sameTile(before, p.mover.from)) p = this.onArrive(work, p, tick);
       }
       if (p.teleportImmunity && !sameTile(p.mover.from, work.nodes[p.teleportImmunity]?.pos ?? p.mover.from)) {

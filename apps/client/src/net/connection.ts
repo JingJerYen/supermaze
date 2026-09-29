@@ -1,5 +1,7 @@
 import { Client, type Room } from "@colyseus/sdk";
 import {
+  type AckMessage,
+  type InputMessage,
   C2S,
   ROOM_NAME,
   S2C,
@@ -48,6 +50,7 @@ export interface ConnectionEvents {
   onMatchStarted(msg: MatchStartedMessage): void;
   onFull(msg: FullStateMessage, receivedAt: number): void;
   onSnapshot(msg: SnapshotMessage, receivedAt: number): void;
+  onAck(msg: AckMessage, receivedAt: number): void;
   onPong(msg: PingMessage, receivedAt: number): void;
   onLeave(code: number): void;
 }
@@ -115,6 +118,7 @@ export class Connection {
     room.onMessage<MatchStartedMessage>(S2C.matchStarted, (m) => this.events.onMatchStarted(m));
     room.onMessage<FullStateMessage>(S2C.full, (m) => this.events.onFull(m, performance.now()));
     room.onMessage<SnapshotMessage>(S2C.snapshot, (m) => this.events.onSnapshot(m, performance.now()));
+    room.onMessage<AckMessage>(S2C.ack, (m) => this.events.onAck(m, performance.now()));
     room.onMessage<PingMessage>(S2C.pong, (m) => this.events.onPong(m, performance.now()));
     room.onLeave((code) => {
       this.room = null;
@@ -127,7 +131,7 @@ export class Connection {
     return this.room?.sessionId ?? null;
   }
 
-  sendInput(input: PlayerInput): void {
+  sendInput(input: InputMessage): void {
     this.room?.send(C2S.input, input);
   }
   setReady(ready: boolean): void {

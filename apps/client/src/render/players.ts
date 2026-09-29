@@ -43,6 +43,7 @@ export class PlayerViews {
     dtSec: number,
     meId: string | null = null,
     ghostIds: ReadonlySet<string> = EMPTY,
+    nudge: { x: number; y: number } | null = null,
   ): void {
     const newTick = tick !== this.lastTick;
     this.lastTick = tick;
@@ -79,6 +80,11 @@ export class PlayerViews {
       view.setFrozen(p.frozenUntilTick > tick);
       view.setCaged(p.frozenUntilTick > tick && p.frozenBy === "trap");
       view.setDowned(p.frozenUntilTick > tick && p.frozenBy === "ghost");
+      if (nudge && id === meId) {
+        // What is left of a corrected prediction, eased away by the mode (tile y is world z).
+        view.mesh.position.x += nudge.x;
+        view.mesh.position.z += nudge.y;
+      }
       view.setSelfMarker(id === meId && p.phase === "maze");
       view.setGhost(ghostIds.has(id));
     }

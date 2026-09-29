@@ -52,6 +52,7 @@ export class Session {
         this.matchMode?.applyFull(m.state, at);
       },
       onSnapshot: (m, at) => this.matchMode?.applyDelta(m, at),
+      onAck: (m, at) => this.matchMode?.applyAck(m.seq, at),
       onPong: (m, at) => {
         if (this.matchMode) this.matchMode.rttMs = at - m.t;
       },
@@ -163,7 +164,9 @@ export class Session {
   private buildMatch(m: MatchStartedMessage): void {
     if (!this.meId) return;
     const map = rotateMap(loadMapById(m.mapId), m.rotation);
-    this.matchMode = new OnlineMatchMode(map, m.tickRate, this.meId, (input) => this.conn.sendInput(input));
+    // ?predict=0 turns the prediction of your own movement off, to compare or to chase a bug.
+    const predict = new URLSearchParams(location.search).get("predict") !== "0";
+    this.matchMode = new OnlineMatchMode(map, m.tickRate, this.meId, (input) => this.conn.sendInput(input), { predict });
     this.matchMode.onLeaveRoom = () => void this.leave();
     this.matchMode.onDebug = (cmd) => this.conn.sendDebug(cmd);
     this.match = new Match(this.root, this.renderer, this.matchMode);
