@@ -117,7 +117,8 @@ export const RULE_SCENES: DemoScene[] = [
     scripts: {
       me: [{ do: "wait", sec: 0.8 }, { do: "goto", x: 9, y: 1 }, { do: "wait", sec: 0.6 }, { do: "goto", x: 5, y: 4 }, { do: "face", ...N }, { do: "wait", sec: 0.5 }, { do: "act" }],
     },
-    holdSec: 4.5,
+    // Long enough for the whole climb: door, walk-in, the light up the tower and the camera's swing to the overview.
+    holdSec: 7.5,
     expect: ["keyPickedUp", "towerClimbed"],
   },
   {
@@ -380,7 +381,7 @@ export const RULE_SCENES: DemoScene[] = [
         { do: "act" },
       ],
     },
-    holdSec: 4.5,
+    holdSec: 7.5,
     expect: ["boxOpened", "placeableDestroyed", "keyPickedUp", "towerClimbed"],
   },
   {
@@ -454,7 +455,7 @@ export const RULE_SCENES: DemoScene[] = [
     scripts: {
       me: [{ do: "wait", sec: 0.8 }, { do: "goto", x: 9, y: 5 }, { do: "wait", sec: 0.5 }, { do: "goto", x: 5, y: 4 }, { do: "face", ...N }, { do: "wait", sec: 0.5 }, { do: "act" }],
     },
-    holdSec: 4.5,
+    holdSec: 7.5,
     expect: ["keyPickedUp", "towerClimbed"],
     table: (t) => [
       ["登塔名次（第 1 名起）", t.scoring.towerPlacement.join(" / ")],
@@ -484,7 +485,7 @@ export const RULE_SCENES: DemoScene[] = [
       me: [{ do: "wait", sec: 1.2 }, { do: "goto", x: 9, y: 5 }, { do: "wait", sec: 0.3 }, { do: "goto", x: 5, y: 4 }, { do: "face", ...N }, { do: "wait", sec: 0.4 }, { do: "act" }],
       foe: [{ do: "wait", sec: 0.3 }, { do: "goto", x: 1, y: 1 }, { do: "goto", x: 4, y: 1 }],
     },
-    holdSec: 4.5,
+    holdSec: 7.5,
     expect: ["keyPickedUp", "keyPickedUp", "towerClimbed"],
     table: (t) => {
       const floors = t.towerRun.floors;

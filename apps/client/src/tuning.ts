@@ -5,10 +5,19 @@
 export const CLIENT_TUNING = {
   climb: {
     /** Door slides open, then the character walks in, then the light climbs the shaft. Seconds. */
-    doorOpenSec: 0.4,
-    walkInSec: 0.7,
-    doorCloseSec: 0.4,
-    ascentSec: 1.2,
+    doorOpenSec: 0.7,
+    walkInSec: 1.0,
+    doorCloseSec: 0.5,
+    ascentSec: 1.6,
+    /** Light pouring out of the open door: colour, how far the beam reaches (tiles), peak strength. */
+    spillColor: 0xffe2a0,
+    spillReach: 2.4,
+    spillOpacity: 0.5,
+    spillLightIntensity: 5,
+    /** Your own climb: the camera rides up with the light, then swings down to the overview at this blend rate per second. */
+    overviewPerSec: 1.1,
+    /** Seconds the overview swing gets before the result screen may cover it. */
+    settleSec: 1.8,
   },
   overview: {
     /** Extra room around the map when looking straight down from the tower, as a factor. */

@@ -15,6 +15,7 @@ import { startLoop } from "./loop.js";
 import type { GameMode } from "./modes/mode.js";
 import { BoxViews } from "./render/boxes.js";
 import { FollowCamera } from "./render/camera.js";
+import { ClimbCamera } from "./render/climbCamera.js";
 import { KeyViews } from "./render/keys.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
@@ -61,6 +62,7 @@ export class Match {
     }
   };
   private lastFrame = performance.now();
+  private readonly climbCamera = new ClimbCamera();
   private resizeObserver: ResizeObserver | null = null;
 
   constructor(
@@ -150,22 +152,24 @@ export class Match {
         if (!this.demo) for (const c of diffSounds(this.lastToastState, s.to, meId)) sfx.play(c.name, c.volume);
         this.lastToastState = s.to;
       }
-      this.results?.update(s.to, meId, this.mode.results());
       this.minimap?.update(s.to, meId);
     }
 
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
     const onTower = meState?.phase === "tower";
-    this.follow.setMode(onTower ? "overview" : "follow");
-    this.mapMesh.tower.setOverview(onTower);
+    const shot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
+    // The rank is already settled; the result screen waits until every climb has been shown.
+    if (s && !shot.busy && this.players.activeClimbs().length === 0) this.results?.update(s.to, meId, this.mode.results());
+    this.follow.setMode(shot.camera, shot.camera === "overview" ? CLIENT_TUNING.climb.overviewPerSec : undefined);
+    this.mapMesh.tower.setOverview(shot.towerOverview);
     this.lighting.setRadius(onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
     if (mePos) {
-      this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2), dt);
+      this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2 + shot.lift), dt);
       this.lighting.follow(mePos);
     }
     // The tower turns see-through while it stands between the camera and the local player.
-    if (mePos && meState?.phase === "maze") this.mapMesh.tower.watch(this.follow.camera.position, mePos, PLAYER_HEIGHT);
+    if (mePos && shot.watchTower) this.mapMesh.tower.watch(this.follow.camera.position, mePos, PLAYER_HEIGHT);
     else this.mapMesh.tower.unwatch();
     this.mapMesh.tower.update(dt);
 

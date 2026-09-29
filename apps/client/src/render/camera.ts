@@ -17,6 +17,7 @@ export class FollowCamera {
   private readonly overviewQuat = new THREE.Quaternion();
   private readonly overviewPos = new THREE.Vector3();
   private mode: CameraMode = "follow";
+  private swingPerSec: number = CLIENT_TUNING.overview.transitionPerSec;
   private snapped = false;
   private mapW = 1;
   private mapH = 1;
@@ -53,8 +54,10 @@ export class FollowCamera {
     this.offset.set(0, t.height * zoom, t.distance * zoom);
   }
 
-  setMode(mode: CameraMode): void {
+  /** `swingPerSec` overrides the blend rate of the swing between the two views. */
+  setMode(mode: CameraMode, swingPerSec: number = CLIENT_TUNING.overview.transitionPerSec): void {
     this.mode = mode;
+    this.swingPerSec = swingPerSec;
   }
 
   /** Recompute the overview pose so the whole map fits at the current aspect ratio. */
@@ -85,7 +88,7 @@ export class FollowCamera {
       const t = 1 - Math.exp(-CLIENT_TUNING.camera.followLerpPerSec * dtSec);
       this.focus.lerp(target, t);
     }
-    const swing = 1 - Math.exp(-CLIENT_TUNING.overview.transitionPerSec * dtSec);
+    const swing = 1 - Math.exp(-this.swingPerSec * dtSec);
     if (this.mode === "overview") {
       this.camera.position.lerp(this.overviewPos, swing);
       this.camera.quaternion.slerp(this.overviewQuat, swing);

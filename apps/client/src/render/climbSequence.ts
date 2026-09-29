@@ -7,8 +7,9 @@ import { CLIENT_TUNING } from "../tuning.js";
  * player to the platform instantly; the client delays the picture: the door on
  * the face the player came from slides open, the character walks in and
  * vanishes, a light runs up that face's rune strip, the crystal pulses, and
- * only then is the character drawn on the platform. Progress is derived from
- * the tick the player's phase changed, so every client shows the same moment.
+ * only then is the character drawn on the platform. Warm light pours out of
+ * the doorway while the door stands open. Progress is timed from the frame the
+ * client first sees the player on the tower.
  */
 
 export type Face = "north" | "south" | "east" | "west";
@@ -43,6 +44,44 @@ export function climbTotalSec(): number {
   return c.doorOpenSec + c.walkInSec + c.ascentSec;
 }
 
+/**
+ * The doorway glow and a beam of light fanning out of it onto the ground, both
+ * additive and fading toward the far end. Returns [glow, beam] materials.
+ */
+function addSpill(group: THREE.Group, px: number, pz: number, yaw: number, doorW: number, doorH: number): THREE.MeshBasicMaterial[] {
+  const c = CLIENT_TUNING.climb;
+  const additive = { color: c.spillColor, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false };
+  const glowMat = new THREE.MeshBasicMaterial(additive);
+  const beamMat = new THREE.MeshBasicMaterial({ ...additive, vertexColors: true, side: THREE.DoubleSide });
+  const holder = new THREE.Group();
+  holder.position.set(px, 0, pz);
+  holder.rotation.y = yaw;
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(doorW, doorH), glowMat);
+  glow.position.set(0, doorH / 2, 0);
+  holder.add(glow);
+
+  // A widening box open at both ends: floor, roof and sides, bright at the door, black (invisible) at the far end.
+  const n = { w: doorW * 0.95, h: doorH * 0.95, z: 0.04 };
+  const f = { w: doorW * 2.6, h: doorH * 1.25, z: c.spillReach };
+  const quad = (a: number[], b: number[], cc: number[], d: number[]) => [a, b, cc, a, cc, d];
+  const nl = [-n.w / 2, 0.02, n.z], nr = [n.w / 2, 0.02, n.z], ntl = [-n.w / 2, n.h, n.z], ntr = [n.w / 2, n.h, n.z];
+  const fl = [-f.w / 2, 0.02, f.z], fr = [f.w / 2, 0.02, f.z], ftl = [-f.w / 2, f.h, f.z], ftr = [f.w / 2, f.h, f.z];
+  const tris = [...quad(nl, nr, fr, fl), ...quad(ntl, ntr, ftr, ftl), ...quad(nl, ntl, ftl, fl), ...quad(nr, ntr, ftr, fr)];
+  const positions = tris.flat();
+  const colors = tris.flatMap((v) => {
+    const k = v[2] === n.z ? 1 : 0;
+    return [k, k, k];
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  const beam = new THREE.Mesh(geo, beamMat);
+  beam.renderOrder = 2;
+  holder.add(beam);
+  group.add(holder);
+  return [glowMat, beamMat];
+}
+
 function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
@@ -59,6 +98,10 @@ const STONE_DOORS: DoorColors = { leaf: 0x20242e, frame: 0x5c6472, handle: 0x8a8
 export class TowerAnimations {
   private readonly doors = new Map<Face, { left: THREE.Mesh; right: THREE.Mesh; travel: number }>();
   private readonly ascents = new Map<Face, THREE.Mesh>();
+  /** Light pouring out of each doorway: the glowing opening and a beam fanning out over the ground. */
+  private readonly spills = new Map<Face, { mats: THREE.MeshBasicMaterial[]; at: THREE.Vector3 }>();
+  /** One lamp shared by all doors, parked at the most open one. */
+  private readonly spillLight: THREE.PointLight;
   private readonly ascentMats: THREE.MeshBasicMaterial[] = [];
   private crystalPulse = 0;
 
@@ -118,6 +161,10 @@ export class TowerAnimations {
       holder.add(left, right);
       group.add(holder);
       this.doors.set(face, { left, right, travel: doorW / 2 });
+      this.spills.set(face, {
+        mats: addSpill(group, px, pz, yaw, doorW, doorH),
+        at: new THREE.Vector3(px + d.dx * 0.6, doorH * 0.6, pz + d.dy * 0.6),
+      });
 
       // Ascent light: an additive strip on the shaft face that grows from the bottom.
       const mat = new THREE.MeshBasicMaterial({
@@ -137,6 +184,10 @@ export class TowerAnimations {
       group.add(strip);
       this.ascents.set(face, strip);
     }
+    const c = CLIENT_TUNING.climb;
+    // Always in the scene (at zero) so the light count, and with it the shaders, never changes.
+    this.spillLight = new THREE.PointLight(c.spillColor, 0, 4.5, 1.2);
+    group.add(this.spillLight);
   }
 
   private freezeWasOn = false;
@@ -164,11 +215,24 @@ export class TowerAnimations {
       rise.set(a.face, Math.max(rise.get(a.face) ?? 0, ph.ascent));
       if (ph.done) this.crystalPulse = Math.max(this.crystalPulse, 1);
     }
+    const c = CLIENT_TUNING.climb;
+    let brightest = 0;
     for (const [face, door] of this.doors) {
       const o = open.get(face) ?? 0;
       door.left.position.x = -door.travel / 2 - o * door.travel;
       door.right.position.x = door.travel / 2 + o * door.travel;
+      // Only a climb lights the doorway; the opening ceremony just opens the doors.
+      const lit = active.some((a) => a.face === face) ? o : 0;
+      const spill = this.spills.get(face)!;
+      const flicker = 0.92 + 0.08 * Math.sin(timeSec * 9 + face.length);
+      spill.mats[0]!.opacity = lit;
+      spill.mats[1]!.opacity = lit * c.spillOpacity * flicker;
+      if (lit > brightest) {
+        brightest = lit;
+        this.spillLight.position.copy(spill.at);
+      }
     }
+    this.spillLight.intensity = brightest * c.spillLightIntensity;
     for (const [face, strip] of this.ascents) {
       const r = rise.get(face) ?? 0;
       strip.scale.y = Math.max(0.001, r * this.shaftHeight);

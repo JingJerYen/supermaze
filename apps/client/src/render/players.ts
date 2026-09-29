@@ -36,6 +36,12 @@ export class PlayerViews {
     return out;
   }
 
+  /** Seconds into this player's climb animation, or null when none is playing. */
+  climbTime(id: string): number | null {
+    const c = this.climbs.get(id);
+    return c ? this.clockSec - c.startSec : null;
+  }
+
   constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {}
 
   /** Draw every player in `to`, blending from its state in `from` when present. */
@@ -75,6 +81,7 @@ export class PlayerViews {
           view.setGhostPose(climb.from.x + (dir.x / len) * step, climb.from.y + (dir.z / len) * step, ph.walkIn < 1, dtSec);
           view.setFacing({ dx: Math.sign(Math.round(dir.x)), dy: Math.sign(Math.round(dir.z)) });
           view.setVisible(ph.walkIn < 1);
+          view.setSelfMarker(false);
           continue;
         }
       }
