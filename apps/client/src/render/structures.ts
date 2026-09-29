@@ -1,32 +1,31 @@
 import * as THREE from "three";
 import type { Dir } from "@supermaze/sim";
+import type { StructurePalette } from "./themes.js";
 
 /**
  * Stairs and bridges as small built structures instead of a bare wedge and slab.
  * Each factory returns a group whose origin is the tile centre on the ground.
  */
 
-const STEP = 0xb98a55;
-const STEP_ALT = 0xa5784a;
-const PLANK = 0xb08a5a;
-const PLANK_ALT = 0xa07c4f;
-const RAIL = 0x6d5436;
-
-// One material per colour, shared by every stairs and bridge, so the map builder
-// can merge all of them into a handful of meshes.
-const MATS = {
-  step: new THREE.MeshLambertMaterial({ color: STEP }),
-  stepAlt: new THREE.MeshLambertMaterial({ color: STEP_ALT }),
-  plank: new THREE.MeshLambertMaterial({ color: PLANK }),
-  plankAlt: new THREE.MeshLambertMaterial({ color: PLANK_ALT }),
-  rail: new THREE.MeshLambertMaterial({ color: RAIL }),
-};
+// One material per colour and palette, shared by every stairs and bridge, so the
+// map builder can merge all of them into a handful of meshes.
+type Mats = Record<keyof StructurePalette, THREE.MeshLambertMaterial>;
+const cache = new Map<string, Mats>();
+function mats(p: StructurePalette): Mats {
+  const key = `${p.step}:${p.stepAlt}:${p.plank}:${p.plankAlt}:${p.rail}`;
+  let m = cache.get(key);
+  if (!m) {
+    const make = (color: number) => new THREE.MeshLambertMaterial({ color });
+    m = { step: make(p.step), stepAlt: make(p.stepAlt), plank: make(p.plank), plankAlt: make(p.plankAlt), rail: make(p.rail) };
+    cache.set(key, m);
+  }
+  return m;
+}
 
 /** `rise` points from the stairs tile toward the wall it climbs onto. Open on both sides. */
-export function createStairs(rise: Dir, steps = 5): THREE.Object3D {
+export function createStairs(rise: Dir, palette: StructurePalette, steps = 5): THREE.Object3D {
   const g = new THREE.Group();
-  const stepMat = MATS.step;
-  const stepAltMat = MATS.stepAlt;
+  const { step: stepMat, stepAlt: stepAltMat } = mats(palette);
   const width = 0.9;
   const depth = 1 / steps;
   // Local frame: +Z is the rise direction (toward the wall); the tile spans z in [-0.5, 0.5].
@@ -44,11 +43,9 @@ export function createStairs(rise: Dir, steps = 5): THREE.Object3D {
  * Plank deck at wall-top height with railings on the two open sides.
  * `along` is the direction the deck runs (from one wall to the other).
  */
-export function createBridge(along: Dir, deckTopY = 1.0): THREE.Object3D {
+export function createBridge(along: Dir, palette: StructurePalette, deckTopY = 1.0): THREE.Object3D {
   const g = new THREE.Group();
-  const plankMat = MATS.plank;
-  const plankAltMat = MATS.plankAlt;
-  const railMat = MATS.rail;
+  const { plank: plankMat, plankAlt: plankAltMat, rail: railMat } = mats(palette);
   const thickness = 0.12;
   const width = 0.9;
   // Local frame: deck runs along +Z.

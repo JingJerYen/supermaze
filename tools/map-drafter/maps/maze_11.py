@@ -27,4 +27,4 @@ finish("maze-11", rows,
        candidates=dict(n_keys=8, n_road_keys=6, n_boxes=10, n_box_top=1, n_switch=4, key_gap=4, wall_cap=1,
                        road_cap=3, box_gap=4, switch_gap=8,
                        keys_on_dead_ends=False, key_filter=lambda x, y, layer: abs(x - cx) + abs(y - cy) >= 8),
-       meta=dict(difficulty="easy", boxes=6, switches=2))
+       meta=dict(difficulty="easy", boxes=6, switches=2, theme="garden"))

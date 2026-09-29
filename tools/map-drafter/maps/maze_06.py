@@ -18,4 +18,4 @@ for x, y in [(21, 12), (21, 18), (18, 15), (24, 15)]:
 
 finish("maze-06", c.rows(),
        stairs=[(3, 5), (41, 19), (15, 29), (37, 15), (21, 9), (25, 23)],
-       doors=8, traps=4, obstacles=4, fseed=1, time=300)
+       doors=8, traps=4, obstacles=4, fseed=1, time=300, meta=dict(theme="garden"))

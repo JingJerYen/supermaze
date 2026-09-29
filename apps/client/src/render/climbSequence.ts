@@ -47,6 +47,14 @@ function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
+export interface DoorColors {
+  leaf: number;
+  frame: number;
+  handle: number;
+}
+
+const STONE_DOORS: DoorColors = { leaf: 0x20242e, frame: 0x5c6472, handle: 0x8a8f9c };
+
 /** The tower's animated parts: one door and one ascent light per face, plus the crystal. */
 export class TowerAnimations {
   private readonly doors = new Map<Face, { left: THREE.Mesh; right: THREE.Mesh; travel: number }>();
@@ -65,9 +73,11 @@ export class TowerAnimations {
     private readonly tierHeight: number,
     private readonly crystal: THREE.Mesh | null,
     runeColor: number,
+    /** Door leaves, frame and handles; the default is the stone tower's iron and granite. */
+    doorColors: DoorColors = STONE_DOORS,
   ) {
-    const doorMat = new THREE.MeshLambertMaterial({ color: 0x20242e });
-    const frameMat = new THREE.MeshLambertMaterial({ color: 0x5c6472 });
+    const doorMat = new THREE.MeshLambertMaterial({ color: doorColors.leaf });
+    const frameMat = new THREE.MeshLambertMaterial({ color: doorColors.frame });
     const doorH = tierHeight * 0.95;
     const doorW = 0.7;
     for (const [face, d] of Object.entries(FACES) as [Face, Dir][]) {
@@ -99,7 +109,7 @@ export class TowerAnimations {
       left.position.x = -doorW / 4;
       right.position.x = doorW / 4;
       // A thin handle strip on each leaf so the split reads even when closed.
-      const handleMat = new THREE.MeshLambertMaterial({ color: 0x8a8f9c });
+      const handleMat = new THREE.MeshLambertMaterial({ color: doorColors.handle });
       for (const [leaf, side] of [[left, 1], [right, -1]] as const) {
         const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.18, 0.02), handleMat);
         handle.position.set(side * (doorW / 4 - 0.06), 0, 0.04);

@@ -1,6 +1,6 @@
 import type { MapGrid, SimulationState } from "@supermaze/sim";
 import { minimapDots } from "./minimapModel.js";
-import { towerGeometry } from "../render/mapMesh.js";
+import { towerGeometry } from "../render/tower.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
 const CSS = `

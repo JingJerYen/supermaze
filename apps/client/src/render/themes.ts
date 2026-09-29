@@ -25,22 +25,41 @@ export interface Theme {
   line: number;
   linesGlowInDark: boolean;
   wallPattern: PatternKind;
+  /** Pattern on wall tops (the walkable upper layer). */
+  topPattern: PatternKind;
   floorPattern: PatternKind;
-  /** Accent colour used by the pattern's "growth" (moss); 0 disables it. */
+  /** Accent colour used by the pattern's "growth" (moss on stone, flowers on hedges); 0 disables it. */
   growth: number;
   /** Share of inner walls that get the growth variant of the side texture (0..1). */
   growthShare: number;
 
-  /** Wall torches per eligible inner wall face, roughly 1 in N; 0 disables torches. */
+  /** Wall lights per eligible inner wall face, roughly 1 in N; 0 disables them. */
   torchEvery: number;
   torchFlame: number;
-  /** Tower styling. */
+  /** A torch on the wall face, or a stone lantern standing at the foot of the wall. */
+  lightStyle: "torch" | "lantern";
+  /** Stairs and bridges. */
+  structure: StructurePalette;
+  /** The central tower: stacked stone, or a giant tree with a deck in its crown. */
+  towerStyle: "stone" | "tree";
   towerStone: number;
   towerRune: number;
   towerCrystal: number;
+  /** Tree tower only: bark, leaves, and the deck the climbers stand on. */
+  towerBark: number;
+  towerLeaf: number;
+  towerDeck: number;
 }
 
-export type PatternKind = "none" | "blocks" | "slab";
+export interface StructurePalette {
+  step: number;
+  stepAlt: number;
+  plank: number;
+  plankAlt: number;
+  rail: number;
+}
+
+export type PatternKind = "none" | "blocks" | "slab" | "hedge" | "hedgeTop" | "flagstone" | "bark";
 
 export const THEMES: Record<string, Theme> = {
   stone: {
@@ -59,14 +78,54 @@ export const THEMES: Record<string, Theme> = {
     line: 0x0e1626,
     linesGlowInDark: false,
     wallPattern: "blocks",
+    topPattern: "slab",
     floorPattern: "slab",
     growth: 0x74c447,
     growthShare: 0.5,
     torchEvery: 9,
     torchFlame: 0xffa63a,
+    lightStyle: "torch",
+    structure: { step: 0xb98a55, stepAlt: 0xa5784a, plank: 0xb08a5a, plankAlt: 0xa07c4f, rail: 0x6d5436 },
+    towerStyle: "stone",
     towerStone: 0x9aa4b3,
     towerRune: 0x5be6ff,
     towerCrystal: 0x8ff3ff,
+    towerBark: 0x6b4a2f,
+    towerLeaf: 0x4f9a3c,
+    towerDeck: 0xb08a5a,
+  },
+  /** Clipped hedges, flagstone paths and stone lanterns in golden evening light; a great tree instead of the tower. */
+  garden: {
+    id: "garden",
+    sky: 0x1d3441,
+    hemiSky: 0xfff0d4,
+    hemiGround: 0x4e6634,
+    hemiIntensity: 1.0,
+    sunColor: 0xffdcaa,
+    sunIntensity: 1.3,
+    wallSide: 0x4a8a34,
+    wallTop: 0x6fae45,
+    outerWall: 0x3f7a2e,
+    floor: 0xcbb68e,
+    plaza: 0xdccca8,
+    line: 0x6a5a3c,
+    linesGlowInDark: false,
+    wallPattern: "hedge",
+    topPattern: "hedgeTop",
+    floorPattern: "flagstone",
+    growth: 0xf2709f,
+    growthShare: 0.45,
+    torchEvery: 7,
+    torchFlame: 0xffd57a,
+    lightStyle: "lantern",
+    structure: { step: 0xdcd0b4, stepAlt: 0xcabd9e, plank: 0xd6c8a8, plankAlt: 0xc5b694, rail: 0xb3a282 },
+    towerStyle: "tree",
+    towerStone: 0xd8ccae,
+    towerRune: 0x5be6ff,
+    towerCrystal: 0x8ff3ff,
+    towerBark: 0x6e4b30,
+    towerLeaf: 0x4f9a3c,
+    towerDeck: 0xc9a46c,
   },
 };
 
@@ -76,190 +135,4 @@ export function themeFor(id: string | undefined): Theme {
   return THEMES[id ?? DEFAULT_THEME_ID] ?? (THEMES[DEFAULT_THEME_ID] as Theme);
 }
 
-const textureCache = new Map<string, THREE.CanvasTexture | null>();
-
-/**
- * Tileable 256 px pattern in shades of `base`; null for "none" so the plain
- * colour is used. `growth` > 0 adds moss to the pattern.
- */
-export function patternTexture(kind: PatternKind, base: number, growth = 0): THREE.CanvasTexture | null {
-  if (kind === "none") return null;
-  const key = `${kind}:${base}:${growth}`;
-  const cached = textureCache.get(key);
-  if (cached !== undefined) return cached;
-
-  const size = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-  const c = new THREE.Color(base);
-  const shade = (k: number) => `#${c.clone().multiplyScalar(k).getHexString()}`;
-  const rnd = seeded(kind.length * 977 + base);
-  ctx.fillStyle = shade(1);
-  ctx.fillRect(0, 0, size, size);
-
-  switch (kind) {
-    case "blocks": {
-      // Two courses of big stone blocks per face, thick dark mortar, each block its own shade.
-      const rows = 2;
-      const cols = 2;
-      const h = size / rows;
-      const w = size / cols;
-      const mortar = 10;
-      ctx.fillStyle = shade(0.45);
-      ctx.fillRect(0, 0, size, size);
-      for (let r = 0; r < rows; r++) {
-        const off = r % 2 ? w / 2 : 0;
-        for (let k = -1; k <= cols; k++) {
-          const x = off + k * w;
-          const tone = 0.9 + rnd() * 0.18;
-          roundedBlock(ctx, x + mortar / 2, r * h + mortar / 2, w - mortar, h - mortar, 8, shade(tone), shade(tone * 1.1), shade(tone * 0.85));
-        }
-      }
-      speckle(ctx, size, shade(1.12), 70, 2.5, rnd);
-      if (growth) mossPatches(ctx, size, growth, rnd, 6);
-      break;
-    }
-    case "slab": {
-      // One big flagstone per tile with a lighter chipped border and a few cracks.
-      ctx.fillStyle = shade(0.8);
-      ctx.fillRect(0, 0, size, size);
-      roundedBlock(ctx, 6, 6, size - 12, size - 12, 6, shade(1), shade(1.08), shade(0.9));
-      speckle(ctx, size, shade(1.15), 50, 2, rnd);
-      ctx.strokeStyle = shade(0.7);
-      ctx.lineWidth = 2;
-      crack(ctx, rnd, size);
-      if (growth) mossPatches(ctx, size, growth, rnd, 2);
-      break;
-    }
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = 4;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  textureCache.set(key, tex);
-  return tex;
-}
-
-/** Deterministic PRNG so every client draws the same pattern. */
-function seeded(seed: number): () => number {
-  let s = (seed >>> 0) || 1;
-  return () => {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    return s / 0x7fffffff;
-  };
-}
-
-function roundedBlock(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-  fill: string,
-  hi: string,
-  lo: string,
-): void {
-  ctx.fillStyle = fill;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.fill();
-  // Bevel: light top-left, dark bottom-right.
-  ctx.strokeStyle = hi;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y + 1.5);
-  ctx.lineTo(x + w - r, y + 1.5);
-  ctx.moveTo(x + 1.5, y + r);
-  ctx.lineTo(x + 1.5, y + h - r);
-  ctx.stroke();
-  ctx.strokeStyle = lo;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y + h - 1.5);
-  ctx.lineTo(x + w - r, y + h - 1.5);
-  ctx.moveTo(x + w - 1.5, y + r);
-  ctx.lineTo(x + w - 1.5, y + h - r);
-  ctx.stroke();
-}
-
-function crack(ctx: CanvasRenderingContext2D, rnd: () => number, size: number): void {
-  ctx.beginPath();
-  let x = rnd() * size;
-  let y = rnd() * size;
-  ctx.moveTo(x, y);
-  for (let i = 0; i < 4; i++) {
-    x += (rnd() - 0.5) * size * 0.4;
-    y += (rnd() - 0.5) * size * 0.4;
-    ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-}
-
-function speckle(ctx: CanvasRenderingContext2D, size: number, color: string, count: number, maxR: number, rnd: () => number): void {
-  ctx.fillStyle = color;
-  for (let i = 0; i < count; i++) {
-    const r = 1 + rnd() * (maxR - 1);
-    ctx.beginPath();
-    ctx.arc(rnd() * size, rnd() * size, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-/** Moss: green blotches, mostly along the bottom and in mortar corners; a darker underlay makes them read from a distance. */
-function mossPatches(ctx: CanvasRenderingContext2D, size: number, color: number, rnd: () => number, count: number): void {
-  const c = new THREE.Color(color);
-  for (let i = 0; i < count; i++) {
-    const cx = rnd() * size;
-    const cy = size * (0.5 + rnd() * 0.5);
-    ctx.fillStyle = `#${c.clone().multiplyScalar(0.55).getHexString()}`;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 20 + rnd() * 12, 12 + rnd() * 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    for (let k = 0; k < 18; k++) {
-      ctx.fillStyle = `#${c.clone().multiplyScalar(0.8 + rnd() * 0.45).getHexString()}`;
-      ctx.beginPath();
-      ctx.arc(cx + (rnd() - 0.5) * 48, cy + (rnd() - 0.5) * 28, 4 + rnd() * 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-/** Glowing rune strip for the tower shaft: a few glyph-like strokes on a transparent background. */
-export function runeTexture(color: number): THREE.CanvasTexture {
-  const key = `rune:${color}`;
-  const cached = textureCache.get(key);
-  if (cached) return cached;
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size * 4;
-  const ctx = canvas.getContext("2d")!;
-  ctx.clearRect(0, 0, size, size * 4);
-  ctx.strokeStyle = `#${new THREE.Color(color).getHexString()}`;
-  ctx.lineWidth = 6;
-  ctx.lineCap = "round";
-  const rnd = seeded(color);
-  for (let g = 0; g < 2; g++) {
-    const cy = 128 + g * 220;
-    ctx.beginPath();
-    ctx.moveTo(64, cy - 22);
-    ctx.lineTo(44, cy);
-    ctx.lineTo(64, cy + 22);
-    ctx.lineTo(84, cy);
-    ctx.closePath();
-    ctx.stroke();
-    if (rnd() > 0.5) {
-      ctx.beginPath();
-      ctx.moveTo(64, cy - 22);
-      ctx.lineTo(64, cy + 22);
-      ctx.stroke();
-    }
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  textureCache.set(key, tex);
-  return tex;
-}
+export { patternTexture, runeTexture } from "./patterns.js";

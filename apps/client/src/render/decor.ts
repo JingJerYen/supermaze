@@ -26,11 +26,17 @@ const bracketProto = new THREE.BoxGeometry(0.08, 0.3, 0.08);
 const cupProto = new THREE.CylinderGeometry(0.07, 0.05, 0.1, 8);
 const flameProto = new THREE.ConeGeometry(0.075, 0.24, 6);
 const glowProto = new THREE.PlaneGeometry(1.7, 1.7).rotateX(-Math.PI / 2);
+const lanternBaseProto = new THREE.BoxGeometry(0.22, 0.06, 0.22);
+const lanternPostProto = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+const lanternLampProto = new THREE.BoxGeometry(0.15, 0.17, 0.15);
+const lanternRoofProto = new THREE.ConeGeometry(0.17, 0.12, 4).rotateY(Math.PI / 4);
+const lanternCapProto = new THREE.SphereGeometry(0.035, 6, 4);
 
 /**
- * Wall torches: on inner walls, on faces that look onto a road tile, roughly one
+ * Wall lights: on inner walls, on faces that look onto a road tile, roughly one
  * per `theme.torchEvery` eligible faces. Never on a tile that can host a light
- * switch, so the two never overlap.
+ * switch, so the two never overlap. A torch hangs on the face; a lantern stands
+ * on the road at its foot.
  */
 export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: ReadonlySet<string>): TorchParts {
   const parts: TorchParts = { brackets: [], flames: [], glows: [] };
@@ -60,8 +66,19 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
           g.translate(px + f.dx * out, dy, pz + f.dy * out);
           return g;
         };
-        parts.brackets.push(place(bracketProto, 0.62, 0.04), place(cupProto, 0.8, 0.06));
-        parts.flames.push(place(flameProto, 0.96, 0.06));
+        if (theme.lightStyle === "lantern") {
+          // Stone lantern standing on the road at the foot of the wall: plinth, post, glowing lamp, roof.
+          parts.brackets.push(
+            place(lanternBaseProto, 0.03, 0.14),
+            place(lanternPostProto, 0.25, 0.14),
+            place(lanternRoofProto, 0.64, 0.14),
+            place(lanternCapProto, 0.73, 0.14),
+          );
+          parts.flames.push(place(lanternLampProto, 0.5, 0.14));
+        } else {
+          parts.brackets.push(place(bracketProto, 0.62, 0.04), place(cupProto, 0.8, 0.06));
+          parts.flames.push(place(flameProto, 0.96, 0.06));
+        }
         // Soft pool of light on the road tile, pulled a little toward the wall the torch hangs on.
         const glow = glowProto.clone().translate(rx - f.dx * 0.18, 0.012, ry - f.dy * 0.18);
         parts.glows.push(glow);
@@ -74,7 +91,7 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
 /** Materials for torch parts; flames and glows are unlit so they read in the dark too. */
 export function torchMaterials(theme: Theme): { bracket: THREE.Material; flame: THREE.Material; glow: THREE.Material } {
   return {
-    bracket: new THREE.MeshLambertMaterial({ color: 0x2b2b2b }),
+    bracket: new THREE.MeshLambertMaterial({ color: theme.lightStyle === "lantern" ? theme.structure.stepAlt : 0x2b2b2b }),
     flame: new THREE.MeshBasicMaterial({ color: theme.torchFlame }),
     glow: new THREE.MeshBasicMaterial({
       color: theme.torchFlame,
