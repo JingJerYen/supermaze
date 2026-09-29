@@ -472,6 +472,7 @@
 - `apps/server`：房間、連線、權威模擬迴圈。
 - `tools/map-validator`：對 `content/maps/` 內的地圖資料執行第 6 節要求的預先驗證。
 - `tools/net-spike`：以腳本化客戶端對伺服器做負載與斷線重連的自動化檢查，作為連線層的回歸測試。
+- `tools/map-drafter`（2026-09-29）：Python 3 地圖草稿工具，不是 npm 套件。`maps/maze_0N.py` 可重現地產生 maze-04～07；`check.py <id>` 對任何地圖多做固定物公平性檢查（沒有單向門陷阱、所有候選不需鐵鎚可達）、列出鑰匙步數並輸出預覽圖（需 `rsvg-convert`）。產生的地圖仍以 `npm run validate-maps` 為準。說明在該目錄的 README。
 - `content/maps/`：人工製作的固定地圖資料。
 - 第 12 節的所有平衡參數集中在 `packages/sim/src/tuning/`，並附帶單位、預設值與合理範圍。
 - 一個檔案一個系統，單檔超過約 200 行就應拆分。

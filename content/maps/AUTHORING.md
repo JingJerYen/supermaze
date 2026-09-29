@@ -117,6 +117,10 @@ http://localhost:5173/?local&map=maze-01&players=6&seed=1&rot=0
 - `seed`：固定抽選結果；換數字看不同抽法。
 - `rot`：0～3，順時針轉 90 度的次數。正式對局會隨機抽方向，四個方向都要順眼。
 
+不開瀏覽器也可以看俯視圖：`python3 tools/map-drafter/check.py maze-01` 會輸出
+`tools/map-drafter/out/maze-01.png`，並檢查固定物是否公平（單向門不會把人困住、鑰匙不需要鐵鎚就拿得到），
+以及每把鑰匙離塔要走幾步。maze-04～07 是用同一個工具的腳本產生的，詳見 `tools/map-drafter/README.md`。
+
 ## 8. 驗證訊息對照
 
 | 訊息 | 意思 |
