@@ -81,7 +81,7 @@ export class Bot {
       if (this.lastSnapshotAt) this.snapshotGapsMs.push(now - this.lastSnapshotAt);
       this.lastSnapshotAt = now;
       if (this.state) this.state = applySnapshot(this.state, m);
-      // Approximation: Colyseus encodes with msgpackr, so the wire size is roughly a third of JSON.
+      // JSON length as a stand-in for the wire size; msgpack comes out at roughly three quarters of it.
       this.snapshotBytes.push(JSON.stringify(m).length);
     });
     room.onMessage<PingMessage>(S2C.pong, (m) => this.rttMs.push(performance.now() - m.t));

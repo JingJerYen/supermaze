@@ -3,6 +3,7 @@ import {
   C2S,
   PROTOCOL_VERSION,
   S2C,
+  SnapshotDelta,
   type DebugMessage,
   type FullStateMessage,
   type InputMessage,
@@ -13,8 +14,6 @@ import {
   type PingMessage,
   type RoomMode,
   type SetTeamModeMessage,
-  type SnapshotMessage,
-  type StateSection,
   type WelcomeMessage,
 } from "@supermaze/protocol";
 import {
@@ -65,7 +64,8 @@ export class MazeRoom extends Room {
   /** Drives cpu-controlled players (dropped humans) with the sim's own CPU. */
   private cpu: CpuController | null = null;
   private readonly latestInputs = new Map<string, PlayerInput>();
-  private readonly lastSent = new Map<StateSection, string>();
+  /** What this match last broadcast; a fresh one per match. */
+  private delta = new SnapshotDelta();
   private countdownTimer: { clear(): void } | null = null;
   private resultsTimer: { clear(): void } | null = null;
   private quickWaitTimer: { clear(): void } | null = null;
@@ -286,7 +286,7 @@ export class MazeRoom extends Room {
     this.sim = new Simulation({ seed, map: this.map, teamMode: this.rules.teamMode, participants });
     this.sim.start();
     this.cpu = new CpuController(this.sim, seed + 1);
-    this.lastSent.clear();
+    this.delta = new SnapshotDelta();
     this.latestInputs.clear();
     this.broadcastLobby();
     this.broadcast(S2C.matchStarted, this.matchStartedMessage());
@@ -316,7 +316,7 @@ export class MazeRoom extends Room {
       delete input.action;
       delete input.discard;
     }
-    this.broadcast(S2C.snapshot, this.deltaSnapshot(sim.getState()));
+    this.broadcast(S2C.snapshot, this.delta.next(sim.getState(), Date.now()));
     if (sim.getState().status === "finished") this.endMatch();
   }
 
@@ -345,42 +345,7 @@ export class MazeRoom extends Room {
     this.armQuickWait();
     this.afterLobbyChange();
   }
-
-  /**
-   * Players every tick; any other section only when its serialised form changed
-   * since the last broadcast. Stringifying ~3 KB per tick costs microseconds.
-   */
-  private deltaSnapshot(state: SimulationState): SnapshotMessage {
-    const msg: SnapshotMessage = { serverTime: Date.now(), tick: state.tick, players: state.players };
-    for (const section of SECTIONS) {
-      const now = JSON.stringify(state[section]);
-      if (this.lastSent.get(section) !== now) {
-        this.lastSent.set(section, now);
-        (msg as unknown as Record<string, unknown>)[section] = state[section];
-      }
-    }
-    return msg;
-  }
 }
-
-const SECTIONS: readonly StateSection[] = [
-  "status",
-  "teamMode",
-  "startTick",
-  "endsAtTick",
-  "freezeUntilTick",
-  "keys",
-  "towerArrivals",
-  "lightsOn",
-  "switches",
-  "boxes",
-  "placeables",
-  "nodes",
-  "ghost",
-  "teamClimbTicks",
-  "winnerTeamId",
-  "result",
-];
 
 /** Display names are cosmetic but still untrusted: trim, cap the length, never empty. */
 function sanitizeName(raw: unknown): string {
