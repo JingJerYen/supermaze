@@ -454,6 +454,7 @@
 - 開發用的文字狀態列預設隱藏，按 F3 切換。F4 強制立刻進入鬼抓人預告（3 秒後開始），單機直接生效，線上由伺服器執行且可用 `SUPERMAZE_DEBUG=0` 關閉；此為暫時的除錯工具，上線前移除。
 - 手機瀏覽器的網址列（2026-09-27）：第一次觸控時請求全螢幕並嘗試鎖定橫向（`apps/client/src/fullscreen.ts`，桌機滑鼠不觸發，失敗靜默）；另提供 `manifest.webmanifest`（`display: fullscreen`、橫向、圖示在 `public/icons/`；2026-09-29 起所有圖示由一張方形原圖 `apps/client/assets-src/app-icon.webp` 以 `scripts/make_icons.sh` 產生：favicon 32／48、apple-touch-icon 180、192、512，另有給 Android 遮罩用的 maskable 版，原圖縮到 78% 疊在自身模糊放大的底圖上；換圖只要覆蓋原圖再執行腳本），從瀏覽器選單「加到主畫面」安裝後以獨立視窗開啟，沒有網址列。之後包成 App 則完全沒有這個問題。
 - 避免使用 WebView 不支援的瀏覽器 API（例如 SharedArrayBuffer、WebGPU 專屬功能），以保留日後以 Capacitor 包裝為 iOS／Android App 的可能性。App 上架本身不在現階段範圍。
+- 行動 App（2026-09-29 決定方向）：以 Capacitor 包裝現有客戶端，不改用 Unity／Godot；第一版上架預計只放離線的爬塔挑戰。第一階段（在 WSL2 電腦產出可安裝試玩的 Android debug APK）的完整交接在 `docs/android-apk-handoff.md`，接手前先讀，完成後把結果寫回本文件並依該文件第 8 節更新。
 
 ### 17.2 權威模擬層
 
