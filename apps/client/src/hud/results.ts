@@ -19,6 +19,7 @@ const CSS = `
 .rs-mult{color:#ffd23f;font-size:12px;margin-left:4px}
 .rs-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
 .rs-count{font-size:14px;color:#c9d2e3}
+.rs-title+.rs-note{margin-top:14px}
 .rs-note{border-radius:10px;padding:10px 14px;margin:0 0 14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06)}
 .rs-note.pass{border-color:#8bff7a;background:rgba(40,110,50,.35)}
 .rs-note.fail{border-color:#ff8a8a;background:rgba(120,30,30,.35)}
@@ -26,6 +27,22 @@ const CSS = `
 .rs-note-line{font-size:14px;color:#e6ebf5;margin-top:4px}
 .rs button{height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;padding:0 16px;font-size:15px;cursor:pointer}
 .rs button.primary{background:#ffd23f;color:#412402;border-color:#ffd23f;font-weight:500}
+@media (max-height:520px){
+  .rs-card{max-height:96vh;padding:10px 16px}
+  .rs-title{font-size:22px;gap:8px}
+  .rs-dot{width:12px;height:12px}
+  .rs-reason{font-size:12px;margin:2px 0 8px}
+  .rs-title+.rs-note{margin-top:8px}
+  .rs-note{padding:5px 12px;margin-bottom:6px}
+  .rs-note-title{font-size:16px}
+  .rs-note-line{font-size:12px;margin-top:1px}
+  .rs table{font-size:13px}
+  .rs th{font-size:11px;padding:2px 8px}
+  .rs td{padding:3px 8px}
+  .rs-foot{margin-top:8px}
+  .rs-count{font-size:12px}
+  .rs button{height:32px;font-size:13px;padding:0 14px}
+}
 `;
 
 const REASON_TEXT: Record<string, string> = {
@@ -43,12 +60,16 @@ const REASON_TEXT: Record<string, string> = {
 export interface ResultsActions {
   /** Server clock (ms since epoch) when the room returns to the lobby, or null for the sandbox. */
   endsAt: number | null;
-  /** Extra verdict above the table (tower run: passed or not, run total). */
+  /** Extra verdict above the table (tower run: passed or not, run total); it replaces the line saying why the round ended. */
   note?: { title: string; lines: string[]; tone: "pass" | "fail" | "info" };
   buttons: { label: string; primary?: boolean; run: () => void }[];
 }
 
-/** End-of-round scoreboard: winner, reason, ranked players with multiplier, and what happens next. */
+/**
+ * End-of-round scoreboard: winner, reason, ranked players and what happens
+ * next. Teams mode shows each score before and after the winners' x2; solo
+ * has no x2, so it shows one score column.
+ */
 export class ResultsPanel {
   private readonly root: HTMLDivElement;
   private readonly card: HTMLDivElement;
@@ -109,7 +130,7 @@ export class ResultsPanel {
           <td class="rs-rank">${i + 1}</td>
           <td><span class="rs-team" style="background:${teamColor(p.teamId)}"></span>${escapeHtml(p.name ?? p.id.slice(0, 6))}${p.id === meId ? "（你）" : ""}</td>
           <td>${placement}</td>
-          <td class="num">${p.score}${boosted ? `<span class="rs-mult">×2</span>` : ""}</td>
+          ${solo ? "" : `<td class="num">${p.score}${boosted ? `<span class="rs-mult">×2</span>` : ""}</td>`}
           <td class="num"><strong>${final}</strong></td>
         </tr>`;
       })
@@ -117,7 +138,7 @@ export class ResultsPanel {
 
     this.card.innerHTML = `
       <div class="rs-title">${winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${teamName(winner)} 獲勝` : solo ? "平手" : "沒有獲勝隊伍"}</div>
-      <div class="rs-reason">${REASON_TEXT[r.reason] ?? r.reason}</div>
+      ${actions.note ? "" : `<div class="rs-reason">${REASON_TEXT[r.reason] ?? r.reason}</div>`}
       ${
         actions.note
           ? `<div class="rs-note ${actions.note.tone}"><div class="rs-note-title">${escapeHtml(actions.note.title)}</div>${actions.note.lines
@@ -126,7 +147,7 @@ export class ResultsPanel {
           : ""
       }
       <table>
-        <thead><tr><th></th><th>玩家</th><th>登塔</th><th class="num">分數</th><th class="num">最終</th></tr></thead>
+        <thead><tr><th></th><th>玩家</th><th>登塔</th><th class="num">分數</th>${solo ? "" : `<th class="num">最終</th>`}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="rs-foot"><span class="rs-count" id="rs-count"></span><span id="rs-buttons"></span></div>`;
