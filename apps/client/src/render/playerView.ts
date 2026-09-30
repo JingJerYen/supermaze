@@ -52,6 +52,9 @@ export class PlayerView {
   private caged = false;
   /** Caught by a ghost: lying on the ground until the freeze ends. */
   private downed = false;
+  /** Piercing: the body is drawn see-through; its materials are copied the first time so other players sharing the model stay solid. */
+  private seeThrough = false;
+  private ownMaterials = false;
 
   constructor(playerId: string, color: number, character?: string | null) {
     this.color = color;
@@ -132,6 +135,24 @@ export class PlayerView {
     if (!this.ghost) return;
     this.ghost.visible = on;
     this.body.visible = !on;
+  }
+
+  /** See-through while the pierce skill lasts. */
+  setSeeThrough(on: boolean): void {
+    if (on === this.seeThrough) return;
+    this.seeThrough = on;
+    const opacity = CLIENT_TUNING.pierce.opacity;
+    this.body.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      if (!this.ownMaterials) o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
+      for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+        m.transparent = on;
+        m.opacity = on ? opacity : 1;
+        m.depthWrite = !on;
+        m.needsUpdate = true;
+      }
+    });
+    this.ownMaterials = true;
   }
 
   /**

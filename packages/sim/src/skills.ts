@@ -1,7 +1,11 @@
 import type { SimEvent } from "./events.js";
+import { isGhost, type GhostState } from "./ghost.js";
 import type { MapGrid } from "./map/grid.js";
 import type { TilePos } from "./map/types.js";
-import { placeableMoveFilter, type PlaceableState } from "./placeables.js";
+import { createMover } from "./movement.js";
+import { placeableMoveFilter, type PlaceableState, type TeleportNodeState } from "./placeables.js";
+import type { SeededRandom } from "./random/seeded.js";
+import { supplyItems, warpTargets } from "./skillEffects.js";
 import type { PlayerState } from "./simulation.js";
 import type { Tuning } from "./tuning/index.js";
 import type { PlayerId, Tick } from "./types.js";
@@ -19,12 +23,25 @@ import type { PlayerId, Tick } from "./types.js";
  * - timeStop: everyone else in the maze is frozen for a while.
  * - jump: up onto the wall in front, or down from a wall top onto the road in
  *   front, without stairs; only usable where there is such a tile.
+ * - pierce: for a while, walk through obstacles and one-way doors either way,
+ *   and over traps without springing them.
+ * - warp: straight to a tile drawn at random (`warpTargets`).
+ * - supply: the bag filled with items drawn at random (`supplyItems`); not with a full or locked bag.
  */
-export type SkillKind = "sprint" | "eagleEye" | "amulet" | "lantern" | "timeStop" | "jump";
+export type SkillKind = "sprint" | "eagleEye" | "amulet" | "lantern" | "timeStop" | "jump" | "pierce" | "warp" | "supply";
 
-export const SKILL_KINDS: readonly SkillKind[] = ["sprint", "eagleEye", "amulet", "lantern", "timeStop", "jump"];
+export const SKILL_KINDS: readonly SkillKind[] = ["sprint", "eagleEye", "amulet", "lantern", "timeStop", "jump", "pierce", "warp", "supply"];
 
-/** A timed skill in effect (sprint, eagle eye, lantern). */
+/** What casting a skill touches besides the caster: the world it lands in and the draws it makes. */
+export interface SkillWorld {
+  grid: MapGrid;
+  placeables: Record<string, PlaceableState>;
+  nodes: Record<string, TeleportNodeState>;
+  players: Record<PlayerId, PlayerState>;
+  rng: SeededRandom;
+}
+
+/** A timed skill in effect (sprint, eagle eye, lantern, pierce). */
 export interface SkillEffect {
   kind: SkillKind;
   untilTick: Tick;
@@ -32,15 +49,26 @@ export interface SkillEffect {
 
 /** Whether `p` may cast the skill they hold right now. */
 export function canUseSkill(
-  ctx: { tick: Tick; freezeUntilTick: Tick; lightsOn: boolean; running: boolean; placeables: Record<string, PlaceableState> },
+  ctx: {
+    tick: Tick;
+    freezeUntilTick: Tick;
+    lightsOn: boolean;
+    running: boolean;
+    placeables: Record<string, PlaceableState>;
+    ghost: GhostState;
+    /** Bag size (`tuning.inventory.capacity`). */
+    capacity: number;
+  },
   p: PlayerState,
   grid: MapGrid,
 ): boolean {
   if (!p.skill || !ctx.running || p.phase !== "maze") return false;
   if (ctx.tick < ctx.freezeUntilTick || ctx.tick < p.frozenUntilTick) return false;
-  // A lantern in the light, or a jump with nowhere to land, would be wasted.
+  // A lantern in the light, a jump with nowhere to land, or a supply into a full bag would be wasted;
+  // a ghost's bag is locked (section 13), so nothing goes in it either.
   if (p.skill === "lantern" && ctx.lightsOn) return false;
   if (p.skill === "jump" && !jumpTarget(grid, ctx.placeables, p)) return false;
+  if (p.skill === "supply" && (p.items.length >= ctx.capacity || isGhost(ctx.ghost, p))) return false;
   return true;
 }
 
@@ -69,6 +97,11 @@ export function skillActive(p: PlayerState, kind: SkillKind, tick: Tick): boolea
   return p.skillEffect?.kind === kind && tick < p.skillEffect.untilTick;
 }
 
+/** Pierce is on: obstacles and one-way doors do not stop `p` and traps do not spring. */
+export function piercing(p: PlayerState, tick: Tick): boolean {
+  return skillActive(p, "pierce", tick);
+}
+
 /** Movement speed factor from the player's own skill. */
 export function skillSpeedFactor(p: PlayerState, tick: Tick, tuning: Tuning): number {
   return skillActive(p, "sprint", tick) ? tuning.skills.sprint.speedMultiplier : 1;
@@ -79,13 +112,7 @@ export function skillSpeedFactor(p: PlayerState, tick: Tick, tuning: Tuning): nu
  * tick everyone else stays frozen until (applied with `applyTimeStop` once
  * every player has moved this tick). The caller checks `canUseSkill` first.
  */
-export function castSkill(
-  p: PlayerState,
-  tick: Tick,
-  tuning: Tuning,
-  grid: MapGrid,
-  placeables: Record<string, PlaceableState>,
-): { caster: PlayerState; event: SimEvent; timeStopUntil: Tick | null } {
+export function castSkill(p: PlayerState, tick: Tick, tuning: Tuning, world: SkillWorld): { caster: PlayerState; event: SimEvent; timeStopUntil: Tick | null } {
   const kind = p.skill as SkillKind;
   const s = tuning.skills;
   const ticks = (sec: number) => Math.round(sec * tuning.tickRate);
@@ -98,6 +125,8 @@ export function castSkill(
       return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.eagleEye.durationSec) } }, event, timeStopUntil: null };
     case "lantern":
       return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.lantern.durationSec) } }, event, timeStopUntil: null };
+    case "pierce":
+      return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.pierce.durationSec) } }, event, timeStopUntil: null };
     case "amulet":
       return { caster: { ...caster, shielded: true }, event, timeStopUntil: null };
     case "timeStop":
@@ -105,9 +134,18 @@ export function castSkill(
     case "jump": {
       // The jump is an ordinary move to a tile the stairs rule would not allow;
       // it takes as long as a step and lands with the usual arrival effects.
-      const to = jumpTarget(grid, placeables, p) as TilePos;
+      const to = jumpTarget(world.grid, world.placeables, p) as TilePos;
       return { caster: { ...caster, mover: { ...p.mover, target: to, progress: 0, turnHold: 0 } }, event, timeStopUntil: null };
     }
+    case "warp": {
+      // Standing still on the drawn tile, facing as before; a step under way is dropped.
+      const targets = warpTargets(world.grid, world.placeables, world.nodes, p);
+      if (targets.length === 0) return { caster, event, timeStopUntil: null };
+      const to = world.rng.pick(targets);
+      return { caster: { ...caster, mover: createMover(to, p.mover.facing), teleportImmunity: null }, event, timeStopUntil: null };
+    }
+    case "supply":
+      return { caster: { ...caster, items: [...p.items, ...supplyItems(world.rng, tuning, world.players, world.nodes, p)] }, event, timeStopUntil: null };
   }
 }
 

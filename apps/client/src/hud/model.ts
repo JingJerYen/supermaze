@@ -115,7 +115,16 @@ export function buildHudModel(
     action: me ? availableAction(grid, state, me, capacity) : null,
     canDiscard: !!me && canDiscard(state, me),
     onTower: me?.phase === "tower",
-    mySkill: me?.skill ? { kind: me.skill, ready: canUseSkill({ tick: state.tick, freezeUntilTick: state.freezeUntilTick, lightsOn: state.lightsOn, running, placeables: state.placeables }, me, grid) } : null,
+    mySkill: me?.skill
+      ? {
+          kind: me.skill,
+          ready: canUseSkill(
+            { tick: state.tick, freezeUntilTick: state.freezeUntilTick, lightsOn: state.lightsOn, running, placeables: state.placeables, ghost: state.ghost, capacity },
+            me,
+            grid,
+          ),
+        }
+      : null,
     skillStatus: running && me ? skillStatusOf(state, me, tickRate) : null,
     myFreeze: running && me && me.phase === "maze" && me.frozenUntilTick > state.tick ? { sec: (me.frozenUntilTick - state.tick) / tickRate, by: me.frozenBy } : null,
     // A round that ends mid-warning or mid-chase leaves the schedule where it

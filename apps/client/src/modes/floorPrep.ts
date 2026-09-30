@@ -48,6 +48,9 @@ export class FloorPrep {
       lantern: `關燈時 ${s.lantern.durationSec} 秒看得更遠`,
       timeStop: `所有對手定身 ${s.timeStop.freezeSec} 秒`,
       jump: "跳上或跳下面前一格",
+      pierce: `${s.pierce.durationSec} 秒穿過障礙與陷阱`,
+      warp: "移到隨機位置",
+      supply: "背包補滿隨機道具",
     };
     // The longer explanation under the buttons, for the skill picked (phones hide the buttons' second line).
     const explain: Record<SkillKind, string> = {
@@ -57,6 +60,9 @@ export class FloorPrep {
       lantern: `只能在關燈時用：${s.lantern.durationSec} 秒內黑暗中看得到 ${s.lantern.darkRadiusTiles} 格遠。`,
       timeStop: `迷宮裡所有對手原地定身 ${s.timeStop.freezeSec} 秒。`,
       jump: "面向牆時跳上牆頂，站在牆頂時跳下道路，不用找樓梯。面前能落腳時技能鈕才會亮。",
+      pierce: `${s.pierce.durationSec} 秒內直接穿過障礙物和單向門（兩個方向都行），踩到陷阱也不會觸發。牆還是過不去。`,
+      warp: "瞬間移到迷宮裡隨機的一格，可能更近也可能更遠，看運氣。只會落在走得到的地方。",
+      supply: "背包空著的格子立刻補滿隨機道具。背包滿了或當鬼時不能用。",
     };
     const shown = this.owned ?? this.picked;
     const note = shown ? `${SKILL_INFO[shown]!.icon} ${SKILL_INFO[shown]!.label}：${explain[shown]}` : "點一個技能看說明。";

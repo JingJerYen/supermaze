@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { MapGrid, MoverState, PlayerState } from "@supermaze/sim";
+import { piercing, type MapGrid, type MoverState, type PlayerState } from "@supermaze/sim";
 import { climbPhase, climbTotalSec, faceOf, type Face } from "./climbSequence.js";
 import { PlayerView } from "./playerView.js";
 import { spreadTargets } from "./spread.js";
@@ -101,6 +101,7 @@ export class PlayerViews {
       }
       view.setSelfMarker(id === meId && p.phase === "maze");
       view.setGhost(ghostIds.has(id));
+      view.setSeeThrough(piercing(p, tick));
     }
     for (const [id, view] of this.views) {
       if (!to[id]) {

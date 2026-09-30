@@ -1,7 +1,7 @@
 import { availableAction, canDiscard } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState, canDrawItem } from "./boxes.js";
 import type { SimEvent } from "./events.js";
-import { applyTimeStop, canUseSkill, castSkill, type SkillEffect, type SkillKind } from "./skills.js";
+import { applyTimeStop, canUseSkill, castSkill, piercing, type SkillEffect, type SkillKind } from "./skills.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { movePlayer } from "./playerMove.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
@@ -471,8 +471,17 @@ export class Simulation {
           p = { ...p, items: p.items.slice(1) };
           work.events.push({ type: "itemDiscarded", tick, playerId: id, item });
         }
-        if (input.skill && canUseSkill({ tick, freezeUntilTick: this.state.freezeUntilTick, lightsOn: work.lightsOn, running: true, placeables: work.placeables }, p, this.grid)) {
-          const cast = castSkill(p, tick, this.tuning, this.grid, work.placeables);
+        const skillCtx = {
+          tick,
+          freezeUntilTick: this.state.freezeUntilTick,
+          lightsOn: work.lightsOn,
+          running: true,
+          placeables: work.placeables,
+          ghost,
+          capacity: this.tuning.inventory.capacity,
+        };
+        if (input.skill && canUseSkill(skillCtx, p, this.grid)) {
+          const cast = castSkill(p, tick, this.tuning, { grid: this.grid, placeables: work.placeables, nodes: work.nodes, players: work.players, rng: this.rng });
           p = cast.caster;
           work.events.push(cast.event);
           if (cast.timeStopUntil !== null) timeStops.push({ casterId: id, until: cast.timeStopUntil });
@@ -600,7 +609,8 @@ export class Simulation {
 
   /** Effects of stepping onto a new tile: traps fire, own paired nodes teleport. */
   private onArrive(work: ItemWork, p: PlayerState, tick: Tick): PlayerState {
-    const trap = placeableAt(work.placeables, p.mover.from);
+    // A piercing player walks over a trap and leaves it where it is.
+    const trap = piercing(p, tick) ? undefined : placeableAt(work.placeables, p.mover.from);
     if (trap?.kind === "trap" && p.shielded) {
       // The amulet takes the trap: it springs and is gone, nobody is held and nobody scores.
       delete work.placeables[trap.id];

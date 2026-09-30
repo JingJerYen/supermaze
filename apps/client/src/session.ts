@@ -129,11 +129,11 @@ export class Session {
       await this.conn.connect(req);
       this.startPing();
     } catch (e) {
-      const local = `ws://${location.hostname}:2567`;
-      const hint = endpoint === local ? "請確認伺服器已啟動（npm run dev）" : `若伺服器在這台電腦上，請把伺服器欄位改成 ${local}`;
-      if (e instanceof ConnectTimeout) this.showHome(`連不上伺服器 ${endpoint}。${hint}`);
-      else if (req.kind === "join") this.showHome(`找不到房間 ${req.code}，請確認代碼`);
-      else this.showHome(`無法連線到 ${endpoint}：${(e as Error).message ?? String(e)}。${hint}`);
+      // Players see one short line; the details go to the console for whoever debugs it.
+      console.warn(`connect to ${endpoint} failed`, e);
+      // The server answered and turned the join down: the code matched no open room.
+      const refused = !(e instanceof ConnectTimeout) && e instanceof Error && e.name === "ServerError";
+      this.showHome(req.kind === "join" && refused ? `找不到房間 ${req.code.toUpperCase()}` : "伺服器無效");
     }
   }
 
@@ -190,7 +190,8 @@ export class Session {
   private onDisconnected(code: number): void {
     this.stopPing();
     this.teardownMatch();
-    this.showHome(code === 4000 ? undefined : `連線中斷（代碼 ${code}）`);
+    if (code !== 4000) console.warn(`disconnected, code ${code}`);
+    this.showHome(code === 4000 ? undefined : "連線中斷");
     void this.lastLobby;
   }
 

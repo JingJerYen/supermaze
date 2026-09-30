@@ -20,6 +20,7 @@ export * from "./items.js";
 export * from "./ghost.js";
 export * from "./actions.js";
 export * from "./skills.js";
+export * from "./skillEffects.js";
 export * from "./simulation.js";
 export * from "./cpu/pathfind.js";
 export * from "./cpu/controller.js";

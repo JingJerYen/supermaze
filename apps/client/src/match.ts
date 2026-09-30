@@ -78,11 +78,11 @@ export class Match {
     options: { demo?: boolean } = {},
   ) {
     this.demo = options.demo === true;
-    // A rules demo leaves the home screen's music alone.
-    if (!this.demo) music.play("game");
+    const theme = themeFor(mode.theme);
+    // The map theme's own track, or the shared one; a rules demo leaves the home screen's music alone.
+    if (!this.demo) music.play(`game-${theme.id}`);
     restartQuality();
     this.scene = createScene();
-    const theme = themeFor(mode.theme);
     this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
     this.scene.background = new THREE.Color(theme.sky);
     this.scene.add(this.mapMesh.group);

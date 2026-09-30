@@ -147,6 +147,8 @@ export interface Tuning {
     lantern: { durationSec: number; darkRadiusTiles: number };
     /** Everyone else in the maze is frozen for this long. */
     timeStop: { freezeSec: number };
+    /** Obstacles, one-way doors and traps let the player through for this long. */
+    pierce: { durationSec: number };
   };
 
   /** Single-player tower run (CLAUDE.md section 4.1). */

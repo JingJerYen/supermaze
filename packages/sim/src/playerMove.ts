@@ -1,4 +1,4 @@
-import { skillSpeedFactor } from "./skills.js";
+import { piercing, skillSpeedFactor } from "./skills.js";
 import { isGhost, type GhostState } from "./ghost.js";
 import type { MapGrid } from "./map/grid.js";
 import { stepMover, type MoveIntent, type MoverState } from "./movement.js";
@@ -21,7 +21,7 @@ export interface MoveContext {
  * Where a player's mover is after one tick of `input`: the movement rule of
  * the simulation in one place. Nobody moves during the start freeze or while
  * held by a trap or a catch; on the tower top the platform is walked freely;
- * in the maze placeables block, CPU-driven players are slower and ghosts
+ * in the maze placeables block (not while piercing), CPU-driven players are slower and ghosts
  * faster. Effects of arriving on a tile (traps, teleports) are not part of it.
  *
  * The authoritative step uses it, and so does a client predicting its own
@@ -36,5 +36,6 @@ export function movePlayer(grid: MapGrid, tuning: Tuning, ctx: MoveContext, p: P
   if (ctx.tick < p.frozenUntilTick) return p.mover;
   const base = p.controller === "cpu" ? speed * tuning.cpu.speedMultiplier : speed;
   const mine = (isGhost(ctx.ghost, p) ? base * tuning.ghostEvent.speedMultiplier : base) * skillSpeedFactor(p, ctx.tick, tuning);
-  return stepMover(p.mover, input, grid, mine, placeableMoveFilter(ctx.placeables), turnTicks);
+  // Pierce walks through every placeable; nothing stops a player standing on one once it ends either.
+  return stepMover(p.mover, input, grid, mine, piercing(p, ctx.tick) ? undefined : placeableMoveFilter(ctx.placeables), turnTicks);
 }
