@@ -28,6 +28,7 @@ class Sfx {
   private readonly buffers = new Map<SoundName, AudioBuffer>();
   private muted = false;
   private started = false;
+  private readonly unlockListeners: ((ctx: AudioContext, master: GainNode) => void)[] = [];
 
   /**
    * Fetch the files and wait for the first tap or key press: browsers only
@@ -57,13 +58,30 @@ class Sfx {
         this.master.gain.value = this.muted ? 0 : CLIENT_TUNING.audio.volume;
         this.master.connect(this.ctx.destination);
         for (const name of this.raw.keys()) this.decode(name);
+        for (const f of this.unlockListeners) f(this.ctx, this.master);
       }
       void this.ctx.resume();
     };
+    // Nothing plays while the page is hidden (another tab, the phone locked).
+    document.addEventListener("visibilitychange", () => {
+      if (!this.ctx) return;
+      if (document.hidden) void this.ctx.suspend();
+      else void this.ctx.resume();
+    });
     for (const type of ["pointerdown", "touchend", "keydown"]) window.addEventListener(type, unlock, { passive: true });
     window.addEventListener("keydown", (e) => {
       if (e.code === "KeyM" && !(e.target instanceof HTMLInputElement)) this.setMuted(!this.muted);
     });
+  }
+
+  /**
+   * Call `f` with the audio context and the master gain once audio is allowed
+   * (right away if it already is). Music plays through the same master, so
+   * muting silences it too.
+   */
+  onUnlock(f: (ctx: AudioContext, master: GainNode) => void): void {
+    if (this.ctx && this.master) f(this.ctx, this.master);
+    else this.unlockListeners.push(f);
   }
 
   get isMuted(): boolean {
