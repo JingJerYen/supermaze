@@ -8,7 +8,6 @@ const CSS = `
   --pad:max(12px,env(safe-area-inset-left));}
 .hud *{box-sizing:border-box}
 .hud.demo .hud-team,.hud.demo .hud-time,.hud.demo .hud-sub,.hud.demo .hud-go{display:none}
-.hud.demo .hud-items{right:max(24px,env(safe-area-inset-right))}
 .hud.demo .hud-top{justify-content:center}
 .hud-top{position:absolute;top:max(10px,env(safe-area-inset-top));left:var(--pad);right:max(12px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hud-team{display:flex;flex-direction:column;gap:5px;min-width:0}
@@ -37,11 +36,20 @@ const CSS = `
 .hud-badge.frozen{color:#9fd3ff}
 .hud-top,.hud-items{transition:opacity .5s}
 .hud.intro .hud-top,.hud.intro .hud-items{opacity:0;transition:none}
-.hud-items{position:absolute;right:calc(max(24px,env(safe-area-inset-right)) + 84px + 14px);bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:10px;align-items:center}
-.hud-slot{width:clamp(48px,9vh,60px);height:clamp(48px,9vh,60px);border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
-.hud-slot svg{width:80%;height:80%;display:block}
-.hud-slot.next{border:2px solid #ffd23f}
-.hud-slot.empty{border-style:dashed;background:rgba(0,0,0,.25)}
+.hud-items{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:8px;align-items:center}
+.hud-items.hidden{display:none}
+.hud-slot{width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;box-sizing:border-box}
+.hud-slot svg{width:72%;height:72%;display:block}
+.hud-slot.empty,.hud-big.empty{border-style:dashed;background:rgba(0,0,0,.25)}
+.hud-big{position:relative;width:84px;height:84px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:30px;font-weight:500}
+.hud-big svg{width:74%;height:74%;display:block}
+.hud-big.ready{border:3px solid #ffd23f;box-shadow:0 0 14px rgba(255,210,63,.55)}
+.hud-big.dim svg{opacity:.35;filter:grayscale(.7)}
+.hud-big.action{background:rgba(255,210,63,.92);border:2px solid rgba(255,255,255,.75);color:#412402;font:700 19px/1.1 system-ui,-apple-system,"Noto Sans TC",sans-serif;text-align:center;padding:0 6px}
+.hud-big.action.long{font-size:14px}
+.hud-badge-item{position:absolute;left:-6px;top:-6px;width:32px;height:32px;border-radius:50%;background:#1a2130;border:2px solid #ffd23f;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.hud-badge-item svg{width:78%;height:78%}
+.hud-items.locked{filter:grayscale(1);opacity:.55}
 .hud-toasts{position:absolute;left:50%;top:100%;margin-top:8px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
 .hud-toast.big{background:rgba(40,30,0,.78);border:1px solid #ffd23f;color:#fff;font-size:clamp(17px,3vw,24px);font-weight:500;padding:8px 20px;animation-duration:3.4s}
@@ -86,6 +94,7 @@ export class Hud {
   private readonly skill: HTMLDivElement;
   private lastGoText = "";
   private lastRosterKey = "";
+  private lastItemsKey = "";
 
   constructor(parent: HTMLElement) {
     const style = document.createElement("style");
@@ -144,22 +153,7 @@ export class Hud {
       renderTeam(this.right, m.otherTeams, false);
     }
 
-    this.items.replaceChildren();
-    // Team colour feeds the teleport icon's pad through currentColor.
-    const teamColor = m.myTeam ? `#${(TEAM_COLORS[m.myTeam.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}` : "#5be6ff";
-    for (let i = 0; i < m.capacity; i++) {
-      const kind = m.items[i];
-      const slot = el("div", `hud-slot${kind ? (i === 0 ? " next" : "") : " empty"}`);
-      if (kind) {
-        const svg = itemIconSvg(kind);
-        if (svg) {
-          slot.innerHTML = svg;
-          slot.style.color = teamColor;
-        } else slot.textContent = ITEM_GLYPH[kind] ?? "?";
-        slot.title = ITEM_LABEL[kind] ?? kind;
-      }
-      this.items.appendChild(slot);
-    }
+    this.renderItems(m);
     this.dark.classList.toggle("on", !m.lightsOn);
 
     // Your own freeze counts down under you; others see a "定身" badge in the roster.
@@ -212,10 +206,37 @@ export class Hud {
     this.root.classList.toggle("demo", on);
   }
 
-  /** Label for the single context button, or null to hide it. */
-  actionLabel(m: HudModel): string | null {
-    if (!m.action) return null;
-    return ACTION_LABEL[m.action] ?? m.action;
+  /**
+   * The bag and the action button in one row at the bottom right: the big
+   * circle on the right is the next item (bright when it can be used here, dim
+   * when not) or, when the button would climb / flip a switch / pick up a node,
+   * that action in yellow with the next item as a small badge; the small
+   * circles to its left are the items queued behind it. All grey while the bag
+   * is locked (you are the ghost). Rebuilt only when something changed.
+   */
+  private renderItems(m: HudModel): void {
+    const teamColor = m.myTeam ? `#${(TEAM_COLORS[m.myTeam.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}` : "#5be6ff";
+    const key = JSON.stringify([m.items, m.action, m.capacity, m.onTower, m.ghost.iAmGhost, teamColor]);
+    if (key === this.lastItemsKey) return;
+    this.lastItemsKey = key;
+    this.items.className = `hud-items${m.onTower ? " hidden" : ""}${m.ghost.iAmGhost ? " locked" : ""}`;
+    this.items.style.color = teamColor; // the teleport icon's pad takes the team colour through currentColor
+    const icon = (kind: string) => itemIconSvg(kind) ?? `<span>${ITEM_GLYPH[kind] ?? "?"}</span>`;
+    const small = [];
+    for (let i = m.capacity - 1; i >= 1; i--) {
+      const kind = m.items[i];
+      small.push(kind ? `<div class="hud-slot" title="${ITEM_LABEL[kind] ?? kind}">${icon(kind)}</div>` : `<div class="hud-slot empty"></div>`);
+    }
+    const next = m.items[0];
+    let big: string;
+    if (m.action && m.action !== "useItem") {
+      const label = ACTION_LABEL[m.action] ?? m.action;
+      const badge = next ? `<div class="hud-badge-item">${icon(next)}</div>` : "";
+      big = `<div class="hud-big action${label.length > 3 ? " long" : ""}">${label}${badge}</div>`;
+    } else if (next) {
+      big = `<div class="hud-big ${m.action === "useItem" ? "ready" : "dim"}" title="${ITEM_LABEL[next] ?? next}">${icon(next)}</div>`;
+    } else big = `<div class="hud-big empty"></div>`;
+    this.items.innerHTML = small.join("") + big;
   }
 
   dispose(): void {

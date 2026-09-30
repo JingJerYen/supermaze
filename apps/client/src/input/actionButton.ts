@@ -1,6 +1,8 @@
 /**
- * On-screen context-action button for touch play. Shown only while the local
- * player can do something, with a label saying what (climb / switch).
+ * Touch target of the big round button at the bottom right. It draws nothing:
+ * the HUD paints the button (the next item, or 登塔 / 開關 / 收回傳送點) and
+ * this transparent circle on top of it takes the press. Pressing when nothing
+ * can be done is harmless; the simulation decides.
  */
 export class ActionButton {
   private readonly el: HTMLButtonElement;
@@ -15,10 +17,9 @@ export class ActionButton {
       width: "84px",
       height: "84px",
       borderRadius: "50%",
-      border: "2px solid rgba(255,255,255,0.7)",
-      background: "rgba(255,210,63,0.85)",
-      color: "#222",
-      font: "bold 18px system-ui, sans-serif",
+      border: "none",
+      background: "transparent",
+      padding: "0",
       display: "none",
       zIndex: "6",
       touchAction: "none",
@@ -34,14 +35,10 @@ export class ActionButton {
     this.el.remove();
   }
 
-  /** Show with a label, or hide with null. */
-  setAction(label: string | null): void {
-    if (label === null) {
-      this.el.style.display = "none";
-      return;
-    }
-    if (this.el.textContent !== label) this.el.textContent = label;
-    this.el.style.display = "block";
+  /** Take presses while the player is in the maze; off on the tower and before play. */
+  setActive(on: boolean): void {
+    const display = on ? "block" : "none";
+    if (this.el.style.display !== display) this.el.style.display = display;
   }
 
   /** True once per press. */

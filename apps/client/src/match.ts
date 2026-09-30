@@ -150,7 +150,7 @@ export class Match {
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
       this.hud.setCaption(this.mode.caption?.() ?? null);
-      this.input?.actionButton.setAction(this.hud.actionLabel(model));
+      this.input?.actionButton.setActive(model.status === "running" && !model.onTower);
       this.input?.discardButton.setVisible(model.canDiscard);
       this.input?.skillButton.setSkill(this.hud.skillButton(model));
       if (this.lastToastState !== s.to) {
