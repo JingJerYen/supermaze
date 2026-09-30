@@ -37,6 +37,8 @@ export const CHARACTER_IDS = [
   "character-female-f",
 ] as const;
 
+export type CharacterId = (typeof CHARACTER_IDS)[number];
+
 /** A picked character from untrusted input, or null (the id-based default is used). */
 export function sanitizeCharacter(raw: unknown): string | null {
   return typeof raw === "string" && (CHARACTER_IDS as readonly string[]).includes(raw) ? raw : null;

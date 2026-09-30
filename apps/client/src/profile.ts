@@ -1,5 +1,6 @@
 import type * as THREE from "three";
 import { capName, sanitizeCharacter } from "@supermaze/protocol";
+import { defaultNameFor } from "./characterNames.js";
 import { CharacterPreview } from "./render/characterPreview.js";
 
 /**
@@ -16,11 +17,18 @@ const NAME_KEY = "supermaze.name";
 const CHAR_KEY = "supermaze.character";
 export const DEFAULT_NAME = "玩家";
 
+/** The saved profile; a player who never set a name gets their character's default name. */
 export function loadProfile(): Profile {
+  const character = sanitizeCharacter(read(CHAR_KEY));
   return {
-    name: capName((read(NAME_KEY) ?? "").trim()) || DEFAULT_NAME,
-    character: sanitizeCharacter(read(CHAR_KEY)),
+    name: capName((read(NAME_KEY) ?? "").trim()) || defaultNameFor(character) || DEFAULT_NAME,
+    character,
   };
+}
+
+/** Whether the player has typed a name of their own (else it follows the character's default). */
+export function hasOwnName(): boolean {
+  return !!(read(NAME_KEY) ?? "").trim();
 }
 
 export function saveProfile(p: Profile): void {
