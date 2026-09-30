@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEFAULT_TUNING, NO_INPUT, isGhost, type SimulationState } from "@supermaze/sim";
+import { DEFAULT_TUNING, NO_INPUT, isGhost, skillActive, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
 import { Hud } from "./hud/hud.js";
 import { Minimap } from "./hud/minimap.js";
@@ -152,6 +152,7 @@ export class Match {
       this.hud.setCaption(this.mode.caption?.() ?? null);
       this.input?.actionButton.setAction(this.hud.actionLabel(model));
       this.input?.discardButton.setVisible(model.canDiscard);
+      this.input?.skillButton.setSkill(this.hud.skillButton(model));
       if (this.lastToastState !== s.to) {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t.text, t.big);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);
@@ -164,12 +165,19 @@ export class Match {
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
     const onTower = meState?.phase === "tower";
-    const shot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
+    const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
+    // Eagle eye (tower run skill): the tower top's view from above for a few seconds, from the maze.
+    const tickNow = s?.to.tick ?? 0;
+    const eagle = !onTower && !!meState && skillActive(meState, "eagleEye", tickNow);
+    const shot = eagle ? { ...climbShot, camera: "overview" as const, towerOverview: true, watchTower: false } : climbShot;
+    const lantern = !!meState && skillActive(meState, "lantern", tickNow);
     // The rank is already settled; the result screen waits until every climb has been shown.
     if (s && !shot.busy && this.players.activeClimbs().length === 0) this.results?.update(s.to, meId, this.mode.results());
     this.follow.setMode(shot.camera, shot.camera === "overview" ? CLIENT_TUNING.climb.overviewPerSec : undefined);
     this.mapMesh.tower.setOverview(shot.towerOverview);
-    this.lighting.setRadius(onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
+    this.lighting.setRadius(
+      onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : lantern ? DEFAULT_TUNING.skills.lantern.darkRadiusTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles,
+    );
     if (mePos) {
       this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2 + shot.lift), dt);
       // Opening fly-in: from far in front of the tower down to the follow view.

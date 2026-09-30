@@ -1,6 +1,6 @@
 import { TEAM_COLORS } from "../render/teamColors.js";
 import { itemIconSvg } from "./itemIcons.js";
-import { ACTION_LABEL, ITEM_GLYPH, ITEM_LABEL } from "./labels.js";
+import { ACTION_LABEL, ITEM_GLYPH, ITEM_LABEL, SKILL_INFO } from "./labels.js";
 import type { HudModel, TeamRow } from "./model.js";
 
 const CSS = `
@@ -58,6 +58,8 @@ const CSS = `
 .hud-dark.on{display:block}
 .hud-frozen{position:absolute;left:50%;top:64%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:clamp(15px,2.4vw,20px);font-weight:500;padding:6px 16px;border-radius:20px;white-space:nowrap;display:none}
 .hud-frozen.on{display:block}
+.hud-skill{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 22px);background:rgba(110,70,200,.8);color:#fff;font-size:14px;font-weight:500;padding:5px 14px;border-radius:16px;white-space:nowrap;display:none}
+.hud-skill.on{display:block}
 .hud-frozen b{color:#ffd23f;font-size:1.35em;margin-left:.4em;font-variant-numeric:tabular-nums}
 `;
 
@@ -81,6 +83,7 @@ export class Hud {
   private readonly dark: HTMLDivElement;
   private readonly go: HTMLDivElement;
   private readonly frozen: HTMLDivElement;
+  private readonly skill: HTMLDivElement;
   private lastGoText = "";
   private lastRosterKey = "";
 
@@ -108,7 +111,8 @@ export class Hud {
     this.dark.textContent = "全圖黑暗";
     this.go = el("div", "hud-go");
     this.frozen = el("div", "hud-frozen");
-    this.root.append(top, this.items, this.gains, this.dark, this.go, this.frozen);
+    this.skill = el("div", "hud-skill");
+    this.root.append(top, this.items, this.gains, this.dark, this.go, this.frozen, this.skill);
     parent.appendChild(this.root);
   }
 
@@ -163,6 +167,18 @@ export class Hud {
     this.frozen.classList.toggle("on", f !== null);
     const frozenHtml = f ? `${f.by === "ghost" ? "被抓到了" : "被鐵籠關住"}<b>${Math.ceil(f.sec)}</b>` : "";
     if (this.frozen.innerHTML !== frozenHtml) this.frozen.innerHTML = frozenHtml;
+
+    const st = m.skillStatus;
+    const info = st ? SKILL_INFO[st.kind] : undefined;
+    const skillText = st && info ? `${info.icon} ${info.label}${st.sec === null ? " 生效中" : ` ${Math.ceil(st.sec)}`}` : "";
+    this.skill.classList.toggle("on", skillText !== "");
+    if (this.skill.textContent !== skillText) this.skill.textContent = skillText;
+  }
+
+  /** The skill button's face, or null to hide it. */
+  skillButton(m: HudModel): { icon: string; label: string; ready: boolean } | null {
+    const info = m.mySkill ? SKILL_INFO[m.mySkill.kind] : undefined;
+    return m.mySkill && info ? { icon: info.icon, label: info.label, ready: m.mySkill.ready } : null;
   }
 
   /** 3, 2, 1 during the start freeze, then "開始" for a moment; each number pops once. */

@@ -1,5 +1,5 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
-import { availableAction, canDiscard, isGhost } from "@supermaze/sim";
+import { availableAction, canDiscard, canUseSkill, isGhost, type SkillKind } from "@supermaze/sim";
 import { openingOf } from "../opening.js";
 import { teamColorIndex } from "../render/teamColors.js";
 
@@ -24,6 +24,10 @@ export interface HudModel {
   /** Whether the discard button would throw away the oldest item. */
   canDiscard: boolean;
   onTower: boolean;
+  /** Skill the local player can still cast this floor; `ready` false while it cannot be cast yet. */
+  mySkill: { kind: SkillKind; ready: boolean } | null;
+  /** A skill of the local player's at work: seconds left, or null for the amulet (up until it blocks). */
+  skillStatus: { kind: SkillKind; sec: number | null } | null;
   /** The local player is frozen: seconds left and why; null otherwise. */
   myFreeze: { sec: number; by: PlayerState["frozenBy"] } | null;
   ghost: {
@@ -111,6 +115,8 @@ export function buildHudModel(
     action: me ? availableAction(grid, state, me, capacity) : null,
     canDiscard: !!me && canDiscard(state, me),
     onTower: me?.phase === "tower",
+    mySkill: me?.skill ? { kind: me.skill, ready: canUseSkill({ tick: state.tick, freezeUntilTick: state.freezeUntilTick, lightsOn: state.lightsOn, running }, me) } : null,
+    skillStatus: running && me ? skillStatusOf(state, me, tickRate) : null,
     myFreeze: running && me && me.phase === "maze" && me.frozenUntilTick > state.tick ? { sec: (me.frozenUntilTick - state.tick) / tickRate, by: me.frozenBy } : null,
     // A round that ends mid-warning or mid-chase leaves the schedule where it
     // stopped; the HUD shows no event once the round is over.
@@ -147,4 +153,14 @@ function warningSubject(state: SimulationState, me: PlayerState | undefined, nam
   if (!teamId) return null;
   if (!me || me.teamId !== teamId) return nameOfTeam(teamId);
   return state.teamMode === "solo" ? "你" : `${nameOfTeam(teamId)}（我方）`;
+}
+
+function skillStatusOf(state: SimulationState, me: PlayerState, tickRate: number): { kind: SkillKind; sec: number | null } | null {
+  if (me.shielded) return { kind: "amulet", sec: null };
+  const e = me.skillEffect;
+  if (e && state.tick < e.untilTick) return { kind: e.kind, sec: (e.untilTick - state.tick) / tickRate };
+  // A time stop shows as everyone else frozen by a skill (only the player casts skills).
+  const stopped = Object.values(state.players).filter((p) => p.id !== me.id && p.frozenBy === "skill" && p.frozenUntilTick > state.tick);
+  if (stopped.length) return { kind: "timeStop", sec: Math.max(...stopped.map((p) => p.frozenUntilTick - state.tick)) / tickRate };
+  return null;
 }

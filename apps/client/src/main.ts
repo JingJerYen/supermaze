@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { rotateMap, type QuarterTurns } from "@supermaze/sim";
+import { SKILL_KINDS, rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { drawMap, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
@@ -53,6 +53,8 @@ if (params.has("rules")) {
     seed,
     name: playerName,
     difficulty: params.get("cpu") === "hard" ? "hard" : "easy",
+    // Developer aid: ?skill=sprint etc. hands you a skill in the sandbox (normally tower run only).
+    skill: SKILL_KINDS.find((k) => k === params.get("skill")) ?? null,
   });
   new Match(root, renderer, mode);
 } else {
