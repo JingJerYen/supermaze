@@ -110,6 +110,21 @@ export const CLIENT_TUNING = {
     othersVolume: 0.3,
     /** Relative volume of the light switch, heard by everyone. */
     lightsVolume: 0.85,
+    /** Background music volume relative to the master; 0 turns it off. `?nomusic` also turns it off. */
+    musicVolume: 0.45,
+    /** Seconds to fade between tracks (home screen and match). */
+    musicFadeSec: 1.2,
+    /**
+     * A music file that is not a seamless loop (a song with an intro and an
+     * ending) is looped by blending its last this-many seconds into its start.
+     */
+    musicLoopBlendSec: 1.5,
+    /** Playback rate in a round's last `musicHurrySec` seconds, and while a ghost chase is on: faster and a little higher. */
+    musicHurryRate: 1.1,
+    musicHurrySec: 30,
+    musicGhostRate: 1.06,
+    /** Seconds to ease the rate in and out. */
+    musicRateEaseSec: 0.8,
   },
   cage: {
     /** Iron cage over a trapped player (world units; the character is 0.9 tall). */

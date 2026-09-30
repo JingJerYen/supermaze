@@ -7,6 +7,8 @@ import { ResultsPanel } from "./hud/results.js";
 import { buildHudModel } from "./hud/model.js";
 import { sfx } from "./audio/sfx.js";
 import { diffSounds } from "./audio/sounds.js";
+import { music } from "./audio/music.js";
+import { musicRate } from "./audio/musicMood.js";
 import { diffGains } from "./hud/gains.js";
 import { SystemButtons } from "./hud/systemButtons.js";
 import { diffToasts } from "./hud/toasts.js";
@@ -76,6 +78,8 @@ export class Match {
     options: { demo?: boolean } = {},
   ) {
     this.demo = options.demo === true;
+    // A rules demo leaves the home screen's music alone.
+    if (!this.demo) music.play("game");
     restartQuality();
     this.scene = createScene();
     const theme = themeFor(mode.theme);
@@ -149,6 +153,7 @@ export class Match {
 
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
+      if (!this.demo) music.setRate(musicRate(model));
       this.hud.setCaption(this.mode.caption?.() ?? null);
       this.input?.actionButton.setActive(model.status === "running" && !model.onTower);
       this.input?.discardButton.setVisible(model.canDiscard);
@@ -224,6 +229,10 @@ export class Match {
     this.debug.dispose();
     this.input?.dispose();
     this.renderer.clear();
+    if (!this.demo) {
+      music.setRate(1);
+      music.play("menu");
+    }
   }
 }
 

@@ -7,6 +7,7 @@ import { characters } from "./render/characters.js";
 import { models } from "./render/models.js";
 import { antialiasAtLaunch, createGovernor, installQuality, rememberRatio } from "./render/quality.js";
 import { sfx } from "./audio/sfx.js";
+import { music } from "./audio/music.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 import { loadProfile } from "./profile.js";
@@ -32,6 +33,8 @@ root.appendChild(renderer.domElement);
 
 fullscreenOnFirstTouch();
 sfx.init();
+music.init();
+music.play("menu");
 
 // URL parameters (see README). `?local` runs the single-player sandbox in the page;
 // otherwise the online flow starts at the home screen.
