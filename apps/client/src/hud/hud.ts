@@ -22,7 +22,7 @@ const CSS = `
 .hud-badge{font-size:10px;padding:2px 4px;border-radius:4px;background:rgba(255,255,255,.15);color:#ffe08a}
 .hud-badge.tower{color:#fff;background:rgba(139,255,122,.28);font-size:11px;font-weight:500}.hud-badge.cpu{color:#ff9f7a}
 .hud-score{font-size:12px;color:#c9d2e3;min-width:2.5em;text-align:right}
-.hud-clock{text-align:center;flex:none}
+.hud-clock{text-align:center;flex:none;position:relative}
 .hud-time{font-size:clamp(34px,6vw,48px);font-weight:500;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
 @keyframes hud-pulse{50%{transform:scale(1.08)}}
@@ -41,7 +41,7 @@ const CSS = `
 .hud-slot svg{width:80%;height:80%;display:block}
 .hud-slot.next{border:2px solid #ffd23f}
 .hud-slot.empty{border-style:dashed;background:rgba(0,0,0,.25)}
-.hud-toasts{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 84px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
+.hud-toasts{position:absolute;left:50%;top:100%;margin-top:8px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
 .hud-toast.big{background:rgba(40,30,0,.78);border:1px solid #ffd23f;color:#fff;font-size:clamp(17px,3vw,24px);font-weight:500;padding:8px 20px;animation-duration:3.4s}
 .hud-gains{position:absolute;left:50%;top:30%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
@@ -92,16 +92,17 @@ export class Hud {
     this.sub = el("div", "hud-sub");
     this.caption = el("div", "hud-caption");
     this.ghost = el("div", "hud-ghost");
-    clock.append(this.time, this.sub, this.caption, this.ghost);
+    this.toasts = el("div", "hud-toasts");
+    // Toasts hang just below the clock column, which grows with the caption and the ghost banner.
+    clock.append(this.time, this.sub, this.caption, this.ghost, this.toasts);
     this.right = el("div", "hud-team right");
     top.append(this.left, clock, this.right);
     this.items = el("div", "hud-items");
-    this.toasts = el("div", "hud-toasts");
     this.gains = el("div", "hud-gains");
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
     this.go = el("div", "hud-go");
-    this.root.append(top, this.items, this.toasts, this.gains, this.dark, this.go);
+    this.root.append(top, this.items, this.gains, this.dark, this.go);
     parent.appendChild(this.root);
   }
 

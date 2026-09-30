@@ -24,6 +24,7 @@ import { buildMapMesh } from "./render/mapMesh.js";
 import { themeFor } from "./render/themes.js";
 import { PlaceableViews } from "./render/placeables.js";
 import { PlayerViews } from "./render/players.js";
+import { useTeams } from "./render/teamColors.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
 import { SwitchViews } from "./render/switches.js";
@@ -127,6 +128,7 @@ export class Match {
     const meId = this.mode.localPlayerId();
     let opening: Opening | null = null;
     if (s) {
+      useTeams(Object.values(s.to.players).map((p) => p.teamId));
       const ghostIds = new Set(Object.values(s.to.players).filter((p) => isGhost(s.to.ghost, p)).map((p) => p.id));
       this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt, meId, ghostIds, s.nudge ?? null);
       this.keys.update(s.to.keys, now / 1000);

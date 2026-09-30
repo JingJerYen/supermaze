@@ -89,7 +89,8 @@ export function buildHudModel(
     .sort((a, b) => a.colorIndex - b.colorIndex);
 
   const opening = openingOf(state, tickRate);
-  const remainingTicks = state.status === "running" ? Math.max(0, state.endsAtTick - state.tick) : 0;
+  const running = state.status === "running";
+  const remainingTicks = running ? Math.max(0, state.endsAtTick - state.tick) : 0;
   return {
     remainingSec: state.status === "lobby" ? 0 : remainingTicks / tickRate,
     freezeSec: opening.countdownSec,
@@ -106,13 +107,17 @@ export function buildHudModel(
     action: me ? availableAction(grid, state, me, capacity) : null,
     canDiscard: !!me && canDiscard(state, me),
     onTower: me?.phase === "tower",
-    ghost: {
-      phase: state.ghost.phase,
-      teamLabel: state.ghost.teamId ? nameOfTeam(state.ghost.teamId) : null,
-      secondsLeft: state.status === "running" ? Math.max(0, state.ghost.phaseEndsAtTick - state.tick) / tickRate : 0,
-      iAmGhost: !!me && isGhost(state.ghost, me),
-      myTeamIsGhost: !!me && state.ghost.teamId === me.teamId && state.ghost.phase !== "idle",
-    },
+    // A round that ends mid-warning or mid-chase leaves the schedule where it
+    // stopped; the HUD shows no event once the round is over.
+    ghost: running
+      ? {
+          phase: state.ghost.phase,
+          teamLabel: state.ghost.teamId ? nameOfTeam(state.ghost.teamId) : null,
+          secondsLeft: Math.max(0, state.ghost.phaseEndsAtTick - state.tick) / tickRate,
+          iAmGhost: !!me && isGhost(state.ghost, me),
+          myTeamIsGhost: !!me && state.ghost.teamId === me.teamId && state.ghost.phase !== "idle",
+        }
+      : { phase: "idle", teamLabel: null, secondsLeft: 0, iAmGhost: false, myTeamIsGhost: false },
   };
 }
 
