@@ -26,5 +26,4 @@ if "--explore" in sys.argv:
 
 finish("maze-14", rows, stairs=STAIRS,
        doors=3, traps=10, obstacles=1, fseed=14, time=300,
-       candidates=dict(n_keys=11, n_road_keys=6, key_gap=7, wall_cap=2, road_cap=3),
-       meta=dict(theme="candy"))
+       candidates=dict(n_keys=11, n_road_keys=6, key_gap=7, wall_cap=2, road_cap=3))

@@ -95,11 +95,11 @@ const GLYPHS: Glyph[] = [
 function carve(ctx: CanvasRenderingContext2D, shade: Shade, glyph: Glyph, x: number, y: number, s: number): void {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = shade(1.14);
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = shade(1.16);
   glyph(ctx, x + 1.5, y + 2, s);
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = shade(0.66);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = shade(0.42);
   glyph(ctx, x, y, s);
 }
 
