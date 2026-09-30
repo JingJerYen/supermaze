@@ -43,4 +43,5 @@ finish("maze-13", rows, stairs=STAIRS, bridges=BRIDGES,
        manual=[(x, y, "O") for x, y in HAMMER_GATES],
        doors=0, traps=3, obstacles=0, fseed=13, time=300,
        candidates=dict(n_keys=11, n_road_keys=7, key_gap=7, wall_cap=2, road_cap=3, box_filter=on_detour,
-                       key_filter=lambda x, y, layer: not (layer == "r" and on_detour(x, y))))
+                       key_filter=lambda x, y, layer: not (layer == "r" and on_detour(x, y))),
+       meta=dict(theme="factory"))

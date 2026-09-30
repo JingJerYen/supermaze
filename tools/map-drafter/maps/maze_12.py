@@ -106,4 +106,5 @@ if "--explore" in sys.argv:
 finish("maze-12", rows, stairs=stairs, bridges=bridges,
        doors=0, traps=3, obstacles=0, fseed=12, time=300,
        candidates=dict(n_keys=11, n_road_keys=7, key_gap=7, wall_cap=2, road_cap=3,
-                       key_filter=lambda x, y, layer: x != cx and y != cy))
+                       key_filter=lambda x, y, layer: x != cx and y != cy),
+       meta=dict(theme="factory"))

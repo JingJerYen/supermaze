@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { PatternKind } from "./themes.js";
 import { crack, roundedBlock, seeded, speckle } from "./canvasDraw.js";
 import { paintBark, paintFlagstone, paintHedge } from "./gardenPatterns.js";
+import { paintPanel, paintPanelGlow, paintPlate, paintTreadPlate } from "./factoryPatterns.js";
 
 /**
  * Surface patterns for the themes, drawn on a canvas at startup and tiled once
@@ -10,11 +11,23 @@ import { paintBark, paintFlagstone, paintHedge } from "./gardenPatterns.js";
 const textureCache = new Map<string, THREE.CanvasTexture | null>();
 
 /**
+ * Kinds painted in their true colours, for a white material: the theme colour
+ * is the colour on screen and the accents keep theirs. Other kinds are shades
+ * of the base, multiplied by a material of the same colour.
+ */
+const TRUE_COLOUR: ReadonlySet<PatternKind> = new Set(["panel", "plate", "tread"]);
+
+export function trueColour(kind: PatternKind): boolean {
+  return TRUE_COLOUR.has(kind);
+}
+
+/**
  * Tileable 256 px pattern in shades of `base`; null for "none" so the plain
- * colour is used. `growth` > 0 adds moss to the pattern. `baked` multiplies
+ * colour is used. `growth` > 0 adds its accent to the pattern (moss on stone,
+ * flowers on hedges, hazard stripes on factory panels). `baked` multiplies
  * `base` into the texture itself, for a white material: the pattern looks the
  * same, but growth colours (flowers) keep their true colour instead of being
- * tinted by the material.
+ * tinted by the material. True-colour kinds are always drawn for a white material.
  */
 export function patternTexture(kind: PatternKind, base: number, growth = 0, baked = false): THREE.CanvasTexture | null {
   if (kind === "none") return null;
@@ -28,7 +41,8 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0, bake
   canvas.height = size;
   const ctx = canvas.getContext("2d")!;
   const c = new THREE.Color(base);
-  const shade = (k: number) => `#${(baked ? c.clone().multiply(c) : c.clone()).multiplyScalar(k).getHexString()}`;
+  const tint = baked && !trueColour(kind) ? c.clone().multiply(c) : c.clone();
+  const shade = (k: number) => `#${tint.clone().multiplyScalar(k).getHexString()}`;
   const rnd = seeded(kind.length * 977 + base);
   ctx.fillStyle = shade(1);
   ctx.fillRect(0, 0, size, size);
@@ -77,8 +91,39 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0, bake
     case "bark":
       paintBark(ctx, size, shade, rnd);
       break;
+    case "panel":
+      paintPanel(ctx, size, shade, rnd, growth);
+      break;
+    case "plate":
+      paintPlate(ctx, size, shade, rnd);
+      break;
+    case "tread":
+      paintTreadPlate(ctx, size, shade, rnd);
+      break;
   }
 
+  return finish(key, canvas);
+}
+
+/**
+ * Emissive map for the kinds that have lights in them (the factory wall
+ * modules), in `glow`; null for every other kind or when `glow` is 0. `growth`
+ * must match the diffuse texture's so the lights line up.
+ */
+export function glowTexture(kind: PatternKind, glow: number, growth = 0): THREE.CanvasTexture | null {
+  if (kind !== "panel" || !glow) return null;
+  const key = `glow:${kind}:${glow}:${growth}`;
+  const cached = textureCache.get(key);
+  if (cached !== undefined) return cached;
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  paintPanelGlow(canvas.getContext("2d")!, size, glow, growth);
+  return finish(key, canvas);
+}
+
+function finish(key: string, canvas: HTMLCanvasElement): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.anisotropy = 4;

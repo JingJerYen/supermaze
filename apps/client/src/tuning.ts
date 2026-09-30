@@ -189,6 +189,11 @@ export const CLIENT_TUNING = {
     opacity: 0.55,
     color: 0xffe08a,
   },
+  metal: {
+    /** Specular colour and shininess of the "metal" map themes' walls, wall tops and floors: a soft sheen, not a mirror. */
+    specular: 0x3a4658,
+    shininess: 28,
+  },
   dark: {
     /** Residual ambient light when the map is dark; 0 is pitch black outside the circle. */
     ambient: 0.04,

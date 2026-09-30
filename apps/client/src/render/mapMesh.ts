@@ -5,7 +5,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { collectTorches, tileHash, torchMaterials } from "./decor.js";
 import { createBridge, createStairs } from "./structures.js";
 import type { Face } from "./climbSequence.js";
-import { patternTexture, themeFor, type Theme } from "./themes.js";
+import { glowTexture, patternTexture, themeFor, trueColour, type PatternKind, type Theme } from "./themes.js";
+import { buildReactorTower } from "./reactorTower.js";
 import { buildStoneTower } from "./stoneTower.js";
 import { buildTreeTower } from "./treeTower.js";
 import type { TowerView } from "./tower.js";
@@ -35,21 +36,35 @@ export function buildMapMesh(
   switchTiles: ReadonlySet<string> = new Set(),
 ): MapView {
   const group = new THREE.Group();
-  const lambert = (color: number, map: THREE.Texture | null) =>
-    new THREE.MeshLambertMaterial(map ? { color, map } : { color });
+  // Materials whose light strips glow while the map is lit; switched off in the dark.
+  const glowing: (THREE.MeshLambertMaterial | THREE.MeshPhongMaterial)[] = [];
+  const surface = (color: number, kind: PatternKind, growth = 0) => {
+    // Flowers are baked into a white material so the green wall colour does not
+    // darken them; true-colour patterns (the factory's) always are.
+    const baked = trueColour(kind) || (growth !== 0 && kind === "hedge");
+    const map = patternTexture(kind, color, growth, baked);
+    const glow = glowTexture(kind, theme.glow, growth);
+    const params = {
+      color: baked ? 0xffffff : color,
+      ...(map ? { map } : {}),
+      ...(glow ? { emissive: 0xffffff, emissiveMap: glow } : {}),
+    };
+    const m =
+      theme.surface === "metal"
+        ? new THREE.MeshPhongMaterial({ ...params, specular: CLIENT_TUNING.metal.specular, shininess: CLIENT_TUNING.metal.shininess })
+        : new THREE.MeshLambertMaterial(params);
+    if (glow) glowing.push(m);
+    return m;
+  };
 
-  const floorMat = lambert(theme.floor, patternTexture(theme.floorPattern, theme.floor));
-  const plazaMat = lambert(theme.plaza, patternTexture(theme.floorPattern, theme.plaza));
-  const sideMat = lambert(theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide));
-  // A second side material with moss or flowers, used on a share of inner walls to
-  // break repetition. Flowers are baked into a white material so the green wall
-  // colour does not darken them.
-  const flowers = theme.wallPattern === "hedge";
-  const sideGrowthMat = theme.growth
-    ? lambert(flowers ? 0xffffff : theme.wallSide, patternTexture(theme.wallPattern, theme.wallSide, theme.growth, flowers))
-    : sideMat;
-  const outerSideMat = lambert(theme.outerWall, patternTexture(theme.wallPattern, theme.outerWall));
-  const topMat = lambert(theme.wallTop, patternTexture(theme.topPattern, theme.wallTop));
+  const floorMat = surface(theme.floor, theme.floorPattern);
+  const plazaMat = surface(theme.plaza, theme.floorPattern);
+  const sideMat = surface(theme.wallSide, theme.wallPattern);
+  // A second side material with moss, flowers or hazard stripes, used on a share
+  // of inner walls to break repetition.
+  const sideGrowthMat = theme.growth ? surface(theme.wallSide, theme.wallPattern, theme.growth) : sideMat;
+  const outerSideMat = surface(theme.outerWall, theme.wallPattern);
+  const topMat = surface(theme.wallTop, theme.topPattern);
   const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 
   const tower = grid.findCells("tower");
@@ -183,7 +198,8 @@ export function buildMapMesh(
   const floorLines = new THREE.LineSegments(lineGeometry(floorEdges), lineMat(0.12));
   group.add(topLines, floorLines);
 
-  const { group: towerGroup, view, animations, center: towerCenter } = (theme.towerStyle === "tree" ? buildTreeTower : buildStoneTower)(grid, theme);
+  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower }[theme.towerStyle];
+  const { group: towerGroup, view, animations, center: towerCenter } = buildTower(grid, theme);
   group.add(towerGroup);
   return {
     group,
@@ -196,6 +212,8 @@ export function buildMapMesh(
       (torchMats.flame as THREE.MeshBasicMaterial).opacity = dark ? 0.45 : 1;
       (torchMats.flame as THREE.MeshBasicMaterial).transparent = true;
       (torchMats.glow as THREE.MeshBasicMaterial).opacity = dark ? 0.18 : 0.55;
+      // Glowing strips would draw the whole maze in the dark, so they go out with the lights.
+      for (const m of glowing) m.emissiveIntensity = dark ? 0 : 1;
     },
     update(timeSec: number, climbs: { face: Face; t: number }[], freeze: number | null = null) {
       animations?.update(climbs, timeSec, freeze);

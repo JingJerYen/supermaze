@@ -34,4 +34,4 @@ finish("maze-08", rows,
        manual=[(14, 21, "<"), (16, 1, ">")],  # one-way into each half at its far end
        doors=0, traps=2, obstacles=0, fseed=8, time=210,
        candidates=dict(n_keys=8, n_road_keys=4, n_boxes=14, n_box_top=2, n_switch=6, key_gap=6, wall_cap=2, road_cap=2),
-       meta=dict(difficulty="medium", boxes=8, switches=4))
+       meta=dict(difficulty="medium", boxes=8, switches=4, theme="factory"))

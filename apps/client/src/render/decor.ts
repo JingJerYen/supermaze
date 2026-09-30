@@ -31,6 +31,10 @@ const lanternPostProto = new THREE.BoxGeometry(0.1, 0.4, 0.1);
 const lanternLampProto = new THREE.BoxGeometry(0.15, 0.17, 0.15);
 const lanternRoofProto = new THREE.ConeGeometry(0.17, 0.12, 4).rotateY(Math.PI / 4);
 const lanternCapProto = new THREE.SphereGeometry(0.035, 6, 4);
+const beaconBaseProto = new THREE.BoxGeometry(0.2, 0.1, 0.2);
+const beaconPostProto = new THREE.BoxGeometry(0.07, 0.42, 0.07);
+const beaconTubeProto = new THREE.CylinderGeometry(0.045, 0.045, 0.26, 8);
+const beaconCapProto = new THREE.BoxGeometry(0.12, 0.05, 0.12);
 
 /**
  * Wall lights: on inner walls, on faces that look onto a road tile, roughly one
@@ -75,6 +79,14 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
             place(lanternCapProto, 0.73, 0.14),
           );
           parts.flames.push(place(lanternLampProto, 0.5, 0.14));
+        } else if (theme.lightStyle === "beacon") {
+          // Steel beacon standing at the foot of the wall: footing, post, glowing tube, cap.
+          parts.brackets.push(
+            place(beaconBaseProto, 0.05, 0.14),
+            place(beaconPostProto, 0.31, 0.14),
+            place(beaconCapProto, 0.8, 0.14),
+          );
+          parts.flames.push(place(beaconTubeProto, 0.65, 0.14));
         } else {
           parts.brackets.push(place(bracketProto, 0.62, 0.04), place(cupProto, 0.8, 0.06));
           parts.flames.push(place(flameProto, 0.96, 0.06));
@@ -91,7 +103,7 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
 /** Materials for torch parts; flames and glows are unlit so they read in the dark too. */
 export function torchMaterials(theme: Theme): { bracket: THREE.Material; flame: THREE.Material; glow: THREE.Material } {
   return {
-    bracket: new THREE.MeshLambertMaterial({ color: theme.lightStyle === "lantern" ? theme.structure.stepAlt : 0x2b2b2b }),
+    bracket: new THREE.MeshLambertMaterial({ color: theme.lightStyle === "torch" ? 0x2b2b2b : theme.structure.stepAlt }),
     flame: new THREE.MeshBasicMaterial({ color: theme.torchFlame }),
     glow: new THREE.MeshBasicMaterial({
       color: theme.torchFlame,
