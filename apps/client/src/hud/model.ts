@@ -25,7 +25,7 @@ export interface HudModel {
   canDiscard: boolean;
   onTower: boolean;
   /** The local player is frozen: seconds left and why; null otherwise. */
-  myFreeze: { sec: number; by: "trap" | "ghost" | null } | null;
+  myFreeze: { sec: number; by: PlayerState["frozenBy"] } | null;
   ghost: {
     phase: "idle" | "warning" | "active";
     teamLabel: string | null;

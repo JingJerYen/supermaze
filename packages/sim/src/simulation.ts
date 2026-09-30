@@ -1,6 +1,7 @@
 import { availableAction, canDiscard } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState, canDrawItem } from "./boxes.js";
 import type { SimEvent } from "./events.js";
+import { applyTimeStop, canUseSkill, castSkill, type SkillEffect, type SkillKind } from "./skills.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { movePlayer } from "./playerMove.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
@@ -32,6 +33,8 @@ export interface PlayerInput extends MoveIntent {
    * not dropped on the floor. Ignored on a tick that also presses `action`.
    */
   discard?: boolean;
+  /** Cast the one-shot skill this tick, if the player holds one (tower run; `canUseSkill`). */
+  skill?: boolean;
 }
 
 export const NO_INPUT: PlayerInput = { moveX: 0, moveY: 0 };
@@ -70,11 +73,17 @@ export interface PlayerState extends Participant {
   /** Cannot move until this tick (trap or ghost catch). 0 when free. */
   frozenUntilTick: Tick;
   /** What caused the latest freeze; meaningful while `frozenUntilTick` is in the future. Clients pick the look from it. */
-  frozenBy: "trap" | "ghost" | null;
+  frozenBy: "trap" | "ghost" | "skill" | null;
   /** Node the player just arrived on by teleport; no bounce-back until they step off it. */
   teleportImmunity: string | null;
   /** Cannot be caught by a ghost until this tick (covers the post-catch freeze and protection). */
   protectedUntilTick: Tick;
+  /** Skill still to cast this round; null once cast or when none was given. */
+  skill: SkillKind | null;
+  /** The timed skill cast this round (sprint, eagle eye, lantern), kept after it runs out. */
+  skillEffect: SkillEffect | null;
+  /** The amulet is up: the next trap or ghost catch is shrugged off. */
+  shielded: boolean;
 }
 
 export type RoundStatus = "lobby" | "running" | "finished";
@@ -215,6 +224,9 @@ export class Simulation {
       teleportImmunity: null,
       protectedUntilTick: 0,
       keyScored: false,
+      skill: p.skill ?? null,
+      skillEffect: null,
+      shielded: false,
     };
     this.state = { ...this.state, players: { ...this.state.players, [p.id]: player } };
     // Keep "keys == participants" if someone joins after the round started (dev-only path;
@@ -373,6 +385,7 @@ export class Simulation {
       }
     }
 
+    const timeStops: { casterId: PlayerId; until: Tick }[] = [];
     const moveCtx = { tick, status: this.state.status, freezeUntilTick: this.state.freezeUntilTick, ghost, placeables: work.placeables };
 
     // Sorted ids make simultaneous pickups resolve identically on every replay.
@@ -458,10 +471,18 @@ export class Simulation {
           p = { ...p, items: p.items.slice(1) };
           work.events.push({ type: "itemDiscarded", tick, playerId: id, item });
         }
+        if (input.skill && canUseSkill({ tick, freezeUntilTick: this.state.freezeUntilTick, lightsOn: work.lightsOn, running: true }, p)) {
+          const cast = castSkill(p, tick, this.tuning);
+          p = cast.caster;
+          work.events.push(cast.event);
+          if (cast.timeStopUntil !== null) timeStops.push({ casterId: id, until: cast.timeStopUntil });
+        }
       }
 
       work.players[id] = p;
     }
+    // Everyone has moved from last tick's state; now a time stop can hold them.
+    for (const t of timeStops) applyTimeStop(work.players, t.casterId, t.until);
 
     const players = work.players;
     for (const s of this.pendingScores) {
@@ -481,6 +502,12 @@ export class Simulation {
           if (r.mover.from.layer !== g.mover.from.layer) continue;
           const rp = moverPosition(r.mover);
           if (Math.hypot(rp.x - gp.x, rp.y - gp.y) > radius) continue;
+          if (r.shielded) {
+            // The amulet takes the catch: nothing lost, nobody scores, and the usual protection follows.
+            players[r.id] = { ...r, shielded: false, protectedUntilTick: tick + Math.round(this.tuning.ghostEvent.caughtProtectionSec * this.tuning.tickRate) };
+            work.events.push({ type: "shieldBlocked", tick, playerId: r.id, by: "ghost" });
+            continue;
+          }
           const frozenUntilTick = tick + Math.round(this.tuning.ghostEvent.caughtFreezeSec * this.tuning.tickRate);
           const protectedUntilTick = frozenUntilTick + Math.round(this.tuning.ghostEvent.caughtProtectionSec * this.tuning.tickRate);
           // A ghost without a key takes the runner's (section 13); a ghost that has one leaves it.
@@ -574,7 +601,12 @@ export class Simulation {
   /** Effects of stepping onto a new tile: traps fire, own paired nodes teleport. */
   private onArrive(work: ItemWork, p: PlayerState, tick: Tick): PlayerState {
     const trap = placeableAt(work.placeables, p.mover.from);
-    if (trap?.kind === "trap") {
+    if (trap?.kind === "trap" && p.shielded) {
+      // The amulet takes the trap: it springs and is gone, nobody is held and nobody scores.
+      delete work.placeables[trap.id];
+      work.events.push({ type: "shieldBlocked", tick, playerId: p.id, by: "trap" });
+      p = { ...p, shielded: false };
+    } else if (trap?.kind === "trap") {
       delete work.placeables[trap.id];
       const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
       // The owner scores only for catching another team; trapping yourself or a teammate is worth nothing.

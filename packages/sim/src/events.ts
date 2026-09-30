@@ -1,3 +1,4 @@
+import type { SkillKind } from "./skills.js";
 import type { ItemKind, PlaceableKind } from "./tuning/index.js";
 import type { PlayerId, TeamId, Tick } from "./types.js";
 
@@ -27,6 +28,8 @@ export type SimEvent =
   | { type: "ghostEnded"; tick: Tick; teamId: TeamId }
   | { type: "playerCaught"; tick: Tick; ghostId: PlayerId; runnerId: PlayerId; frozenUntilTick: Tick; stolenKeyId: string | null }
   | { type: "teamCompleted"; tick: Tick; teamId: TeamId; isWinner: boolean }
+  | { type: "skillUsed"; tick: Tick; playerId: PlayerId; skill: SkillKind }
+  | { type: "shieldBlocked"; tick: Tick; playerId: PlayerId; by: "trap" | "ghost" }
   | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason };
 
 export type RoundEndReason =

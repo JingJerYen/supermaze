@@ -91,6 +91,13 @@ export const DEFAULT_TUNING: Tuning = {
     },
   },
 
+  skills: {
+    sprint: { durationSec: 10, speedMultiplier: 1.5 },
+    eagleEye: { durationSec: 5 },
+    lantern: { durationSec: 20, darkRadiusTiles: 6 },
+    timeStop: { freezeSec: 7 },
+  },
+
   towerRun: {
     passShare: 0.5,
     // map difficulty, CPUs, CPU vision (tiles), CPU speed. CPU counts are odd so the

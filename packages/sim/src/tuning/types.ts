@@ -138,6 +138,17 @@ export interface Tuning {
     difficulties: Record<CpuDifficulty, { visionTiles: number; speedMultiplier: number }>;
   };
 
+  /** One-shot skills of the tower run (section 4.1); one per floor, cast once. */
+  skills: {
+    sprint: { durationSec: number; speedMultiplier: number };
+    /** A look from above, like the tower top's. */
+    eagleEye: { durationSec: number };
+    /** Only in the dark: the circle of light around the player grows to `darkRadiusTiles`. */
+    lantern: { durationSec: number; darkRadiusTiles: number };
+    /** Everyone else in the maze is frozen for this long. */
+    timeStop: { freezeSec: number };
+  };
+
   /** Single-player tower run (CLAUDE.md section 4.1). */
   towerRun: {
     /**
