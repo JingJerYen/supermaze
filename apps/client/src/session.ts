@@ -86,9 +86,9 @@ export class Session {
   private playTowerRun(name: string): void {
     this.teardownMatch();
     this.ui.hide();
-    this.towerRun = new TowerRun(this.root, this.renderer, name, (notice) => {
+    this.towerRun = new TowerRun(this.root, this.renderer, name, (notice, lastName) => {
       this.teardownMatch();
-      this.showHome(name, notice);
+      this.showHome(lastName ?? name, notice);
     });
     this.towerRun.start();
   }

@@ -14,6 +14,7 @@ import {
 import type { ResultsActions } from "../hud/results.js";
 import { MAP_POOL } from "../maps.js";
 import { Match } from "../match.js";
+import { FloorPrep, type FloorPrepChoice } from "./floorPrep.js";
 import { createLocalMode } from "./local.js";
 
 const BEST_KEY = "supermaze.towerBest";
@@ -48,32 +49,53 @@ export class TowerRun {
   private plan: FloorPlan | null = null;
   private match: Match | null = null;
   private verdict: ResultsActions | null = null;
+  private prep: FloorPrep | null = null;
+  private character: string | null = null;
   private readonly floorsTotal = DEFAULT_TUNING.towerRun.floors.length;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
-    private readonly name: string,
-    private readonly onHome: (notice?: string) => void,
+    private name: string,
+    /** Back to the home screen, with the name last used. */
+    private readonly onHome: (notice?: string, name?: string) => void,
   ) {
     this.run = startTowerRun(Date.now() >>> 0);
   }
 
   start(): void {
-    this.playFloor();
+    this.prepare();
   }
 
   dispose(): void {
     this.match?.dispose();
     this.match = null;
+    this.prep?.dispose();
+    this.prep = null;
   }
 
-  private playFloor(): void {
+  /** Before every floor: name, character and the floor's skill (section 4.1). */
+  private prepare(): void {
     this.dispose();
+    this.prep = new FloorPrep(
+      this.root,
+      this.renderer,
+      this.run.floor,
+      this.floorsTotal,
+      this.name,
+      (choice) => this.playFloor(choice),
+      () => this.quit(),
+    );
+  }
+
+  private playFloor(choice: FloorPrepChoice): void {
+    this.dispose();
+    this.name = choice.name;
+    this.character = choice.character;
     this.verdict = null;
     this.plan = planFloor(this.run, MAP_POOL);
     if (!this.plan) {
-      this.onHome("沒有可用的地圖，無法開始爬塔挑戰");
+      this.onHome("沒有可用的地圖，無法開始爬塔挑戰", this.name);
       return;
     }
     const plan = this.plan;
@@ -81,6 +103,8 @@ export class TowerRun {
       players: plan.participants,
       seed: plan.seed,
       name: this.name,
+      character: this.character,
+      skill: choice.skill,
       tuning: plan.tuning,
       endWhenYouClimb: true,
       onFinish: (state) => this.finishFloor(state),
@@ -125,7 +149,7 @@ export class TowerRun {
       this.verdict = {
         endsAt: null,
         note: { title: `晉級！${where}`, tone: "pass", lines: [`總分 ${run.totalScore}　下一層：第 ${run.floor} / ${this.floorsTotal} 層`] },
-        buttons: [{ label: `前往第 ${run.floor} 層`, primary: true, run: () => this.playFloor() }, home],
+        buttons: [{ label: `前往第 ${run.floor} 層`, primary: true, run: () => this.prepare() }, home],
       };
     }
   }
@@ -134,17 +158,17 @@ export class TowerRun {
   private async continueAfterFail(): Promise<void> {
     if (this.run.status !== "stopped" || !(await continueGate())) return;
     this.run = continueRun(this.run);
-    this.playFloor();
+    this.prepare();
   }
 
   private restart(): void {
     this.run = startTowerRun(Date.now() >>> 0);
-    this.playFloor();
+    this.prepare();
   }
 
   private quit(): void {
     this.dispose();
-    this.onHome();
+    this.onHome(undefined, this.name);
   }
 }
 

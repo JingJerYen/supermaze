@@ -98,6 +98,13 @@
 - 難度由層數表 `towerRun.floors` 決定（`packages/sim/src/tuning/defaults.ts`），每層指定：地圖難度、CPU 人數、CPU 視野（取代 `cpu.visionTiles`）與速度（取代 `cpu.speedMultiplier`）。CPU 人數一律是奇數（1、3、5），參賽人數為偶數，「前一半」沒有歧義。目前第 1～4 層簡單地圖、第 5～7 層中等、第 8～20 層困難；CPU 視野由 2 格升到 6 格、速度由 0.45 升到 0.8。數字都是試玩值。
 - 地圖難度寫在地圖 JSON 的 `difficulty`（`easy`、`medium`、`hard`，第 6 節）。每層從該難度、且 `supportedParticipants` 含本層人數的地圖中依種子抽選並抽旋轉方向；沒有符合的地圖時改抽最接近的難度（同距離取較難的）；有別張可選時避開上一層剛玩過的地圖。地圖用完會重複抽，加上四種旋轉方向，20 層不需要 20 張地圖。
 - 每層的種子由挑戰種子與層數推得，可重現。
+- 特殊技能（2026-09-30 定案並實作，只限爬塔挑戰，連線對戰沒有；CPU 沒有技能）：每一層開打前有一個準備畫面（`apps/client/src/modes/floorPrep.ts`），可以改暱稱、從 Kenney 的 12 個角色中選一個（左側頭像是啟動時用渲染器即時畫的，右側是會轉的 3D 預覽，換角色時播模型內建的 `emote-yes`），並為這一層選一個技能後按「取得技能」。取得技能經過 `skillGate()`，目前直接放行，上架時在這裡接獎勵廣告或付費；不取得也可以直接開始。角色與暱稱記在瀏覽器（`supermaze.character`、`supermaze.name`），角色以 `Participant.character` 傳入，只影響外觀。技能在這一層可以施放一次：桌機 R 鍵，手機是丟棄鍵左邊同樣大小的紫色小圓鈕（顯示技能圖示與名稱，暫時不能施放時變淡）。開局凍結、定身期間不能施放。五種技能（數值在 `tuning.skills`，試玩值）：
+  - 衝刺：10 秒內移動速度 1.5 倍（與 CPU、鬼的倍率相乘）。
+  - 鷹眼：5 秒內鏡頭切到與塔頂相同的俯瞰視角，之後回到跟隨鏡頭。
+  - 護身符：擋下下一次陷阱或鬼抓，用掉為止。擋陷阱時陷阱照樣消失但不定身、放陷阱的人不得分；擋鬼時不失去道具與鑰匙、鬼不得分，並照常給防重抓保護時間。
+  - 點燈：只能在關燈時施放，20 秒內黑暗中的可見半徑從 3 格變成 6 格。
+  - 時間暫停：迷宮中其他所有玩家原地定身 7 秒（`frozenBy: "skill"`，不顯示鐵籠也不倒地，名單顯示「定身」）；原本已有更長定身的不縮短。使用者提議 10 秒，因為它對所有對手同時生效，預設先用與陷阱相同的 7 秒。
+  規則在 `packages/sim/src/skills.ts`，模擬層只認參賽者開局時帶的 `Participant.skill`，由哪些模式發放是呼叫端決定；輸入是 `PlayerInput.skill`，事件為 `skillUsed` 與 `shieldBlocked`。畫面下方紫色膠囊顯示進行中技能的剩餘秒數（護身符顯示「生效中」），施放與護身符擋下時有大字提示。開發沙盒可用 `?local&skill=sprint` 等直接帶技能。
 - 實作：規則是 `packages/sim/src/run/towerRun.ts` 的純函式（`startTowerRun`、`planFloor`、`judgeFloor`、`recordFloor`、`continueRun`、`passRank`），有單元測試；`apps/client/test/towerRunPool.test.ts` 確認現有地圖池的每一層都抽得到正確難度的地圖。客戶端 `apps/client/src/modes/towerRun.ts` 只負責逐層開局與結算畫面的文字、按鈕；HUD 計時器下方顯示「第 n / 20 層、分數前 k 名晉級、總分」。畫面右側的 ✕ 退出等於結束挑戰。
 - 開發用的 `?local`（可帶 `players`、`seed`、`rot`、`map`、`cpu=hard`）仍是單局沙盒，不經爬塔流程。
 

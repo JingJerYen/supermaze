@@ -47,7 +47,7 @@ export class PlayerView {
   /** Caught by a ghost: lying on the ground until the freeze ends. */
   private downed = false;
 
-  constructor(playerId: string, color: number) {
+  constructor(playerId: string, color: number, character?: string | null) {
     this.color = color;
     this.mesh = new THREE.Group();
 
@@ -61,7 +61,7 @@ export class PlayerView {
     this.mesh.add(this.disc);
 
     this.mesh.add(this.hammer.root, this.body);
-    this.rig = characters.createRig(playerId, PLAYER_HEIGHT);
+    this.rig = characters.createRig(playerId, PLAYER_HEIGHT, character);
     if (this.rig) {
       this.body.add(this.rig.root);
       this.rig.mixer.addEventListener("finished", (e) => {

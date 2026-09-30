@@ -1,0 +1,119 @@
+import * as THREE from "three";
+import { characters, type CharacterRig } from "./characters.js";
+
+/**
+ * The character select stage: the picked character stands on a small disc,
+ * turning slowly, and waves (`emote-yes`) each time the pick changes. It draws
+ * on the one shared renderer while the pre-floor screen is up. Also makes the
+ * portrait thumbnails for the picker, once.
+ */
+export class CharacterPreview {
+  private readonly scene = new THREE.Scene();
+  private readonly camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+  private readonly holder = new THREE.Group();
+  private rig: CharacterRig | null = null;
+  private frame = 0;
+  private last = performance.now();
+  private running = false;
+
+  constructor(private readonly renderer: THREE.WebGLRenderer) {
+    this.scene.background = new THREE.Color(0x141a26);
+    this.scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a3040, 1.5));
+    const sun = new THREE.DirectionalLight(0xfff2dc, 1.6);
+    sun.position.set(2, 4, 3);
+    this.scene.add(sun);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.08, 40), new THREE.MeshLambertMaterial({ color: 0x3a4660 }));
+    disc.position.y = -0.04;
+    this.scene.add(disc, this.holder);
+  }
+
+  /** Show `name`; the new character waves hello. */
+  show(name: string): void {
+    if (this.rig) this.holder.remove(this.rig.root);
+    this.rig = characters.createRig(name, 1.6, name);
+    if (!this.rig) return;
+    this.holder.add(this.rig.root);
+    const wave = this.rig.clip("emote-yes");
+    if (wave) {
+      wave.setLoop(THREE.LoopOnce, 1);
+      wave.clampWhenFinished = false;
+      this.rig.idle?.stop();
+      wave.reset().play();
+      const rig = this.rig;
+      rig.mixer.addEventListener("finished", () => rig.idle?.reset().play());
+    }
+  }
+
+  start(): void {
+    if (this.running) return;
+    this.running = true;
+    this.last = performance.now();
+    const loop = (now: number) => {
+      if (!this.running) return;
+      const dt = Math.min((now - this.last) / 1000, 0.1);
+      this.last = now;
+      this.rig?.mixer.update(dt);
+      this.holder.rotation.y += dt * 0.5;
+      this.render();
+      this.frame = requestAnimationFrame(loop);
+    };
+    this.frame = requestAnimationFrame(loop);
+  }
+
+  stop(): void {
+    this.running = false;
+    cancelAnimationFrame(this.frame);
+  }
+
+  /** The stage sits in the right part of the screen, clear of the panel on the left. */
+  private render(): void {
+    const size = new THREE.Vector2();
+    this.renderer.getSize(size);
+    this.camera.aspect = size.x / Math.max(size.y, 1);
+    // Aim so the character stands at about 70% of the width.
+    const dist = 8;
+    const shift = 0.4 * Math.tan((this.camera.fov * Math.PI) / 360) * this.camera.aspect * dist;
+    this.camera.position.set(-shift, 1.6, dist);
+    this.camera.lookAt(-shift, 0.8, 0);
+    this.camera.updateProjectionMatrix();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Head-and-shoulders portraits of every loaded character, as image URLs. */
+  static portraits(renderer: THREE.WebGLRenderer, px = 96): Map<string, string> {
+    const out = new Map<string, string>();
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2a3450);
+    scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a3040, 1.6));
+    const sun = new THREE.DirectionalLight(0xfff2dc, 1.6);
+    sun.position.set(1.5, 3, 3);
+    scene.add(sun);
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
+    camera.position.set(0, 1.25, 2.6);
+    camera.lookAt(0, 1.05, 0);
+    const target = new THREE.WebGLRenderTarget(px, px);
+    target.texture.colorSpace = THREE.SRGBColorSpace;
+    const pixels = new Uint8Array(px * px * 4);
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = px;
+    const ctx = canvas.getContext("2d")!;
+    for (const name of characters.available()) {
+      const rig = characters.createRig(name, 1.6, name);
+      if (!rig) continue;
+      rig.mixer.update(0);
+      scene.add(rig.root);
+      renderer.setRenderTarget(target);
+      renderer.render(scene, camera);
+      renderer.readRenderTargetPixels(target, 0, 0, px, px, pixels);
+      scene.remove(rig.root);
+      // WebGL rows run bottom-up.
+      const img = ctx.createImageData(px, px);
+      for (let y = 0; y < px; y++) img.data.set(pixels.subarray((px - 1 - y) * px * 4, (px - y) * px * 4), y * px * 4);
+      ctx.putImageData(img, 0, 0);
+      out.set(name, canvas.toDataURL());
+    }
+    renderer.setRenderTarget(null);
+    target.dispose();
+    return out;
+  }
+}
