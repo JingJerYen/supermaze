@@ -136,9 +136,9 @@ export const CLIENT_TUNING = {
     /** The map's longer side is drawn this long on screen, whatever the map size; also capped at maxVh of the window height. */
     boxPx: 150,
     maxVh: 26,
-    /** Dot radius as a share of one map cell: yours, everyone else's, and the factor for players on the tower. */
+    /** Dot radius as a share of one map cell: yours, everyone else's (the same size; yours has the white ring), and the factor for players on the tower. */
     selfDot: 0.62,
-    otherDot: 0.45,
+    otherDot: 0.62,
     towerDotScale: 0.7,
     /** Everyone for themselves: your colour and the colour of all the others. Two teams use the team colours. */
     soloSelfColor: 0xffd23f,

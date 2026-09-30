@@ -1,6 +1,6 @@
 import type * as THREE from "three";
 import { NAME_MAX_CHARS } from "@supermaze/protocol";
-import { defaultNameFor } from "../characterNames.js";
+import { defaultNameFor, FALLBACK_NAME } from "../characterNames.js";
 import { hasOwnName, loadProfile, portraits, saveProfile, type Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { characters } from "../render/characters.js";
@@ -24,7 +24,7 @@ export class CharacterSetup {
     this.profile = loadProfile();
     if (!this.profile.character) {
       this.profile.character = characters.available()[0] ?? null;
-      if (!hasOwnName()) this.profile.name = defaultNameFor(this.profile.character) ?? this.profile.name;
+      if (!hasOwnName()) this.profile.name = defaultNameFor(this.profile.character) ?? FALLBACK_NAME;
     }
     this.preview = new CharacterPreview(renderer);
     if (this.profile.character) this.preview.show(this.profile.character);
@@ -56,11 +56,11 @@ export class CharacterSetup {
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-char]")) {
       b.addEventListener("click", () => {
         // A name still at the old character's default (or cleared) follows the new pick; a typed one stays.
-        const before = defaultNameFor(this.profile.character);
+        const before = defaultNameFor(this.profile.character) ?? FALLBACK_NAME;
         this.profile.character = b.dataset["char"] ?? null;
         const typed = nameInput.value.trim();
         if (!typed || typed === before) {
-          this.profile.name = defaultNameFor(this.profile.character) ?? typed;
+          this.profile.name = defaultNameFor(this.profile.character) ?? FALLBACK_NAME;
           nameInput.value = this.profile.name;
         }
         if (this.profile.character) this.preview.show(this.profile.character);
