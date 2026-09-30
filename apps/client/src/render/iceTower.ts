@@ -3,7 +3,7 @@ import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
 import { TowerAnimations } from "./climbSequence.js";
 import { patternTexture, type Theme } from "./themes.js";
-import { TowerView, towerGeometry, type TowerBuild } from "./tower.js";
+import { mergeByMaterial, TowerView, towerGeometry, type TowerBuild } from "./tower.js";
 
 /**
  * The ice palace's tower: an ice spire. It keeps every measure of the stone
@@ -44,6 +44,8 @@ export function buildIceTower(grid: MapGrid, theme: Theme): TowerBuild {
   if (footW === 0) return { group: tower, view, animations: null, center };
   const cx = center.x;
   const cz = center.z;
+  // Repeated decorations, merged into one mesh per material at the end.
+  const parts: THREE.Mesh[] = [];
 
   // Plinth: a course of dark stone over the whole footprint, then a snow-capped tier of ice.
   const tier1 = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight, footD), stoneMat);
@@ -63,7 +65,7 @@ export function buildIceTower(grid: MapGrid, theme: Theme): TowerBuild {
     const a = (i * Math.PI) / 4 + Math.PI / 8;
     const rib = new THREE.Mesh(ribGeo, shardMat);
     rib.position.set(cx + Math.sin(a) * radius, shaftBottom + shaftH / 2, cz + Math.cos(a) * radius);
-    tower.add(rib);
+    parts.push(rib);
   }
 
   // Crystal shards leaning out from the foot of the shaft, on the corners between the doors.
@@ -79,7 +81,7 @@ export function buildIceTower(grid: MapGrid, theme: Theme): TowerBuild {
       const r = radius * 0.95;
       shard.position.set(cx + Math.sin(dir) * r, shaftBottom + len / 2 - 0.1, cz + Math.cos(dir) * r);
       shard.rotation.set(Math.cos(dir) * lean, 0, -Math.sin(dir) * lean);
-      tower.add(shard);
+      parts.push(shard);
     }
   }
 
@@ -108,7 +110,7 @@ export function buildIceTower(grid: MapGrid, theme: Theme): TowerBuild {
     for (const sz of [-1, 1]) {
       const spike = new THREE.Mesh(spikeGeo, spikeMat);
       spike.position.set(cx + sx * (slabW / 2 - 0.18), top + 0.65, cz + sz * (slabD / 2 - 0.18));
-      tower.add(spike);
+      parts.push(spike);
     }
   }
 
@@ -122,6 +124,7 @@ export function buildIceTower(grid: MapGrid, theme: Theme): TowerBuild {
   crystal.position.set(cx, crystalY, cz);
   crystal.userData["baseY"] = crystalY;
 
+  mergeByMaterial(tower, parts);
   tower.add(tier1, tier2, shaft, platform, edges, crystal);
   const animations = new TowerAnimations(tower, center, footW, footD, t.shaftWidth, shaftBottom, shaftH, shaftBottom, crystal, theme.towerRune, {
     leaf: 0x2a4a7a,

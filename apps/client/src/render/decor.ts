@@ -37,13 +37,13 @@ const beaconBaseProto = new THREE.BoxGeometry(0.2, 0.1, 0.2);
 const beaconPostProto = new THREE.BoxGeometry(0.07, 0.42, 0.07);
 const beaconTubeProto = new THREE.CylinderGeometry(0.045, 0.045, 0.26, 8);
 const beaconCapProto = new THREE.BoxGeometry(0.12, 0.05, 0.12);
-const candleBaseProto = new THREE.CylinderGeometry(0.1, 0.11, 0.05, 12);
-const candleProto = new THREE.CylinderGeometry(0.055, 0.06, 0.4, 12);
-const candleFlameProto = new THREE.ConeGeometry(0.05, 0.15, 7);
+const candleBaseProto = new THREE.CylinderGeometry(0.1, 0.11, 0.05, 8);
+const candleProto = new THREE.CylinderGeometry(0.055, 0.06, 0.4, 8);
+const candleFlameProto = new THREE.ConeGeometry(0.05, 0.15, 6);
 const plinthProto = new THREE.BoxGeometry(0.2, 0.26, 0.2);
 const plinthCapProto = new THREE.BoxGeometry(0.26, 0.05, 0.26);
 const iceCrystalProto = new THREE.OctahedronGeometry(0.1, 0).scale(0.8, 1.5, 0.8);
-const gumdropProto = new THREE.SphereGeometry(0.07, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1);
+const gumdropProto = new THREE.SphereGeometry(0.07, 7, 3, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1);
 /** Gumdrop colours; no yellow, so nothing on the floor reads as the key's gold. */
 const GUMDROPS = [0xe8384f, 0x4cc46a, 0x9b5ad6, 0xf28c28, 0x3fa8e8];
 
