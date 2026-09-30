@@ -32,16 +32,20 @@ export interface Theme {
   growth: number;
   /** Share of inner walls that get the growth variant of the side texture (0..1). */
   growthShare: number;
+  /** Colour of the light strips built into the wall pattern, glowing while the map is lit; 0 for none. */
+  glow: number;
+  /** Matte (plain diffuse) or metal (adds a soft specular sheen) for walls, wall tops and floors. */
+  surface: "matte" | "metal";
 
   /** Wall lights per eligible inner wall face, roughly 1 in N; 0 disables them. */
   torchEvery: number;
   torchFlame: number;
-  /** A torch on the wall face, or a stone lantern standing at the foot of the wall. */
-  lightStyle: "torch" | "lantern";
+  /** A torch on the wall face, or a stone lantern or light beacon standing at the foot of the wall. */
+  lightStyle: "torch" | "lantern" | "beacon";
   /** Stairs and bridges. */
   structure: StructurePalette;
-  /** The central tower: stacked stone, or a giant tree with a deck in its crown. */
-  towerStyle: "stone" | "tree";
+  /** The central tower: stacked stone, a giant tree with a deck in its crown, or a steel reactor with a hologram. */
+  towerStyle: "stone" | "tree" | "reactor";
   towerStone: number;
   towerRune: number;
   towerCrystal: number;
@@ -59,7 +63,7 @@ export interface StructurePalette {
   rail: number;
 }
 
-export type PatternKind = "none" | "blocks" | "slab" | "hedge" | "hedgeTop" | "flagstone" | "bark";
+export type PatternKind = "none" | "blocks" | "slab" | "hedge" | "hedgeTop" | "flagstone" | "bark" | "panel" | "plate" | "tread";
 
 export const THEMES: Record<string, Theme> = {
   stone: {
@@ -82,6 +86,8 @@ export const THEMES: Record<string, Theme> = {
     floorPattern: "slab",
     growth: 0x74c447,
     growthShare: 0.5,
+    glow: 0,
+    surface: "matte",
     torchEvery: 9,
     torchFlame: 0xffa63a,
     lightStyle: "torch",
@@ -115,6 +121,8 @@ export const THEMES: Record<string, Theme> = {
     floorPattern: "flagstone",
     growth: 0xf2709f,
     growthShare: 0.6,
+    glow: 0,
+    surface: "matte",
     torchEvery: 7,
     torchFlame: 0xffd57a,
     lightStyle: "lantern",
@@ -127,6 +135,46 @@ export const THEMES: Record<string, Theme> = {
     towerLeaf: 0x4f9a3c,
     towerDeck: 0xc9a46c,
   },
+  /**
+   * Sci-fi factory: modular steel walls with glowing light strips and pale caps,
+   * tread-plate floors, beacons at the wall feet, and a reactor holding a
+   * hologram globe instead of the tower. Its patterns are true-colour, so these
+   * are the colours on screen before lighting.
+   */
+  factory: {
+    id: "factory",
+    sky: 0x060b1c,
+    hemiSky: 0xd6e2ff,
+    hemiGround: 0x1a2233,
+    hemiIntensity: 1.0,
+    sunColor: 0xeef4ff,
+    sunIntensity: 1.25,
+    wallSide: 0x4a5b7c,
+    wallTop: 0xa4adba,
+    outerWall: 0x3c4a66,
+    floor: 0x444c5a,
+    plaza: 0x535d6e,
+    line: 0x0c1018,
+    linesGlowInDark: false,
+    wallPattern: "panel",
+    topPattern: "plate",
+    floorPattern: "tread",
+    growth: 0xf2b41e,
+    growthShare: 0.22,
+    glow: 0x4fd8ff,
+    surface: "metal",
+    torchEvery: 8,
+    torchFlame: 0x55dcff,
+    lightStyle: "beacon",
+    structure: { step: 0x8e98a8, stepAlt: 0x76808f, plank: 0x4d596b, plankAlt: 0x404b5c, rail: 0xf0a431 },
+    towerStyle: "reactor",
+    towerStone: 0xa7b0bd,
+    towerRune: 0x4fd8ff,
+    towerCrystal: 0xa8f2ff,
+    towerBark: 0x6b4a2f,
+    towerLeaf: 0x4f9a3c,
+    towerDeck: 0x6fb6e6,
+  },
 };
 
 export const DEFAULT_THEME_ID = "stone";
@@ -135,4 +183,4 @@ export function themeFor(id: string | undefined): Theme {
   return THEMES[id ?? DEFAULT_THEME_ID] ?? (THEMES[DEFAULT_THEME_ID] as Theme);
 }
 
-export { patternTexture, runeTexture } from "./patterns.js";
+export { glowTexture, patternTexture, runeTexture, trueColour } from "./patterns.js";
