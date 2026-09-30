@@ -34,4 +34,5 @@ finish("maze-07", c.rows(),
        manual=[(14, 7, "O"), (28, 9, ">"), (7, 18, "A"), (14, 23, "A")],
        doors=4, traps=3, obstacles=3, fseed=1, time=240,
        candidates=dict(n_keys=12, n_road_keys=6, wall_cap=4,
-                       fixed_keys=[(3, 3, "r"), (31, 3, "r"), (39, 23, "r"), (29, 25, "r"), (3, 27, "r"), (13, 27, "r")]))
+                       fixed_keys=[(3, 3, "r"), (31, 3, "r"), (39, 23, "r"), (29, 25, "r"), (3, 27, "r"), (13, 27, "r")]),
+       meta=dict(theme="ice"))

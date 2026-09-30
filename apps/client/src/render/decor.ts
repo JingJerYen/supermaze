@@ -40,6 +40,9 @@ const beaconCapProto = new THREE.BoxGeometry(0.12, 0.05, 0.12);
 const candleBaseProto = new THREE.CylinderGeometry(0.1, 0.11, 0.05, 12);
 const candleProto = new THREE.CylinderGeometry(0.055, 0.06, 0.4, 12);
 const candleFlameProto = new THREE.ConeGeometry(0.05, 0.15, 7);
+const plinthProto = new THREE.BoxGeometry(0.2, 0.26, 0.2);
+const plinthCapProto = new THREE.BoxGeometry(0.26, 0.05, 0.26);
+const iceCrystalProto = new THREE.OctahedronGeometry(0.1, 0).scale(0.8, 1.5, 0.8);
 const gumdropProto = new THREE.SphereGeometry(0.07, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1);
 /** Gumdrop colours; no yellow, so nothing on the floor reads as the key's gold. */
 const GUMDROPS = [0xe8384f, 0x4cc46a, 0x9b5ad6, 0xf28c28, 0x3fa8e8];
@@ -98,6 +101,10 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
             place(beaconCapProto, 0.8, 0.14),
           );
           parts.flames.push(place(beaconTubeProto, 0.65, 0.14));
+        } else if (theme.lightStyle === "crystal") {
+          // A glowing ice crystal floating over a small stone plinth at the foot of the wall.
+          parts.brackets.push(place(plinthProto, 0.13, 0.16), place(plinthCapProto, 0.285, 0.16));
+          parts.flames.push(place(iceCrystalProto, 0.5, 0.16));
         } else if (theme.lightStyle === "candle") {
           // A striped candle standing at the foot of the wall on a little icing base.
           parts.brackets.push(place(candleBaseProto, 0.025, 0.16), place(candleProto, 0.25, 0.16));
@@ -142,7 +149,7 @@ export function torchMaterials(theme: Theme): { bracket: THREE.Material; flame: 
   return {
     bracket: candle
       ? new THREE.MeshLambertMaterial({ color: 0xffffff, map: stripeTexture(theme.structure.rail) })
-      : new THREE.MeshLambertMaterial({ color: theme.lightStyle === "torch" ? 0x2b2b2b : theme.structure.stepAlt }),
+      : new THREE.MeshLambertMaterial({ color: theme.lightStyle === "torch" ? 0x2b2b2b : theme.lightStyle === "crystal" ? 0x3e4a60 : theme.structure.stepAlt }),
     prop: new THREE.MeshLambertMaterial({ vertexColors: true }),
     flame: new THREE.MeshBasicMaterial({ color: theme.torchFlame }),
     glow: new THREE.MeshBasicMaterial({

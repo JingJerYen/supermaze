@@ -46,14 +46,14 @@ export interface Theme {
   /** Wall lights per eligible inner wall face, roughly 1 in N; 0 disables them. */
   torchEvery: number;
   torchFlame: number;
-  /** A torch on the wall face, or a stone lantern, light beacon or striped candle standing at the foot of the wall. */
-  lightStyle: "torch" | "lantern" | "beacon" | "candle";
+  /** A torch on the wall face, or a stone lantern, light beacon, striped candle or ice crystal on a plinth standing at the foot of the wall. */
+  lightStyle: "torch" | "lantern" | "beacon" | "candle" | "crystal";
   /** Small props scattered at the wall feet (gumdrops on the candy map); omitted for none. */
   scatter?: "gumdrops";
   /** Stairs and bridges. */
   structure: StructurePalette;
-  /** The central tower: stacked stone, a giant tree with a deck in its crown, a steel reactor with a hologram, or a tall layer cake. */
-  towerStyle: "stone" | "tree" | "reactor" | "cake";
+  /** The central tower: stacked stone, a giant tree with a deck in its crown, a steel reactor with a hologram, a tall layer cake, or an ice spire. */
+  towerStyle: "stone" | "tree" | "reactor" | "cake" | "ice";
   towerStone: number;
   towerRune: number;
   towerCrystal: number;
@@ -85,7 +85,15 @@ export type PatternKind =
   | "biscuit"
   | "icing"
   | "chocolate"
-  | "cake";
+  | "cake"
+  | "iceBrick"
+  | "snow"
+  | "frostStone";
+
+/** Wall patterns that carry their wall top's colour as a band along the top edge (icing, snow). */
+export function bandedWalls(kind: PatternKind): boolean {
+  return kind === "biscuit" || kind === "iceBrick";
+}
 
 export const THEMES: Record<string, Theme> = {
   stone: {
@@ -237,6 +245,46 @@ export const THEMES: Record<string, Theme> = {
     towerBark: 0x6b4a2f,
     towerLeaf: 0x4f9a3c,
     towerDeck: 0xf6ecd8,
+  },
+  /**
+   * Ice palace: walls of pale-blue ice over dark stone with snow and icicles
+   * along the top, thick snow on the wall tops, frosted pavers, glowing ice
+   * crystals on stone plinths, and an ice spire instead of the tower, under a
+   * deep indigo night. True-colour patterns with a soft sheen.
+   */
+  ice: {
+    id: "ice",
+    sky: 0x121838,
+    hemiSky: 0xe4eeff,
+    hemiGround: 0x46527c,
+    hemiIntensity: 1.3,
+    sunColor: 0xf0f5ff,
+    sunIntensity: 1.35,
+    wallSide: 0x9cd8fa,
+    wallTop: 0xf4f8ff,
+    outerWall: 0x8ccbf0,
+    floor: 0x7d8aa6,
+    plaza: 0x8e9bb6,
+    line: 0x2a3450,
+    linesGlowInDark: false,
+    wallPattern: "iceBrick",
+    topPattern: "snow",
+    floorPattern: "frostStone",
+    growth: 0,
+    growthShare: 0,
+    glow: 0,
+    surface: "metal",
+    torchEvery: 7,
+    torchFlame: 0x8fe6ff,
+    lightStyle: "crystal",
+    structure: { step: 0xeef3fb, stepAlt: 0xd6e0ee, plank: 0xbfe6fb, plankAlt: 0xa8dcf6, rail: 0x7cc4ec },
+    towerStyle: "ice",
+    towerStone: 0x9fd6f6,
+    towerRune: 0x7fe4ff,
+    towerCrystal: 0xc8f4ff,
+    towerBark: 0x6b4a2f,
+    towerLeaf: 0x4f9a3c,
+    towerDeck: 0xe6f2ff,
   },
 };
 

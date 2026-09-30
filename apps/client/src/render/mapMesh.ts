@@ -5,9 +5,10 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { collectTorches, tileHash, torchMaterials } from "./decor.js";
 import { createBridge, createStairs } from "./structures.js";
 import type { Face } from "./climbSequence.js";
-import { glowTexture, patternTexture, themeFor, trueColour, type PatternKind, type Theme } from "./themes.js";
+import { bandedWalls, glowTexture, patternTexture, themeFor, trueColour, type PatternKind, type Theme } from "./themes.js";
 import { buildReactorTower } from "./reactorTower.js";
 import { buildCakeTower } from "./cakeTower.js";
+import { buildIceTower } from "./iceTower.js";
 import { buildStoneTower } from "./stoneTower.js";
 import { buildTreeTower } from "./treeTower.js";
 import type { TowerView } from "./tower.js";
@@ -60,16 +61,16 @@ export function buildMapMesh(
 
   const floorMat = surface(theme.floor, theme.floorPattern);
   const plazaMat = surface(theme.plaza, theme.floorPattern);
-  const sideMat = surface(theme.wallSide, theme.wallPattern, theme.wallPattern === "biscuit" ? theme.wallTop : 0);
+  // Walls whose pattern carries their top's colour as a band (icing, snow) get it as the accent.
+  const banded = bandedWalls(theme.wallPattern);
+  const sideMat = surface(theme.wallSide, theme.wallPattern, banded ? theme.wallTop : 0);
   // A second side material with moss, flowers or hazard stripes, used on a share
   // of inner walls to break repetition.
   const sideGrowthMat = theme.growth ? surface(theme.wallSide, theme.wallPattern, theme.growth) : sideMat;
-  const outerSideMat = surface(theme.outerWall, theme.wallPattern, theme.wallPattern === "biscuit" ? theme.wallTop : 0);
+  const outerSideMat = surface(theme.outerWall, theme.wallPattern, banded ? theme.wallTop : 0);
   const topMat = surface(theme.wallTop, theme.topPattern);
-  // Themes with a second top colour: a wall pattern that carries its top's
-  // colour as a band (biscuit under icing) gets it as its accent, so the band
-  // always matches the top above it.
-  const banded = theme.wallPattern === "biscuit";
+  // Themes with a second top colour: on banded walls the band follows it, so
+  // it always matches the top above it.
   const topAlt = theme.wallTopAlt ?? 0;
   const topAltMat = topAlt ? surface(topAlt, theme.topPattern) : topMat;
   const sideAltMat = topAlt && banded ? surface(theme.wallSide, theme.wallPattern, topAlt) : sideMat;
@@ -213,7 +214,7 @@ export function buildMapMesh(
   const floorLines = new THREE.LineSegments(lineGeometry(floorEdges), lineMat(0.12));
   group.add(topLines, floorLines);
 
-  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower, cake: buildCakeTower }[theme.towerStyle];
+  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower, cake: buildCakeTower, ice: buildIceTower }[theme.towerStyle];
   const { group: towerGroup, view, animations, center: towerCenter } = buildTower(grid, theme);
   group.add(towerGroup);
   return {
