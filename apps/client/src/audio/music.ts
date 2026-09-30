@@ -4,8 +4,10 @@ import { sfx } from "./sfx.js";
 
 /**
  * Background music: one track on the home screen, one in a match, each looped
- * without a gap. A track is public/music/<name>.m4a or .mp3 when there is one
- * (a designer drops the file in), else a placeholder composed in code. A file
+ * without a gap. A match plays its map theme's own track when there is one
+ * (`game-candy`, ...), else the shared match track. A track is
+ * public/music/<name>.m4a or .mp3 when there is one (a designer drops the file
+ * in), else a placeholder composed in code. A file
  * that is not a seamless loop (a song with an intro and an ending) has its
  * silent ends trimmed and its last seconds blended into its start, so it loops
  * smoothly too. It plays through the sound effects' master gain, so muting
@@ -15,10 +17,10 @@ import { sfx } from "./sfx.js";
 class Music {
   private ctx: AudioContext | null = null;
   private out: GainNode | null = null;
-  private readonly buffers = new Map<TrackName, AudioBuffer>();
-  private readonly loading = new Set<TrackName>();
-  private wanted: TrackName | null = null;
-  private current: { track: TrackName; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private readonly buffers = new Map<TrackKey, AudioBuffer>();
+  private readonly loading = new Map<TrackKey, Promise<AudioBuffer>>();
+  private wanted: TrackKey | null = null;
+  private current: { track: TrackKey; src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private rate = 1;
   private enabled = false;
 
@@ -37,10 +39,10 @@ class Music {
   }
 
   /** Switch to `track` (null for silence), fading between them. */
-  play(track: TrackName | null): void {
+  play(track: TrackKey | null): void {
     if (!this.enabled) return;
     this.wanted = track;
-    if (track) void this.load(track);
+    if (track && this.ctx) void this.load(track);
     this.apply();
   }
 
@@ -51,23 +53,31 @@ class Music {
     if (this.ctx && this.current) this.current.src.playbackRate.setTargetAtTime(rate, this.ctx.currentTime, CLIENT_TUNING.audio.musicRateEaseSec / 3);
   }
 
-  private async load(track: TrackName): Promise<void> {
-    const ctx = this.ctx;
-    if (!ctx || this.buffers.has(track) || this.loading.has(track)) return;
-    this.loading.add(track);
-    let buffer: AudioBuffer | null = null;
+  /** The track's buffer, fetched or composed once; playback follows as soon as it is ready. */
+  private load(track: TrackKey): Promise<AudioBuffer> {
+    let pending = this.loading.get(track);
+    if (!pending) {
+      pending = this.decode(this.ctx as AudioContext, track);
+      this.loading.set(track, pending);
+      void pending.then((buffer) => {
+        this.buffers.set(track, buffer);
+        this.apply();
+      });
+    }
+    return pending;
+  }
+
+  private async decode(ctx: AudioContext, track: TrackKey): Promise<AudioBuffer> {
     const data = await fetchFirst([`music/${track}.m4a`, `music/${track}.mp3`]);
     if (data) {
       try {
-        buffer = loopable(ctx, await ctx.decodeAudioData(data), CLIENT_TUNING.audio.musicLoopBlendSec);
+        return loopable(ctx, await ctx.decodeAudioData(data), CLIENT_TUNING.audio.musicLoopBlendSec);
       } catch {
-        buffer = null; // undecodable file: fall back to the placeholder
+        /* undecodable file: fall back as if there were none */
       }
     }
-    buffer ??= await renderPlaceholder(track, ctx.sampleRate);
-    this.buffers.set(track, buffer);
-    this.loading.delete(track);
-    this.apply();
+    const fallback = fallbackTrack(track);
+    return fallback ? this.load(fallback) : renderPlaceholder(track as TrackName, ctx.sampleRate);
   }
 
   /** Bring what is playing in line with what is wanted. */
@@ -143,6 +153,14 @@ export function loopable(ctx: BaseAudioContext, input: AudioBuffer, blendSec: nu
     }
   });
   return out;
+}
+
+/** "menu", "game", or a theme's own match track, "game-<theme id>". */
+export type TrackKey = TrackName | `game-${string}`;
+
+/** The track to play instead when `track` has no file: a theme's match track falls back to the shared one. */
+export function fallbackTrack(track: TrackKey): TrackName | null {
+  return track === "menu" || track === "game" ? null : "game";
 }
 
 export const music = new Music();

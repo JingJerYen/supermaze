@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loopable } from "../src/audio/music.js";
+import { fallbackTrack, loopable } from "../src/audio/music.js";
 import { musicRate } from "../src/audio/musicMood.js";
 import { CLIENT_TUNING } from "../src/tuning.js";
 
@@ -45,5 +45,13 @@ describe("music rate", () => {
     expect(musicRate({ ...base, ghost: { phase: "active" } })).toBe(a.musicGhostRate);
     expect(musicRate({ ...base, ghost: { phase: "warning" } })).toBe(1);
     expect(musicRate({ ...base, remainingSec: 5, ghost: { phase: "active" } })).toBe(Math.max(a.musicHurryRate, a.musicGhostRate));
+  });
+});
+
+describe("theme tracks", () => {
+  it("a theme with no track of its own plays the shared match track", () => {
+    expect(fallbackTrack("game-candy")).toBe("game");
+    expect(fallbackTrack("game")).toBeNull();
+    expect(fallbackTrack("menu")).toBeNull();
   });
 });
