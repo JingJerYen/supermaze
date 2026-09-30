@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { CHARACTER_IDS } from "@supermaze/protocol";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 
@@ -9,20 +10,8 @@ import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.j
  * is assigned one deterministically from their id so every client shows the same person. Missing files -> `ready()` false -> the box
  * placeholder in PlayerView stays.
  */
-export const CHARACTER_NAMES = [
-  "character-male-a",
-  "character-male-b",
-  "character-male-c",
-  "character-male-d",
-  "character-male-e",
-  "character-male-f",
-  "character-female-a",
-  "character-female-b",
-  "character-female-c",
-  "character-female-d",
-  "character-female-e",
-  "character-female-f",
-];
+/** Menu order; the list is shared with the server so it can check a pick. */
+export const CHARACTER_NAMES: readonly string[] = CHARACTER_IDS;
 const BASE = `${import.meta.env.BASE_URL}models/characters/`;
 
 interface Loaded {

@@ -60,6 +60,8 @@ export type JoinRequest = (
   | { kind: "create"; name: string }
   | { kind: "join"; name: string; code: string }
 ) & {
+  /** Picked character (character setup); null for the id-based default. */
+  character?: string | null;
   /** Server typed on the home screen; empty keeps the current endpoint. */
   server?: string;
 };
@@ -101,7 +103,7 @@ export class Connection {
 
   async connect(req: JoinRequest): Promise<void> {
     const client = new Client(this.endpoint);
-    const opts = { name: req.name };
+    const opts = { name: req.name, character: req.character ?? null };
     let room: Room;
     // A dead or mistyped server must not leave the player on "connecting" for ever.
     if (req.kind === "quick") room = await withTimeout(client.joinOrCreate(ROOM_NAME, { ...opts, mode: "quick" }), CONNECT_TIMEOUT_MS);

@@ -9,6 +9,7 @@ import { antialiasAtLaunch, createGovernor, installQuality, rememberRatio } from
 import { sfx } from "./audio/sfx.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
+import { loadProfile } from "./profile.js";
 import { Session } from "./session.js";
 import { CLIENT_TUNING } from "./tuning.js";
 
@@ -52,6 +53,7 @@ if (params.has("rules")) {
     players,
     seed,
     name: playerName,
+    character: loadProfile().character,
     difficulty: params.get("cpu") === "hard" ? "hard" : "easy",
     // Developer aid: ?skill=sprint etc. hands you a skill in the sandbox (normally tower run only).
     skill: SKILL_KINDS.find((k) => k === params.get("skill")) ?? null,
@@ -59,7 +61,7 @@ if (params.has("rules")) {
   new Match(root, renderer, mode);
 } else {
   const endpoint = params.get("server") ?? rememberedServer() ?? `ws://${location.hostname}:2567`;
-  void new Session(root, renderer, endpoint, playerName).start();
+  void new Session(root, renderer, endpoint).start();
 }
 
 /** The server last typed on the home screen, if any. */

@@ -1,7 +1,9 @@
 import type * as THREE from "three";
 import type { LobbyMessage, MatchStartedMessage } from "@supermaze/protocol";
 import { rotateMap } from "@supermaze/sim";
+import { CharacterSetup } from "./lobby/characterSetup.js";
 import { LobbyUi } from "./lobby/lobbyUi.js";
+import { loadProfile, portraits } from "./profile.js";
 import { loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { OnlineMatchMode } from "./modes/online.js";
@@ -20,6 +22,7 @@ export class Session {
   private match: Match | null = null;
   private rules: RulesScreen | null = null;
   private towerRun: TowerRun | null = null;
+  private profileScreen: CharacterSetup | null = null;
   private matchMode: OnlineMatchMode | null = null;
   private pendingStart: MatchStartedMessage | null = null;
   private lastLobby: LobbyMessage | null = null;
@@ -29,11 +32,11 @@ export class Session {
     private readonly root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
     endpoint: string,
-    private readonly defaultName: string,
   ) {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
-      onTowerRun: (name) => this.playTowerRun(name),
+      onTowerRun: () => this.playTowerRun(),
+      onProfile: () => this.showProfile(),
       onRules: () => this.showRules(),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
@@ -68,7 +71,7 @@ export class Session {
       this.startPing();
       return; // lobby / matchStarted / full will arrive and drive the UI
     }
-    this.showHome(this.defaultName);
+    this.showHome();
   }
 
   /** Rules cards over demo scenes; closing returns to the home screen. */
@@ -78,23 +81,35 @@ export class Session {
     this.rules = new RulesScreen(this.root, this.renderer, () => {
       this.rules?.dispose();
       this.rules = null;
-      this.showHome(this.defaultName);
+      this.showHome();
     });
   }
 
   /** Single-player tower run in the page: no socket involved; quitting leads back here. */
-  private playTowerRun(name: string): void {
+  /** Character setup (name and character); done returns to the home screen. */
+  private showProfile(): void {
     this.teardownMatch();
     this.ui.hide();
-    this.towerRun = new TowerRun(this.root, this.renderer, name, (notice, lastName) => {
+    this.profileScreen = new CharacterSetup(this.root, this.renderer, () => {
+      this.profileScreen?.dispose();
+      this.profileScreen = null;
+      this.showHome();
+    });
+  }
+
+  private playTowerRun(): void {
+    this.teardownMatch();
+    this.ui.hide();
+    this.towerRun = new TowerRun(this.root, this.renderer, (notice) => {
       this.teardownMatch();
-      this.showHome(lastName ?? name, notice);
+      this.showHome(notice);
     });
     this.towerRun.start();
   }
 
-  private showHome(name: string, notice?: string): void {
-    this.ui.showHome(name, notice, loadTowerBest());
+  private showHome(notice?: string): void {
+    this.ui.setPortraits(portraits(this.renderer));
+    this.ui.showHome(loadProfile(), notice, loadTowerBest());
   }
 
   private async join(req: JoinRequest): Promise<void> {
@@ -116,16 +131,16 @@ export class Session {
     } catch (e) {
       const local = `ws://${location.hostname}:2567`;
       const hint = endpoint === local ? "請確認伺服器已啟動（npm run dev）" : `若伺服器在這台電腦上，請把伺服器欄位改成 ${local}`;
-      if (e instanceof ConnectTimeout) this.ui.showHome(req.name, `連不上伺服器 ${endpoint}。${hint}`);
-      else if (req.kind === "join") this.ui.showHome(req.name, `找不到房間 ${req.code}，請確認代碼`);
-      else this.ui.showHome(req.name, `無法連線到 ${endpoint}：${(e as Error).message ?? String(e)}。${hint}`);
+      if (e instanceof ConnectTimeout) this.showHome(`連不上伺服器 ${endpoint}。${hint}`);
+      else if (req.kind === "join") this.showHome(`找不到房間 ${req.code}，請確認代碼`);
+      else this.showHome(`無法連線到 ${endpoint}：${(e as Error).message ?? String(e)}。${hint}`);
     }
   }
 
   private async leave(): Promise<void> {
     await this.conn.leave();
     this.teardownMatch();
-    this.showHome(this.defaultName);
+    this.showHome();
   }
 
   private onLobby(m: LobbyMessage): void {
@@ -175,7 +190,7 @@ export class Session {
   private onDisconnected(code: number): void {
     this.stopPing();
     this.teardownMatch();
-    this.showHome(this.defaultName, code === 4000 ? undefined : `連線中斷（代碼 ${code}）`);
+    this.showHome(code === 4000 ? undefined : `連線中斷（代碼 ${code}）`);
     void this.lastLobby;
   }
 

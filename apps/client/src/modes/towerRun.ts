@@ -9,12 +9,14 @@ import {
   startTowerRun,
   type FloorPlan,
   type SimulationState,
+  type SkillKind,
   type TowerRunState,
 } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { MAP_POOL } from "../maps.js";
 import { Match } from "../match.js";
-import { FloorPrep, type FloorPrepChoice } from "./floorPrep.js";
+import { loadProfile } from "../profile.js";
+import { FloorPrep } from "./floorPrep.js";
 import { createLocalMode } from "./local.js";
 
 const BEST_KEY = "supermaze.towerBest";
@@ -50,15 +52,12 @@ export class TowerRun {
   private match: Match | null = null;
   private verdict: ResultsActions | null = null;
   private prep: FloorPrep | null = null;
-  private character: string | null = null;
   private readonly floorsTotal = DEFAULT_TUNING.towerRun.floors.length;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
-    private name: string,
-    /** Back to the home screen, with the name last used. */
-    private readonly onHome: (notice?: string, name?: string) => void,
+    private readonly onHome: (notice?: string) => void,
   ) {
     this.run = startTowerRun(Date.now() >>> 0);
   }
@@ -74,7 +73,7 @@ export class TowerRun {
     this.prep = null;
   }
 
-  /** Before every floor: name, character and the floor's skill (section 4.1). */
+  /** Before every floor: the floor's skill (section 4.1); who you are comes from the home screen's character setup. */
   private prepare(): void {
     this.dispose();
     this.prep = new FloorPrep(
@@ -82,29 +81,28 @@ export class TowerRun {
       this.renderer,
       this.run.floor,
       this.floorsTotal,
-      this.name,
-      (choice) => this.playFloor(choice),
+      loadProfile(),
+      (skill) => this.playFloor(skill),
       () => this.quit(),
     );
   }
 
-  private playFloor(choice: FloorPrepChoice): void {
+  private playFloor(skill: SkillKind | null): void {
     this.dispose();
-    this.name = choice.name;
-    this.character = choice.character;
+    const profile = loadProfile();
     this.verdict = null;
     this.plan = planFloor(this.run, MAP_POOL);
     if (!this.plan) {
-      this.onHome("沒有可用的地圖，無法開始爬塔挑戰", this.name);
+      this.onHome("沒有可用的地圖，無法開始爬塔挑戰");
       return;
     }
     const plan = this.plan;
     const mode = createLocalMode(rotateMap(plan.map, plan.rotation), {
       players: plan.participants,
       seed: plan.seed,
-      name: this.name,
-      character: this.character,
-      skill: choice.skill,
+      name: profile.name,
+      character: profile.character,
+      skill,
       tuning: plan.tuning,
       endWhenYouClimb: true,
       onFinish: (state) => this.finishFloor(state),
@@ -168,7 +166,7 @@ export class TowerRun {
 
   private quit(): void {
     this.dispose();
-    this.onHome(undefined, this.name);
+    this.onHome();
   }
 }
 

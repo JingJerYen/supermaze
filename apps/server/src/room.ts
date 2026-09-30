@@ -3,6 +3,7 @@ import {
   C2S,
   InputQueue,
   PROTOCOL_VERSION,
+  sanitizeCharacter,
   S2C,
   SnapshotDelta,
   type AckMessage,
@@ -135,7 +136,7 @@ export class MazeRoom extends Room {
     this.armQuickWait();
   }
 
-  override onJoin(client: Client, options?: { name?: unknown }): void {
+  override onJoin(client: Client, options?: { name?: unknown; character?: unknown }): void {
     if (!this.inLobby()) {
       // The room is locked while playing; this is a safety net.
       client.leave(CloseCode.CONSENTED);
@@ -145,6 +146,7 @@ export class MazeRoom extends Room {
     this.lobby.set(client.sessionId, {
       id: client.sessionId,
       name: sanitizeName(options?.name),
+      character: sanitizeCharacter(options?.character),
       teamId: teamForNewPlayer(players),
       ready: false,
       connected: true,
@@ -274,7 +276,7 @@ export class MazeRoom extends Room {
     const seed = Date.now() >>> 0;
     const participants = [...this.lobby.values()]
       .filter((p) => p.connected)
-      .map((p) => ({ id: p.id, teamId: p.teamId, controller: "human" as const, name: p.name }));
+      .map((p) => ({ id: p.id, teamId: p.teamId, controller: "human" as const, name: p.name, character: p.character ?? null }));
     const drawn = pickMap(this.pool, participants.length, seed);
     if (!drawn) {
       this.phase = "lobby";

@@ -21,6 +21,7 @@ const CSS = `
 .lb-team-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:500}
 .lb-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
 .lb-p{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.1);font-size:15px}
+.lb-av{width:22px;height:22px;border-radius:5px;vertical-align:middle;margin-right:6px;background:#2a3450}
 .lb-p.empty{color:#7f8899;font-size:13px}
 .lb-ready{color:#8bff7a;font-size:12px}.lb-wait{color:#c9d2e3;font-size:12px}.lb-off{color:#ff9f7a;font-size:12px}
 .lb button.on{background:rgba(255,210,63,.22);border-color:#ffd23f;color:#ffe08a}
@@ -32,7 +33,9 @@ const CSS = `
 export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
   /** Single-player tower run against CPUs, run inside the page. */
-  onTowerRun(name: string): void;
+  onTowerRun(): void;
+  /** Open the character setup (name and character). */
+  onProfile(): void;
   /** Open the rules cards. */
   onRules(): void;
   onReady(ready: boolean): void;
@@ -54,6 +57,7 @@ export class LobbyUi {
   private server = "";
   private lastMsg: LobbyMessage | null = null;
   private tickTimer: number | null = null;
+  private faces = new Map<string, string>();
 
   constructor(parent: HTMLElement, private readonly handlers: LobbyUiHandlers) {
     const style = document.createElement("style");
@@ -84,31 +88,41 @@ export class LobbyUi {
     this.server = url;
   }
 
+  /** Portraits by character, for the room lists. */
+  setPortraits(faces: Map<string, string>): void {
+    this.faces = faces;
+  }
+
   /** `best` is the tower-run record shown next to its button. */
-  showHome(defaultName: string, error?: string, best?: { score: number; floor: number } | null): void {
+  showHome(profile: { name: string; character: string | null }, error?: string, best?: { score: number; floor: number } | null): void {
     this.stopTicking();
     this.show();
     this.root.classList.add("home");
     this.card.className = "hm";
-    this.card.innerHTML = homeHtml({ error, best });
-    const nameEl = this.card.querySelector<HTMLInputElement>("#lb-name")!;
-    nameEl.value = capName(defaultName);
-    const name = () => capName(nameEl.value.trim() || defaultName);
+    this.card.innerHTML = homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best });
+    const name = () => capName(profile.name);
+    const character = profile.character;
     const serverEl = this.card.querySelector<HTMLInputElement>("#lb-server")!;
     serverEl.value = this.server;
     const server = () => serverEl.value.trim();
-    this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), server: server() }));
-    this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), server: server() }));
+    this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), character, server: server() }));
+    this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), character, server: server() }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
-    this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun(name()));
+    this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
+    this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {
       const code = this.card.querySelector<HTMLInputElement>("#lb-code")!.value.trim().toUpperCase();
       if (code.length !== 4) {
         this.card.querySelector("#lb-home-notice")!.textContent = "請輸入四碼房間代碼";
         return;
       }
-      this.handlers.onJoin({ kind: "join", name: name(), code, server: server() });
+      this.handlers.onJoin({ kind: "join", name: name(), character, code, server: server() });
     });
+  }
+
+  private face(character: string | null | undefined): string {
+    const src = character ? this.faces.get(character) : undefined;
+    return src ? `<img class="lb-av" alt="" src="${src}">` : "";
   }
 
   showConnecting(text = "連線中..."): void {
@@ -140,7 +154,7 @@ export class LobbyUi {
         .map((p) => {
           const state = !p.connected ? `<span class="lb-off">斷線</span>` : p.ready ? `<span class="lb-ready">準備好了</span>` : `<span class="lb-wait">未準備</span>`;
           const tags = [p.id === this.meId ? "（你）" : "", p.id === msg.hostId ? " 房主" : ""].join("");
-          return `<div class="lb-p"><span>${escapeHtml(p.name)}${tags}</span>${state}</div>`;
+          return `<div class="lb-p"><span>${this.face(p.character)}${escapeHtml(p.name)}${tags}</span>${state}</div>`;
         })
         .join("");
       const empty = `<div class="lb-p empty">空位</div>`.repeat(Math.max(0, Math.ceil(msg.maxPlayers / 2) - members.length));
@@ -150,7 +164,7 @@ export class LobbyUi {
     const playerRow = (p: LobbyMessage["players"][number]) => {
       const state = !p.connected ? `<span class="lb-off">斷線</span>` : p.ready ? `<span class="lb-ready">準備好了</span>` : `<span class="lb-wait">未準備</span>`;
       const tags = [p.id === this.meId ? "（你）" : "", p.id === msg.hostId ? " 房主" : ""].join("");
-      return `<div class="lb-p"><span>${escapeHtml(p.name)}${tags}</span>${state}</div>`;
+      return `<div class="lb-p"><span>${this.face(p.character)}${escapeHtml(p.name)}${tags}</span>${state}</div>`;
     };
     const soloList = `<div class="lb-solo"><div class="lb-team-h">個人對戰<span class="lb-muted">每人一隊，依分數排名，沒有勝隊加成</span></div>${msg.players.map(playerRow).join("")}${`<div class="lb-p empty">空位</div>`.repeat(Math.max(0, msg.maxPlayers - msg.players.length))}</div>`;
     // Only a private room has a choice; its host switches, everyone else just sees the mode.
