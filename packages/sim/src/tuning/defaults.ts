@@ -92,10 +92,10 @@ export const DEFAULT_TUNING: Tuning = {
   },
 
   skills: {
-    sprint: { durationSec: 10, speedMultiplier: 1.5 },
-    eagleEye: { durationSec: 5 },
+    sprint: { durationSec: 15, speedMultiplier: 1.5 },
+    eagleEye: { durationSec: 10 },
     lantern: { durationSec: 20, darkRadiusTiles: 6 },
-    timeStop: { freezeSec: 7 },
+    timeStop: { freezeSec: 15 },
   },
 
   towerRun: {
