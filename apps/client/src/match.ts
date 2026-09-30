@@ -24,6 +24,7 @@ import { buildMapMesh } from "./render/mapMesh.js";
 import { themeFor } from "./render/themes.js";
 import { PlaceableViews } from "./render/placeables.js";
 import { PlayerViews } from "./render/players.js";
+import { qualityFrame, qualityStatus, restartQuality } from "./render/quality.js";
 import { useTeams } from "./render/teamColors.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
@@ -75,6 +76,7 @@ export class Match {
     options: { demo?: boolean } = {},
   ) {
     this.demo = options.demo === true;
+    restartQuality();
     this.scene = createScene();
     const theme = themeFor(mode.theme);
     this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
@@ -121,8 +123,10 @@ export class Match {
   private render(alpha: number): void {
     const now = performance.now();
     const tickSec = 1 / this.mode.tickRate;
-    const dt = Math.min((now - this.lastFrame) / 1000, tickSec * 4);
+    const frameSec = (now - this.lastFrame) / 1000;
+    const dt = Math.min(frameSec, tickSec * 4);
     this.lastFrame = now;
+    qualityFrame(this.renderer, frameSec);
 
     const s = this.mode.sample(now, alpha);
     const meId = this.mode.localPlayerId();
@@ -188,6 +192,7 @@ export class Match {
         drawCalls: r.calls,
         triangles: r.triangles,
         pixels: `${this.renderer.domElement.width}x${this.renderer.domElement.height} @${this.renderer.getPixelRatio()}`,
+        quality: qualityStatus(),
         gpuObjects: `${this.renderer.info.memory.geometries} geo, ${this.renderer.info.memory.textures} tex`,
         jsHeap: jsHeapMB(),
         mode: this.mode.label,

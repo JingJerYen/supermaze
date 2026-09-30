@@ -215,6 +215,24 @@ export const CLIENT_TUNING = {
     maxPixelRatio: 2,
     clearColor: 0x101318,
   },
+  /** Automatic quality for weak devices (render/quality.ts). ?dpr= or ?quality=off turns it off; ?quality=reset forgets. */
+  quality: {
+    enabled: true,
+    /** Seconds after a match starts before frames count (loading, shader compile, the opening shot). */
+    warmupSec: 3,
+    /** Frames are judged in windows of this many seconds, by their median frame time. */
+    windowSec: 4,
+    /** After a step down, seconds to let things settle before judging it. */
+    settleSec: 1,
+    /** Below this median frame rate the pixel ratio steps down. */
+    slowFps: 45,
+    /** A step must raise the frame rate by this share, else it is undone and adjusting stops. */
+    minGain: 0.1,
+    /** Pixel ratios to step through below the device's own. */
+    ratioSteps: [1.5, 1.25, 1, 0.8],
+    /** Once this browser has gone to this ratio or below, the next launch also turns antialiasing off. */
+    antialiasAboveRatio: 1,
+  },
   loop: {
     /** Largest frame delta we accept, seconds. Tab switches must not teleport players. */
     maxFrameDeltaSec: 0.25,
