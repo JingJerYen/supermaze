@@ -49,6 +49,17 @@ export class FloorPrep {
       timeStop: `所有對手定身 ${s.timeStop.freezeSec} 秒`,
       jump: "跳上或跳下面前一格",
     };
+    // The longer explanation under the buttons, for the skill picked (phones hide the buttons' second line).
+    const explain: Record<SkillKind, string> = {
+      sprint: `${s.sprint.durationSec} 秒內移動速度變成 ${s.sprint.speedMultiplier} 倍。`,
+      eagleEye: `${s.eagleEye.durationSec} 秒內從高空俯瞰整張地圖，看清鑰匙和路線。`,
+      amulet: "擋下下一次陷阱或鬼抓：不會被定身，也不會失去道具和鑰匙。",
+      lantern: `只能在關燈時用：${s.lantern.durationSec} 秒內黑暗中看得到 ${s.lantern.darkRadiusTiles} 格遠。`,
+      timeStop: `迷宮裡所有對手原地定身 ${s.timeStop.freezeSec} 秒。`,
+      jump: "面向牆時跳上牆頂，站在牆頂時跳下道路，不用找樓梯。面前能落腳時技能鈕才會亮。",
+    };
+    const shown = this.owned ?? this.picked;
+    const note = shown ? `${SKILL_INFO[shown]!.icon} ${SKILL_INFO[shown]!.label}：${explain[shown]}` : "點一個技能看說明。";
     const face = this.profile.character ? portraits(this.renderer).get(this.profile.character) : undefined;
     const skills = SKILL_KINDS.map((k) => {
       const info = SKILL_INFO[k]!;
@@ -63,7 +74,7 @@ export class FloorPrep {
       <div class="sp-who">${face ? `<img alt="" src="${face}">` : ""}<span>${escapeHtml(this.profile.name)}</span></div>
       <div><label>這一層的技能（施放一次：R 鍵或技能鍵）</label><div class="sp-skills">${skills}</div></div>
       <div class="sp-row">${skillButton}</div>
-      <div class="sp-note">${this.owned ? "這一層可以施放一次。" : "不取得技能也可以直接開始。"}</div>
+      <div class="sp-note">${note}</div>
       <div class="sp-spacer"></div>
       <div class="sp-row"><button id="fp-home">回首頁</button><button class="primary" id="fp-go">開始第 ${this.floor} 層</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-skill]")) {
