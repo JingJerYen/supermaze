@@ -32,6 +32,8 @@ export interface HudModel {
     iAmGhost: boolean;
     /** The local player's team is the announced or active ghost team. */
     myTeamIsGhost: boolean;
+    /** Who the warning names: "你" in solo, "A 隊（我方）" for your own team, else the team label. */
+    warningSubject: string | null;
   };
 }
 
@@ -116,8 +118,9 @@ export function buildHudModel(
           secondsLeft: Math.max(0, state.ghost.phaseEndsAtTick - state.tick) / tickRate,
           iAmGhost: !!me && isGhost(state.ghost, me),
           myTeamIsGhost: !!me && state.ghost.teamId === me.teamId && state.ghost.phase !== "idle",
+          warningSubject: warningSubject(state, me, nameOfTeam),
         }
-      : { phase: "idle", teamLabel: null, secondsLeft: 0, iAmGhost: false, myTeamIsGhost: false },
+      : { phase: "idle", teamLabel: null, secondsLeft: 0, iAmGhost: false, myTeamIsGhost: false, warningSubject: null },
   };
 }
 
@@ -134,4 +137,11 @@ function toRow(state: SimulationState, p: PlayerState, isMe: boolean): PlayerRow
     ghost: isGhost(state.ghost, p),
     frozen: p.frozenUntilTick > state.tick,
   };
+}
+
+function warningSubject(state: SimulationState, me: PlayerState | undefined, nameOfTeam: (teamId: string) => string): string | null {
+  const teamId = state.ghost.teamId;
+  if (!teamId) return null;
+  if (!me || me.teamId !== teamId) return nameOfTeam(teamId);
+  return state.teamMode === "solo" ? "你" : `${nameOfTeam(teamId)}（我方）`;
 }

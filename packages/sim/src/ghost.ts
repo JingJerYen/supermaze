@@ -54,19 +54,26 @@ export function isGhost(ghost: GhostState, p: PlayerState): boolean {
  * behind; then the most recent ghost team is passed over; then the first team
  * id in sorted order. Turns never differ by more than one. Teams with nobody
  * left in the maze are skipped; with fewer than two eligible teams the event
- * waits another interval.
+ * waits another interval. An event that could not run its full warning and
+ * chase before `roundEndsAtTick` is not announced at all.
  */
 export function stepGhost(
   ghost: GhostState,
   players: Record<PlayerId, PlayerState>,
   tick: Tick,
   tuning: Tuning,
+  roundEndsAtTick: Tick,
 ): { ghost: GhostState; events: SimEvent[] } {
   if (tick < ghost.phaseEndsAtTick) return { ghost, events: [] };
   const events: SimEvent[] = [];
 
   if (ghost.phase === "idle") {
-    return beginWarning(ghost, players, tick, tuning, sec(tuning.ghostEvent.warningSec, tuning));
+    const warningTicks = sec(tuning.ghostEvent.warningSec, tuning);
+    if (tick + warningTicks + sec(tuning.ghostEvent.durationSec, tuning) > roundEndsAtTick) {
+      // Too late in the round for a whole event: stay idle until the round ends.
+      return { ghost: { ...ghost, phaseEndsAtTick: roundEndsAtTick }, events };
+    }
+    return beginWarning(ghost, players, tick, tuning, warningTicks);
   }
 
   if (ghost.phase === "warning") {

@@ -46,6 +46,14 @@ describe("ghost notice", () => {
     expect(m.ghost).toMatchObject({ phase: "warning", teamLabel: "A 隊", secondsLeft: 3, iAmGhost: false, myTeamIsGhost: false });
   });
 
+  it("names you as 'you' in solo and marks your own team in teams", () => {
+    // "cpu" sorts before "me", so the cpu is the first ghost; from its side the warning says 你.
+    expect(hud("solo", [["me", "me"], ["cpu", "cpu"]], "cpu").ghost.warningSubject).toBe("你");
+    expect(hud("solo", [["me", "me"], ["cpu", "cpu"]], "me").ghost.warningSubject).toBe("cpu");
+    expect(hud("teams", [["alice", "A"], ["bob", "B"]], "alice").ghost.warningSubject).toBe("A 隊（我方）");
+    expect(hud("teams", [["alice", "A"], ["bob", "B"]], "bob").ghost.warningSubject).toBe("A 隊");
+  });
+
   it("disappears once the round is over, even mid-warning", () => {
     const sim = new Simulation({
       seed: 1,

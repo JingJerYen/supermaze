@@ -9,6 +9,7 @@ const CSS = `
 .hud *{box-sizing:border-box}
 .hud.demo .hud-team,.hud.demo .hud-time,.hud.demo .hud-sub,.hud.demo .hud-go{display:none}
 .hud.demo .hud-items{right:max(24px,env(safe-area-inset-right))}
+.hud.demo .hud-top{justify-content:center}
 .hud-top{position:absolute;top:max(10px,env(safe-area-inset-top));left:var(--pad);right:max(12px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hud-team{display:flex;flex-direction:column;gap:5px;min-width:0}
 .hud-team.right{align-items:flex-end}
@@ -122,7 +123,7 @@ export class Hud {
     const g = m.ghost;
     const gs = Math.ceil(g.secondsLeft);
     this.ghost.className = `hud-ghost ${g.phase !== "idle" ? g.phase : ""} ${g.iAmGhost ? "me" : ""}`.trim();
-    if (g.phase === "warning") this.ghost.textContent = `${gs} 秒後 ${g.teamLabel} 變成鬼`;
+    if (g.phase === "warning") this.ghost.textContent = warningText(gs, g.warningSubject ?? "");
     else if (g.phase === "active") this.ghost.textContent = g.iAmGhost ? `你是鬼，去抓人 ${gs} 秒` : g.myTeamIsGhost ? `我方是鬼 ${gs} 秒` : `鬼抓人！躲開 ${g.teamLabel} ${gs} 秒`;
 
 
@@ -263,4 +264,10 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string): H
   const e = document.createElement(tag);
   if (className) e.className = className;
   return e;
+}
+
+/** "10 秒後你變成鬼", "10 秒後 A 隊 變成鬼", "10 秒後 A 隊（我方）變成鬼": no stray space next to CJK. */
+function warningText(sec: number, subject: string): string {
+  if (subject === "你") return `${sec} 秒後你變成鬼`;
+  return `${sec} 秒後 ${subject}${subject.endsWith("）") ? "" : " "}變成鬼`;
 }

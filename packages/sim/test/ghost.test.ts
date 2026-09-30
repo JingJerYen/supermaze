@@ -178,6 +178,31 @@ describe("schedule follows the round length", () => {
     expect(at("ghostStarted", events)[0]).toBe(20 + g.warningSec);
     expect(at("ghostEnded", events)[0]).toBe(firstEnd);
   });
+
+  it("no warning when the round has no time left for a whole event", () => {
+    const tuning: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0 } };
+    const g = tuning.ghostEvent;
+    // 60 s round: warning at 12 s, over at 12 + warning + duration; the next one
+    // would be due 12 s later but could not finish before the round does.
+    const sim = new Simulation({ seed: 3, map: MAP, participants: two, tuning, timeLimitSec: 60 });
+    sim.start();
+    const firstEnd = 12 + g.warningSec + g.durationSec;
+    expect(firstEnd + 12 + g.warningSec + g.durationSec).toBeGreaterThan(60);
+    const events = run(sim, 60 * T + 1);
+    expect(events.filter((e) => e.type === "ghostWarning").map((e) => e.tick / T)).toEqual([12]);
+    expect(sim.getState().ghost.phase).toBe("idle");
+  });
+
+  it("an event that exactly fits is still announced", () => {
+    const tuning: Tuning = { ...DEFAULT_TUNING, round: { ...DEFAULT_TUNING.round, startFreezeSec: 0, introSec: 0 } };
+    const g = tuning.ghostEvent;
+    // Round sized so the first warning plus the whole event ends on the last tick.
+    const limit = (g.warningSec + g.durationSec) / (1 - g.firstWarningShare);
+    const sim = new Simulation({ seed: 3, map: MAP, participants: two, tuning, timeLimitSec: limit });
+    sim.start();
+    const events = run(sim, Math.round(limit * T));
+    expect(events.map((e) => e.type)).toContain("ghostStarted");
+  });
 });
 
 describe("stealing keys", () => {

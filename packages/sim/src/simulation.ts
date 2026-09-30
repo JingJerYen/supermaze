@@ -360,7 +360,7 @@ export class Simulation {
     // Ghost-tag schedule advances first so this tick's movement uses the right roles and speeds.
     let ghost = this.state.ghost;
     if (this.state.status === "running") {
-      const g = stepGhost(ghost, this.state.players, tick, this.tuning);
+      const g = stepGhost(ghost, this.state.players, tick, this.tuning, this.state.endsAtTick);
       ghost = g.ghost;
       work.events.push(...g.events);
     }
