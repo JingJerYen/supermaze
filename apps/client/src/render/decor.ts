@@ -43,6 +43,9 @@ const candleFlameProto = new THREE.ConeGeometry(0.05, 0.15, 6);
 const plinthProto = new THREE.BoxGeometry(0.2, 0.26, 0.2);
 const plinthCapProto = new THREE.BoxGeometry(0.26, 0.05, 0.26);
 const iceCrystalProto = new THREE.OctahedronGeometry(0.1, 0).scale(0.8, 1.5, 0.8);
+const brazierBowlProto = new THREE.CylinderGeometry(0.13, 0.08, 0.12, 8);
+const brazierRimProto = new THREE.CylinderGeometry(0.14, 0.14, 0.025, 8);
+const brazierFlameProto = new THREE.ConeGeometry(0.08, 0.2, 6);
 const gumdropProto = new THREE.SphereGeometry(0.07, 7, 3, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1);
 /** Gumdrop colours; no yellow, so nothing on the floor reads as the key's gold. */
 const GUMDROPS = [0xe8384f, 0x4cc46a, 0x9b5ad6, 0xf28c28, 0x3fa8e8];
@@ -105,6 +108,10 @@ export function collectTorches(grid: MapGrid, theme: Theme, switchTiles: Readonl
           // A glowing ice crystal floating over a small stone plinth at the foot of the wall.
           parts.brackets.push(place(plinthProto, 0.13, 0.16), place(plinthCapProto, 0.285, 0.16));
           parts.flames.push(place(iceCrystalProto, 0.5, 0.16));
+        } else if (theme.lightStyle === "brazier") {
+          // A bronze fire bowl on a small stone plinth at the foot of the wall.
+          parts.brackets.push(place(plinthProto, 0.13, 0.16), place(brazierBowlProto, 0.32, 0.16), place(brazierRimProto, 0.385, 0.16));
+          parts.flames.push(place(brazierFlameProto, 0.49, 0.16));
         } else if (theme.lightStyle === "candle") {
           // A striped candle standing at the foot of the wall on a little icing base.
           parts.brackets.push(place(candleBaseProto, 0.025, 0.16), place(candleProto, 0.25, 0.16));
@@ -149,7 +156,7 @@ export function torchMaterials(theme: Theme): { bracket: THREE.Material; flame: 
   return {
     bracket: candle
       ? new THREE.MeshLambertMaterial({ color: 0xffffff, map: stripeTexture(theme.structure.rail) })
-      : new THREE.MeshLambertMaterial({ color: theme.lightStyle === "torch" ? 0x2b2b2b : theme.lightStyle === "crystal" ? 0x3e4a60 : theme.structure.stepAlt }),
+      : new THREE.MeshLambertMaterial({ color: theme.lightStyle === "torch" ? 0x2b2b2b : theme.lightStyle === "crystal" ? 0x3e4a60 : theme.lightStyle === "brazier" ? 0x4a3420 : theme.structure.stepAlt }),
     prop: new THREE.MeshLambertMaterial({ vertexColors: true }),
     flame: new THREE.MeshBasicMaterial({ color: theme.torchFlame }),
     glow: new THREE.MeshBasicMaterial({
