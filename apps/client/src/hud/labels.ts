@@ -24,6 +24,9 @@ export const SKILL_INFO: Record<string, { label: string; icon: string; blurb: st
   lantern: { label: "點燈", icon: "🔦", blurb: "黑暗中看得更遠（關燈時才能用）" },
   timeStop: { label: "時間暫停", icon: "⏸️", blurb: "所有對手停住不動" },
   jump: { label: "跳", icon: "🦘", blurb: "跳上面前的牆，或從牆頂跳下" },
+  pierce: { label: "穿透", icon: "👻", blurb: "穿過障礙物、單向門與陷阱" },
+  warp: { label: "隨機傳送", icon: "🌀", blurb: "瞬間移到隨機的位置" },
+  supply: { label: "補給", icon: "🎁", blurb: "背包補滿隨機道具" },
 };
 
 export const ACTION_LABEL: Record<string, string> = {

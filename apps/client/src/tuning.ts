@@ -161,6 +161,10 @@ export const CLIENT_TUNING = {
     soloSelfColor: 0xffd23f,
     soloOtherColor: 0xff6b6b,
   },
+  /** The tower run's pierce skill: the character turns see-through while it lasts. */
+  pierce: {
+    opacity: 0.45,
+  },
   /** The tower run's jump skill: the step onto or off a wall is drawn as a hop. */
   jump: {
     /** Extra height at the middle of the hop, world units (a wall is 1 tall). */

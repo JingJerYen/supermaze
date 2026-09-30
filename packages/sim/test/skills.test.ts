@@ -3,6 +3,9 @@ import type { MapData } from "../src/map/types.js";
 import { moverPosition } from "../src/movement.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { canUseSkill, jumpTarget, type SkillKind } from "../src/skills.js";
+import { warpTargets } from "../src/skillEffects.js";
+import { movePlayer } from "../src/playerMove.js";
+import { tileKey } from "../src/map/grid.js";
 import { MapGrid } from "../src/map/grid.js";
 import type { PlaceableState } from "../src/placeables.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
@@ -58,7 +61,7 @@ describe("skills", () => {
     expect(stepAll(withFreeze, 1, new Map([["a", cast]])).some((e) => e.type === "skillUsed")).toBe(false);
     const st = withFreeze.getState();
     const a = st.players["a"]!;
-    const ctx = { tick: st.freezeUntilTick, freezeUntilTick: st.freezeUntilTick, lightsOn: true, running: true, placeables: {} };
+    const ctx = { tick: st.freezeUntilTick, freezeUntilTick: st.freezeUntilTick, lightsOn: true, running: true, placeables: {}, ghost: st.ghost, capacity: 3 };
     expect(canUseSkill(ctx, a, MapGrid.fromMapData(MAP))).toBe(true);
     expect(canUseSkill(ctx, { ...a, frozenUntilTick: ctx.tick + 1 }, MapGrid.fromMapData(MAP))).toBe(false);
   });
@@ -80,7 +83,7 @@ describe("skills", () => {
   it("lantern: only in the dark", () => {
     const s = sim([{ id: "a", skill: "lantern" }]);
     const st = s.getState();
-    const ctx = { tick: 1, freezeUntilTick: 0, running: true, placeables: {} };
+    const ctx = { tick: 1, freezeUntilTick: 0, running: true, placeables: {}, ghost: st.ghost, capacity: 3 };
     expect(canUseSkill({ ...ctx, lightsOn: true }, st.players["a"]!, MapGrid.fromMapData(MAP))).toBe(false);
     expect(canUseSkill({ ...ctx, lightsOn: false }, st.players["a"]!, MapGrid.fromMapData(MAP))).toBe(true);
     expect(stepAll(s, 1, new Map([["a", cast]])).some((e) => e.type === "skillUsed")).toBe(false);
@@ -187,5 +190,79 @@ describe("skills", () => {
     });
     expect(jumpTarget(grid, on("obstacle"), at(3, 4, "road", 0, 1))).toBeNull();
     expect(jumpTarget(grid, on("trap"), at(3, 4, "road", 0, 1))).toEqual({ x: 3, y: 5, layer: "wallTop" });
+  });
+
+  it("pierce: through an obstacle and over a trap, which stays; a trap springs again once it ends", () => {
+    const blocked = { ...MAP, fixtures: [{ kind: "obstacle" as const, x: 2, y: 6, layer: "road" as const }] };
+    const run = (skill: boolean) => {
+      const s = new Simulation({ seed: 1, map: blocked, teamMode: "solo", tuning: NO_FREEZE, participants: [{ id: "a", teamId: "a", controller: "human", ...(skill ? { skill: "pierce" as const } : {}) }] });
+      s.start();
+      if (skill) stepAll(s, 1, new Map([["a", cast]]));
+      stepAll(s, 3 * T, new Map([["a", S]]));
+      return s.getState().players["a"]!.mover.from;
+    };
+    expect(run(false)).not.toMatchObject({ x: 2, y: 6 });
+    expect(run(true)).toMatchObject({ x: 2, y: 6, layer: "road" });
+
+    const s = sim([{ id: "a", skill: "pierce" }]);
+    stepAll(s, 1, new Map([["a", cast]]));
+    const ev = stepAll(s, 3 * T, new Map([["a", S]]));
+    expect(s.getState().players["a"]!.mover.from).toMatchObject({ x: 2, y: 6 });
+    expect(ev.some((e) => e.type === "trapTriggered")).toBe(false);
+    expect(Object.values(s.getState().placeables)).toHaveLength(1);
+    expect(s.getState().players["a"]!.skillEffect).toMatchObject({ kind: "pierce" });
+  });
+
+  it("pierce: standing on an obstacle when it runs out, the player can still walk off", () => {
+    const grid = MapGrid.fromMapData(MAP);
+    const s = sim([{ id: "a" }]);
+    const a = s.getState().players["a"]!;
+    const on = { ...a, mover: { ...a.mover, from: { x: 2, y: 6, layer: "road" as const }, target: null, facing: { dx: 1, dy: 0 } }, skillEffect: { kind: "pierce" as const, untilTick: 5 } };
+    const placeables: Record<string, PlaceableState> = {
+      o: { id: "o", kind: "obstacle", pos: { x: 2, y: 6, layer: "road" }, dir: { dx: 0, dy: 1 }, ownerId: null, expiresAtTick: 0, permanent: true },
+    };
+    const ctx = { tick: 10, status: "running" as const, freezeUntilTick: 0, ghost: s.getState().ghost, placeables };
+    const moved = movePlayer(grid, NO_FREEZE, ctx, on, { moveX: 1, moveY: 0 });
+    expect(moved.target ?? moved.from).not.toEqual(on.mover.from);
+  });
+
+  it("warp: lands on a reachable tile, never stairs, a bridge, the tower ring, a placeable or where it stood; the same seed lands the same", () => {
+    const grid = MapGrid.fromMapData(MAP);
+    const s = sim([{ id: "a", skill: "warp" }]);
+    const a = s.getState().players["a"]!;
+    const targets = warpTargets(grid, s.getState().placeables, s.getState().nodes, a);
+    const reach = grid.reachableFrom(grid.spawnTiles()[0]!);
+    expect(targets.length).toBeGreaterThan(10);
+    for (const t of targets) {
+      expect(reach.has(tileKey(t.x, t.y, t.layer))).toBe(true);
+      expect(["stairs", "bridge"]).not.toContain(grid.kindAt(t.x, t.y));
+      expect(t.layer === "road" && grid.isTowerEntry(t.x, t.y)).toBe(false);
+      expect(t).not.toEqual(a.mover.from);
+      expect(t).not.toEqual({ x: 2, y: 6, layer: "road" }); // the fixed trap
+    }
+    stepAll(s, 1, new Map([["a", cast]]));
+    const landed = s.getState().players["a"]!.mover;
+    expect(landed.target).toBeNull();
+    expect(targets).toContainEqual(landed.from);
+    const again = sim([{ id: "a", skill: "warp" }]);
+    stepAll(again, 1, new Map([["a", cast]]));
+    expect(again.getState().players["a"]!.mover.from).toEqual(landed.from);
+  });
+
+  it("supply: fills the bag, keeps the two-node limit, and is not cast into a full bag", () => {
+    const s = sim([{ id: "a", skill: "supply" }]);
+    stepAll(s, 1, new Map([["a", cast]]));
+    expect(s.getState().players["a"]!.items).toHaveLength(DEFAULT_TUNING.inventory.capacity);
+
+    const onlyNodes: Tuning = { ...NO_FREEZE, itemBoxes: { ...NO_FREEZE.itemBoxes, weights: { hammer: 0, obstacle: 0, oneWayDoor: 0, trap: 0, teleportNode: 1 } } };
+    const n = sim([{ id: "a", skill: "supply" }], onlyNodes);
+    stepAll(n, 1, new Map([["a", cast]]));
+    expect(n.getState().players["a"]!.items).toEqual(["teleportNode", "teleportNode"]);
+
+    const st = s.getState();
+    const ctx = { tick: st.tick, freezeUntilTick: 0, lightsOn: true, running: true, placeables: {}, ghost: st.ghost, capacity: 3 };
+    const full = { ...st.players["a"]!, skill: "supply" as const };
+    expect(canUseSkill(ctx, full, MapGrid.fromMapData(MAP))).toBe(false);
+    expect(canUseSkill(ctx, { ...full, items: [] }, MapGrid.fromMapData(MAP))).toBe(true);
   });
 });

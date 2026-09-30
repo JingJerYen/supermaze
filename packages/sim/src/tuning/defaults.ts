@@ -96,6 +96,7 @@ export const DEFAULT_TUNING: Tuning = {
     eagleEye: { durationSec: 10 },
     lantern: { durationSec: 20, darkRadiusTiles: 6 },
     timeStop: { freezeSec: 15 },
+    pierce: { durationSec: 10 },
   },
 
   towerRun: {
