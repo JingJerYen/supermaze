@@ -31,7 +31,7 @@ export class TowerView {
 
   constructor(
     private readonly platform: THREE.MeshLambertMaterial,
-    private readonly shaft: THREE.MeshLambertMaterial,
+    private readonly shaft: THREE.Material,
     /** Parts that thin out with the shaft in the overview (a tree's canopy round the platform). */
     private readonly overviewFade: THREE.Material[] = [],
   ) {}

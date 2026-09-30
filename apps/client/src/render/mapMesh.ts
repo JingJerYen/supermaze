@@ -5,8 +5,10 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { collectTorches, tileHash, torchMaterials } from "./decor.js";
 import { createBridge, createStairs } from "./structures.js";
 import type { Face } from "./climbSequence.js";
-import { glowTexture, patternTexture, themeFor, trueColour, type PatternKind, type Theme } from "./themes.js";
+import { bandedWalls, glowTexture, patternTexture, themeFor, trueColour, type PatternKind, type Theme } from "./themes.js";
 import { buildReactorTower } from "./reactorTower.js";
+import { buildCakeTower } from "./cakeTower.js";
+import { buildIceTower } from "./iceTower.js";
 import { buildStoneTower } from "./stoneTower.js";
 import { buildTreeTower } from "./treeTower.js";
 import type { TowerView } from "./tower.js";
@@ -59,12 +61,19 @@ export function buildMapMesh(
 
   const floorMat = surface(theme.floor, theme.floorPattern);
   const plazaMat = surface(theme.plaza, theme.floorPattern);
-  const sideMat = surface(theme.wallSide, theme.wallPattern);
+  // Walls whose pattern carries their top's colour as a band (icing, snow) get it as the accent.
+  const banded = bandedWalls(theme.wallPattern);
+  const sideMat = surface(theme.wallSide, theme.wallPattern, banded ? theme.wallTop : 0);
   // A second side material with moss, flowers or hazard stripes, used on a share
   // of inner walls to break repetition.
   const sideGrowthMat = theme.growth ? surface(theme.wallSide, theme.wallPattern, theme.growth) : sideMat;
-  const outerSideMat = surface(theme.outerWall, theme.wallPattern);
+  const outerSideMat = surface(theme.outerWall, theme.wallPattern, banded ? theme.wallTop : 0);
   const topMat = surface(theme.wallTop, theme.topPattern);
+  // Themes with a second top colour: on banded walls the band follows it, so
+  // it always matches the top above it.
+  const topAlt = theme.wallTopAlt ?? 0;
+  const topAltMat = topAlt ? surface(topAlt, theme.topPattern) : topMat;
+  const sideAltMat = topAlt && banded ? surface(theme.wallSide, theme.wallPattern, topAlt) : sideMat;
   const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 
   const tower = grid.findCells("tower");
@@ -79,8 +88,10 @@ export function buildMapMesh(
     plaza: [] as THREE.BufferGeometry[],
     side: [] as THREE.BufferGeometry[],
     sideGrowth: [] as THREE.BufferGeometry[],
+    sideAlt: [] as THREE.BufferGeometry[],
     outerSide: [] as THREE.BufferGeometry[],
     top: [] as THREE.BufferGeometry[],
+    topAlt: [] as THREE.BufferGeometry[],
     shadow: [] as THREE.BufferGeometry[],
   };
   const floorProto = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
@@ -116,14 +127,16 @@ export function buildMapMesh(
         case "wall": {
           const outer = isOuter(x, y);
           const grown = !outer && theme.growth !== 0 && tileHash(x, y, 7) % 100 < theme.growthShare * 100;
-          const sides = outer ? batches.outerSide : grown ? batches.sideGrowth : batches.side;
+          // The second top colour comes in runs: whole 3x3 blocks of tiles share one colour.
+          const alt = !outer && topAlt !== 0 && tileHash(Math.floor(x / 3), Math.floor(y / 3), 11) % 2 === 0;
+          const sides = outer ? batches.outerSide : alt && banded ? batches.sideAlt : grown ? batches.sideGrowth : batches.side;
           // Only faces that can be seen: skip a face when the neighbour is also a wall.
           const neighbourWall = (dx: number, dy: number) => grid.kindAt(x + dx, y + dy) === "wall";
           if (!neighbourWall(0, 1)) sides.push(at(sideProtos[0] as THREE.BufferGeometry, x, y));
           if (!neighbourWall(0, -1)) sides.push(at(sideProtos[1] as THREE.BufferGeometry, x, y));
           if (!neighbourWall(1, 0)) sides.push(at(sideProtos[2] as THREE.BufferGeometry, x, y));
           if (!neighbourWall(-1, 0)) sides.push(at(sideProtos[3] as THREE.BufferGeometry, x, y));
-          batches.top.push(at(topProto, x, y));
+          (alt ? batches.topAlt : batches.top).push(at(topProto, x, y));
           pushRect(topEdges, x, y, 1.003);
           if (!outer) batches.shadow.push(at(shadowProto, x, y, 0.006));
           break;
@@ -181,8 +194,10 @@ export function buildMapMesh(
   addMerged(batches.plaza, plazaMat);
   addMerged(batches.side, sideMat);
   addMerged(batches.sideGrowth, sideGrowthMat);
+  addMerged(batches.sideAlt, sideAltMat);
   addMerged(batches.outerSide, outerSideMat);
   addMerged(batches.top, topMat);
+  addMerged(batches.topAlt, topAltMat);
   addMerged(batches.shadow, shadowMat);
   for (const [material, list] of structureBatches) addMerged(list, material);
 
@@ -192,13 +207,14 @@ export function buildMapMesh(
   addMerged(torches.brackets, torchMats.bracket);
   addMerged(torches.flames, torchMats.flame);
   addMerged(torches.glows, torchMats.glow);
+  addMerged(torches.props, torchMats.prop);
 
   const lineMat = (opacity: number) => new THREE.LineBasicMaterial({ color: theme.line, transparent: true, opacity });
   const topLines = new THREE.LineSegments(lineGeometry(topEdges), lineMat(0.55));
   const floorLines = new THREE.LineSegments(lineGeometry(floorEdges), lineMat(0.12));
   group.add(topLines, floorLines);
 
-  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower }[theme.towerStyle];
+  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower, cake: buildCakeTower, ice: buildIceTower }[theme.towerStyle];
   const { group: towerGroup, view, animations, center: towerCenter } = buildTower(grid, theme);
   group.add(towerGroup);
   return {
