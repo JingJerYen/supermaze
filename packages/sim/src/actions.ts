@@ -27,13 +27,14 @@ export interface ActionContext {
 /**
  * Shared by the authoritative step and the client HUD, so what the button says
  * it will do is exactly what the server will do. The player must be standing
- * still in the maze and the start freeze must be over. Priority: climb (with a key, on a
+ * still in the maze, the start freeze must be over, and the player must not be
+ * frozen by a trap or a ghost's catch (a frozen player does nothing at all). Priority: climb (with a key, on a
  * door tile, facing the door), light switch underfoot, pick up the
  * team's teleport node underfoot, then use the oldest carried item; the last
  * only when the item could really be used (a refused placement offers nothing).
  */
 export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerState, inventoryCapacity: number): PlayerAction | null {
-  if (ctx.tick < ctx.freezeUntilTick) return null;
+  if (ctx.tick < ctx.freezeUntilTick || ctx.tick < p.frozenUntilTick) return null;
   if (p.phase !== "maze" || p.mover.target !== null) return null;
   const at = p.mover.from;
   // A ghost's key and bag are locked for the chase; light switches stay usable (section 13).
@@ -51,11 +52,11 @@ export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerStat
 
 /**
  * Whether the discard key would throw away the oldest item: in the maze, with
- * something in the bag, after the start freeze, and not while a ghost (a
+ * something in the bag, after the start freeze, not while frozen, and not while a ghost (a
  * ghost's bag is locked for the chase, section 13). Unlike using an item this
  * needs no legal tile ahead and works while walking. Shared with the HUD.
  */
 export function canDiscard(ctx: Pick<ActionContext, "tick" | "freezeUntilTick" | "ghost">, p: PlayerState): boolean {
-  if (ctx.tick < ctx.freezeUntilTick) return false;
+  if (ctx.tick < ctx.freezeUntilTick || ctx.tick < p.frozenUntilTick) return false;
   return p.phase === "maze" && p.items.length > 0 && !isGhost(ctx.ghost, p);
 }

@@ -56,6 +56,9 @@ const CSS = `
 @keyframes hud-go-pop{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}
 .hud-dark{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:12px;color:#c9d2e3;display:none}
 .hud-dark.on{display:block}
+.hud-frozen{position:absolute;left:50%;top:64%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:clamp(15px,2.4vw,20px);font-weight:500;padding:6px 16px;border-radius:20px;white-space:nowrap;display:none}
+.hud-frozen.on{display:block}
+.hud-frozen b{color:#ffd23f;font-size:1.35em;margin-left:.4em;font-variant-numeric:tabular-nums}
 `;
 
 /**
@@ -77,6 +80,7 @@ export class Hud {
   private readonly gains: HTMLDivElement;
   private readonly dark: HTMLDivElement;
   private readonly go: HTMLDivElement;
+  private readonly frozen: HTMLDivElement;
   private lastGoText = "";
   private lastRosterKey = "";
 
@@ -103,7 +107,8 @@ export class Hud {
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
     this.go = el("div", "hud-go");
-    this.root.append(top, this.items, this.gains, this.dark, this.go);
+    this.frozen = el("div", "hud-frozen");
+    this.root.append(top, this.items, this.gains, this.dark, this.go, this.frozen);
     parent.appendChild(this.root);
   }
 
@@ -152,6 +157,12 @@ export class Hud {
       this.items.appendChild(slot);
     }
     this.dark.classList.toggle("on", !m.lightsOn);
+
+    // Your own freeze counts down under you; others see a "定身" badge in the roster.
+    const f = m.myFreeze;
+    this.frozen.classList.toggle("on", f !== null);
+    const frozenHtml = f ? `${f.by === "ghost" ? "被抓到了" : "被鐵籠關住"}<b>${Math.ceil(f.sec)}</b>` : "";
+    if (this.frozen.innerHTML !== frozenHtml) this.frozen.innerHTML = frozenHtml;
   }
 
   /** 3, 2, 1 during the start freeze, then "開始" for a moment; each number pops once. */
@@ -188,7 +199,6 @@ export class Hud {
   /** Label for the single context button, or null to hide it. */
   actionLabel(m: HudModel): string | null {
     if (!m.action) return null;
-    if (m.action === "useItem") return `用${ITEM_LABEL[m.items[0] ?? ""] ?? "道具"}`;
     return ACTION_LABEL[m.action] ?? m.action;
   }
 

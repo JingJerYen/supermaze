@@ -24,6 +24,8 @@ export interface HudModel {
   /** Whether the discard button would throw away the oldest item. */
   canDiscard: boolean;
   onTower: boolean;
+  /** The local player is frozen: seconds left and why; null otherwise. */
+  myFreeze: { sec: number; by: "trap" | "ghost" | null } | null;
   ghost: {
     phase: "idle" | "warning" | "active";
     teamLabel: string | null;
@@ -109,6 +111,7 @@ export function buildHudModel(
     action: me ? availableAction(grid, state, me, capacity) : null,
     canDiscard: !!me && canDiscard(state, me),
     onTower: me?.phase === "tower",
+    myFreeze: running && me && me.phase === "maze" && me.frozenUntilTick > state.tick ? { sec: (me.frozenUntilTick - state.tick) / tickRate, by: me.frozenBy } : null,
     // A round that ends mid-warning or mid-chase leaves the schedule where it
     // stopped; the HUD shows no event once the round is over.
     ghost: running

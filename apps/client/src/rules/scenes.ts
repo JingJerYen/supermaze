@@ -287,7 +287,7 @@ export const RULE_SCENES: DemoScene[] = [
     id: "trap",
     title: "定身陷阱",
     text: [
-      "陷阱放在面前一格。第一個踩上去的人會被鐵籠罩住，{trapFreezeSec} 秒內不能移動。",
+      "陷阱放在面前一格。第一個踩上去的人會被鐵籠罩住，{trapFreezeSec} 秒內不能移動，也不能用道具。",
       "陷阱抓到一個人就消失，沒人踩的話 {trapSec} 秒後消失。",
       "誰踩到都算，包括你自己。抓到別隊的人可以得分。",
     ],

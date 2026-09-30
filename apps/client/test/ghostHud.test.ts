@@ -70,3 +70,23 @@ describe("ghost notice", () => {
     expect(m.ghost.phase).toBe("idle");
   });
 });
+
+describe("your own freeze", () => {
+  it("counts down for the frozen player only, with the cause", () => {
+    const sim = new Simulation({
+      seed: 1,
+      map,
+      teamMode: "teams",
+      tuning: RULE_SCENES[0]!.tuning(new Simulation({ seed: 1, map, participants: [] }).tuning),
+      participants: [["alice", "A"], ["bob", "B"]].map(([id, teamId]) => ({ id: id!, teamId: teamId!, controller: "human" as const })),
+    });
+    sim.start();
+    const st = sim.getState();
+    const rate = sim.tuning.tickRate;
+    const alice = { ...st.players["alice"]!, frozenUntilTick: st.tick + 7 * rate, frozenBy: "trap" as const };
+    const frozen = { ...st, players: { ...st.players, alice } };
+    const model = (me: string) => buildHudModel(frozen, me, sim.grid, rate, sim.tuning.inventory.capacity);
+    expect(model("alice").myFreeze).toEqual({ sec: 7, by: "trap" });
+    expect(model("bob").myFreeze).toBeNull();
+  });
+});

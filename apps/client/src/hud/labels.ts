@@ -20,5 +20,5 @@ export const ACTION_LABEL: Record<string, string> = {
   climb: "登塔",
   switch: "開關",
   pickUpNode: "收回傳送點",
-  useItem: "使用道具",
+  useItem: "用道具",
 };
