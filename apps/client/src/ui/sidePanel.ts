@@ -17,7 +17,7 @@ const CSS = `
 .sp-chars button.on{border-color:#ffd23f;box-shadow:0 0 0 2px rgba(255,210,63,.35)}
 .sp-who{display:flex;align-items:center;gap:10px;font-size:15px}
 .sp-who img{width:44px;height:44px;border-radius:10px;background:#2a3450}
-.sp-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.sp-skills{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .sp-skills button{text-align:left;padding:6px 8px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:rgba(110,70,200,.25);color:#fff;cursor:pointer;font-size:13px;line-height:1.3}
 .sp-skills button b{display:block;font-size:14px}
 .sp-skills button small{color:#d8d0f0;font-size:11px}
@@ -32,8 +32,9 @@ const CSS = `
 .sp-row button.owned,.sp-row button.owned:disabled{opacity:1;background:#2f7a45;border-color:#7fd08e;color:#fff}
 .sp-note{font-size:12px;color:#c9d2e3}
 .sp-spacer{flex:1}
-@media (max-height:520px){.sp{padding:10px 12px;gap:6px}.sp h2{font-size:17px}.sp-chars{grid-template-columns:repeat(12,1fr);gap:4px}
-  .sp-skills{grid-template-columns:repeat(5,1fr)}.sp-skills button{padding:4px 5px}.sp-skills button small{display:none}.sp-row button{height:36px}}
+/* Phones in landscape: a narrower panel so the character on the right stays clear; portraits keep two rows of six, skills two rows of three. */
+@media (max-height:520px){.sp{width:min(320px,44vw);padding:10px 12px;gap:6px}.sp h2{font-size:17px}.sp-chars{gap:4px}
+  .sp-skills button{padding:4px 5px}.sp-skills button small{display:none}.sp-row button{height:36px}}
 `;
 
 /** A fresh panel on `root`, with the shared styles installed once. */

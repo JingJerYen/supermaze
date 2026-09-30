@@ -15,7 +15,13 @@ function poseOf(grid: MapGrid, m: MoverState, out: THREE.Vector3): THREE.Vector3
   const { x, y } = moverPosition(m);
   const from = tileElevation(grid, m.from);
   const to = m.target ? tileElevation(grid, m.target) : from;
-  return out.set(x, from + (to - from) * m.progress, y);
+  const hop = isJump(grid, m) ? Math.sin(Math.PI * m.progress) * CLIENT_TUNING.jump.arcHeight : 0;
+  return out.set(x, from + (to - from) * m.progress + hop, y);
+}
+
+/** A change of level anywhere but on stairs: the jump skill, drawn as a hop over the wall's edge. */
+function isJump(grid: MapGrid, m: MoverState): boolean {
+  return !!m.target && m.target.layer !== m.from.layer && m.from.layer !== "towerTop" && m.target.layer !== "towerTop" && grid.kindAt(m.from.x, m.from.y) !== "stairs";
 }
 
 /**
@@ -172,6 +178,11 @@ export class PlayerView {
   private base(): THREE.AnimationAction | null {
     if (!this.rig) return null;
     return this.walking ? this.rig.walk : this.rig.idle;
+  }
+
+  /** The jump skill: the rig's `jump` clip, once. */
+  jump(): void {
+    this.playOnce("jump");
   }
 
   private playOnce(name: string): void {

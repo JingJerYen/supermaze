@@ -47,6 +47,7 @@ export class FloorPrep {
       amulet: "擋下一次陷阱或鬼抓",
       lantern: `關燈時 ${s.lantern.durationSec} 秒看得更遠`,
       timeStop: `所有對手定身 ${s.timeStop.freezeSec} 秒`,
+      jump: "跳上或跳下面前一格",
     };
     const face = this.profile.character ? portraits(this.renderer).get(this.profile.character) : undefined;
     const skills = SKILL_KINDS.map((k) => {

@@ -1,4 +1,7 @@
 import type { SimEvent } from "./events.js";
+import type { MapGrid } from "./map/grid.js";
+import type { TilePos } from "./map/types.js";
+import { placeableMoveFilter, type PlaceableState } from "./placeables.js";
 import type { PlayerState } from "./simulation.js";
 import type { Tuning } from "./tuning/index.js";
 import type { PlayerId, Tick } from "./types.js";
@@ -14,10 +17,12 @@ import type { PlayerId, Tick } from "./types.js";
  * - amulet: the next trap or ghost catch is shrugged off.
  * - lantern: a wider circle of light while the map is dark; only usable in the dark.
  * - timeStop: everyone else in the maze is frozen for a while.
+ * - jump: up onto the wall in front, or down from a wall top onto the road in
+ *   front, without stairs; only usable where there is such a tile.
  */
-export type SkillKind = "sprint" | "eagleEye" | "amulet" | "lantern" | "timeStop";
+export type SkillKind = "sprint" | "eagleEye" | "amulet" | "lantern" | "timeStop" | "jump";
 
-export const SKILL_KINDS: readonly SkillKind[] = ["sprint", "eagleEye", "amulet", "lantern", "timeStop"];
+export const SKILL_KINDS: readonly SkillKind[] = ["sprint", "eagleEye", "amulet", "lantern", "timeStop", "jump"];
 
 /** A timed skill in effect (sprint, eagle eye, lantern). */
 export interface SkillEffect {
@@ -27,14 +32,36 @@ export interface SkillEffect {
 
 /** Whether `p` may cast the skill they hold right now. */
 export function canUseSkill(
-  ctx: { tick: Tick; freezeUntilTick: Tick; lightsOn: boolean; running: boolean },
+  ctx: { tick: Tick; freezeUntilTick: Tick; lightsOn: boolean; running: boolean; placeables: Record<string, PlaceableState> },
   p: PlayerState,
+  grid: MapGrid,
 ): boolean {
   if (!p.skill || !ctx.running || p.phase !== "maze") return false;
   if (ctx.tick < ctx.freezeUntilTick || ctx.tick < p.frozenUntilTick) return false;
-  // A lantern in the light would be wasted.
+  // A lantern in the light, or a jump with nowhere to land, would be wasted.
   if (p.skill === "lantern" && ctx.lightsOn) return false;
+  if (p.skill === "jump" && !jumpTarget(grid, ctx.placeables, p)) return false;
   return true;
+}
+
+/**
+ * Where a jump from where `p` stands lands: the tile in front on the other
+ * level, that is a wall top when standing on the road and facing a wall, or
+ * the road when standing on a wall top (or a bridge) and facing a road cell.
+ * Null when there is no such tile, when `p` is walking, or on stairs (they
+ * change level already). An obstacle or a one-way door against the jump
+ * blocks the landing, the same as a step; a trap does not, it springs.
+ */
+export function jumpTarget(grid: MapGrid, placeables: Record<string, PlaceableState>, p: PlayerState): TilePos | null {
+  const m = p.mover;
+  if (p.phase !== "maze" || m.target || grid.kindAt(m.from.x, m.from.y) === "stairs") return null;
+  const x = m.from.x + m.facing.dx;
+  const y = m.from.y + m.facing.dy;
+  const kind = grid.kindAt(x, y);
+  const layer = m.from.layer === "road" && kind === "wall" ? "wallTop" : m.from.layer === "wallTop" && kind === "road" ? "road" : null;
+  if (!layer) return null;
+  const to: TilePos = { x, y, layer };
+  return placeableMoveFilter(placeables)(m.from, to, m.facing) ? to : null;
 }
 
 /** The timed effect `kind` is running for `p` at `tick`. */
@@ -52,7 +79,13 @@ export function skillSpeedFactor(p: PlayerState, tick: Tick, tuning: Tuning): nu
  * tick everyone else stays frozen until (applied with `applyTimeStop` once
  * every player has moved this tick). The caller checks `canUseSkill` first.
  */
-export function castSkill(p: PlayerState, tick: Tick, tuning: Tuning): { caster: PlayerState; event: SimEvent; timeStopUntil: Tick | null } {
+export function castSkill(
+  p: PlayerState,
+  tick: Tick,
+  tuning: Tuning,
+  grid: MapGrid,
+  placeables: Record<string, PlaceableState>,
+): { caster: PlayerState; event: SimEvent; timeStopUntil: Tick | null } {
   const kind = p.skill as SkillKind;
   const s = tuning.skills;
   const ticks = (sec: number) => Math.round(sec * tuning.tickRate);
@@ -69,6 +102,12 @@ export function castSkill(p: PlayerState, tick: Tick, tuning: Tuning): { caster:
       return { caster: { ...caster, shielded: true }, event, timeStopUntil: null };
     case "timeStop":
       return { caster, event, timeStopUntil: tick + ticks(s.timeStop.freezeSec) };
+    case "jump": {
+      // The jump is an ordinary move to a tile the stairs rule would not allow;
+      // it takes as long as a step and lands with the usual arrival effects.
+      const to = jumpTarget(grid, placeables, p) as TilePos;
+      return { caster: { ...caster, mover: { ...p.mover, target: to, progress: 0, turnHold: 0 } }, event, timeStopUntil: null };
+    }
   }
 }
 
