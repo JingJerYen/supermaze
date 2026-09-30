@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
 import { moverPosition } from "../src/movement.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
-import { canUseSkill, type SkillKind } from "../src/skills.js";
+import { canUseSkill, jumpTarget, type SkillKind } from "../src/skills.js";
+import { MapGrid } from "../src/map/grid.js";
+import type { PlaceableState } from "../src/placeables.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import { NO_FREEZE, TINY_MAP } from "./fixtures.js";
 import { walk } from "./walk.js";
@@ -56,9 +58,9 @@ describe("skills", () => {
     expect(stepAll(withFreeze, 1, new Map([["a", cast]])).some((e) => e.type === "skillUsed")).toBe(false);
     const st = withFreeze.getState();
     const a = st.players["a"]!;
-    const ctx = { tick: st.freezeUntilTick, freezeUntilTick: st.freezeUntilTick, lightsOn: true, running: true };
-    expect(canUseSkill(ctx, a)).toBe(true);
-    expect(canUseSkill(ctx, { ...a, frozenUntilTick: ctx.tick + 1 })).toBe(false);
+    const ctx = { tick: st.freezeUntilTick, freezeUntilTick: st.freezeUntilTick, lightsOn: true, running: true, placeables: {} };
+    expect(canUseSkill(ctx, a, MapGrid.fromMapData(MAP))).toBe(true);
+    expect(canUseSkill(ctx, { ...a, frozenUntilTick: ctx.tick + 1 }, MapGrid.fromMapData(MAP))).toBe(false);
   });
 
   it("sprint: faster until it runs out", () => {
@@ -78,9 +80,9 @@ describe("skills", () => {
   it("lantern: only in the dark", () => {
     const s = sim([{ id: "a", skill: "lantern" }]);
     const st = s.getState();
-    const ctx = { tick: 1, freezeUntilTick: 0, running: true };
-    expect(canUseSkill({ ...ctx, lightsOn: true }, st.players["a"]!)).toBe(false);
-    expect(canUseSkill({ ...ctx, lightsOn: false }, st.players["a"]!)).toBe(true);
+    const ctx = { tick: 1, freezeUntilTick: 0, running: true, placeables: {} };
+    expect(canUseSkill({ ...ctx, lightsOn: true }, st.players["a"]!, MapGrid.fromMapData(MAP))).toBe(false);
+    expect(canUseSkill({ ...ctx, lightsOn: false }, st.players["a"]!, MapGrid.fromMapData(MAP))).toBe(true);
     expect(stepAll(s, 1, new Map([["a", cast]])).some((e) => e.type === "skillUsed")).toBe(false);
     expect(s.getState().players["a"]!.skill).toBe("lantern"); // kept for later
   });
@@ -145,5 +147,45 @@ describe("skills", () => {
     expect(b).toMatchObject({ shielded: false, frozenUntilTick: 0 });
     expect(b.protectedUntilTick).toBeGreaterThan(s.getState().tick);
     expect(s.getState().players["a"]!.score).toBe(0);
+  });
+
+  it("jump: up onto the wall in front, landing a step later", () => {
+    // Spawn (2,4); (3,4) is road with the wall (3,5) south of it.
+    const s = sim([{ id: "a", skill: "jump" }]);
+    walk(s, "a", [{ moveX: 1, moveY: 0 }]);
+    expect(stepAll(s, 1, new Map([["a", cast]])).some((e) => e.type === "skillUsed")).toBe(false); // facing the road
+    stepAll(s, 1, new Map([["a", S]])); // a tap turns without stepping (the wall is in the way anyway)
+    expect(s.getState().players["a"]!.mover).toMatchObject({ from: { x: 3, y: 4, layer: "road" }, facing: { dx: 0, dy: 1 } });
+    const ev = stepAll(s, 1, new Map([["a", cast]]));
+    expect(ev).toContainEqual(expect.objectContaining({ type: "skillUsed", playerId: "a", skill: "jump" }));
+    expect(s.getState().players["a"]!.mover.target).toEqual({ x: 3, y: 5, layer: "wallTop" });
+    stepAll(s, T);
+    expect(s.getState().players["a"]!.mover).toMatchObject({ from: { x: 3, y: 5, layer: "wallTop" }, target: null });
+    expect(s.getState().players["a"]!.skill).toBeNull();
+  });
+
+  it("jump: only onto the other level, from a standstill, off stairs, and not into an obstacle", () => {
+    const s = sim([{ id: "a", skill: "jump" }]);
+    const grid = MapGrid.fromMapData(MAP);
+    const a = s.getState().players["a"]!;
+    const at = (x: number, y: number, layer: "road" | "wallTop", dx: number, dy: number) => ({ ...a, mover: { ...a.mover, from: { x, y, layer }, target: null, facing: { dx, dy } } });
+    // Down from a wall top onto the road, either side.
+    expect(jumpTarget(grid, {}, at(4, 5, "wallTop", 0, -1))).toEqual({ x: 4, y: 4, layer: "road" });
+    expect(jumpTarget(grid, {}, at(5, 5, "wallTop", 1, 0))).toEqual({ x: 6, y: 5, layer: "road" });
+    // Same level, the tower, the stairs, and standing on the stairs: no jump.
+    expect(jumpTarget(grid, {}, at(3, 4, "road", 1, 0))).toBeNull();
+    expect(jumpTarget(grid, {}, at(4, 5, "wallTop", 1, 0))).toBeNull();
+    expect(jumpTarget(grid, {}, at(2, 4, "road", 0, -1))).toBeNull();
+    expect(jumpTarget(grid, {}, at(2, 4, "road", 0, 1))).toBeNull();
+    expect(jumpTarget(grid, {}, at(2, 5, "road", 1, 0))).toBeNull();
+    // Mid-step, nothing.
+    const walking = at(3, 4, "road", 0, 1);
+    expect(jumpTarget(grid, {}, { ...walking, mover: { ...walking.mover, target: { x: 3, y: 5, layer: "wallTop" } } })).toBeNull();
+    // An obstacle on the landing blocks it; a trap does not.
+    const on = (kind: PlaceableState["kind"]): Record<string, PlaceableState> => ({
+      p: { id: "p", kind, pos: { x: 3, y: 5, layer: "wallTop" }, dir: { dx: 0, dy: 1 }, ownerId: null, expiresAtTick: 0, permanent: true },
+    });
+    expect(jumpTarget(grid, on("obstacle"), at(3, 4, "road", 0, 1))).toBeNull();
+    expect(jumpTarget(grid, on("trap"), at(3, 4, "road", 0, 1))).toEqual({ x: 3, y: 5, layer: "wallTop" });
   });
 });

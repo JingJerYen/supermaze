@@ -1,4 +1,5 @@
-import type { CharacterId } from "@supermaze/protocol";
+import { CHARACTER_IDS, type CharacterId } from "@supermaze/protocol";
+import { SeededRandom } from "@supermaze/sim";
 
 /** The name of a player who has picked no character and typed no name. */
 export const FALLBACK_NAME = "玩家";
@@ -29,4 +30,25 @@ export const DEFAULT_NAMES: Record<CharacterId, string> = {
 /** The default name for `character`, or null when it has none (no pick yet). */
 export function defaultNameFor(character: string | null | undefined): string | null {
   return character ? (DEFAULT_NAMES[character as CharacterId] ?? null) : null;
+}
+
+/**
+ * Characters and names for `count` CPU opponents: each a different character,
+ * none the same as `taken` (the player's), named with that character's
+ * default name. Shuffled by `seed`, so every floor has its own line-up and a
+ * replay has the same one. When there are more CPUs than characters left,
+ * characters repeat.
+ */
+export function cpuCast(count: number, seed: number, taken: readonly (string | null)[]): { character: CharacterId; name: string }[] {
+  const free = CHARACTER_IDS.filter((c) => !taken.includes(c));
+  const pool = [...(free.length > 0 ? free : CHARACTER_IDS)];
+  const rng = new SeededRandom(seed);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = rng.nextInt(0, i);
+    [pool[i], pool[j]] = [pool[j] as CharacterId, pool[i] as CharacterId];
+  }
+  return Array.from({ length: count }, (_, i) => {
+    const character = pool[i % pool.length] as CharacterId;
+    return { character, name: DEFAULT_NAMES[character] };
+  });
 }

@@ -76,10 +76,20 @@ export class CharacterLibrary {
     return this.loaded.map((l) => l.name);
   }
 
+  /** The character `playerId` is drawn as: `character` when given and loaded, else one picked by id. Null before loading. */
+  resolve(playerId: string, character?: string | null): string | null {
+    return this.pick(playerId, character)?.name ?? null;
+  }
+
+  private pick(playerId: string, character?: string | null): Loaded | null {
+    if (this.loaded.length === 0) return null;
+    return this.loaded.find((l) => l.name === character) ?? (this.loaded[hash(playerId) % this.loaded.length] as Loaded);
+  }
+
   /** Build a rig for `playerId` (as `character` when given and loaded), standing `height` world units tall. */
   createRig(playerId: string, height: number, character?: string | null): CharacterRig | null {
-    if (this.loaded.length === 0) return null;
-    const src = this.loaded.find((l) => l.name === character) ?? (this.loaded[hash(playerId) % this.loaded.length] as Loaded);
+    const src = this.pick(playerId, character);
+    if (!src) return null;
     const model = cloneSkeleton(src.scene);
     // Skinned bounds are computed from the bind pose; never let the camera cull a player.
     model.traverse((o) => {

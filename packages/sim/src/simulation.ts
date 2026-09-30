@@ -471,8 +471,8 @@ export class Simulation {
           p = { ...p, items: p.items.slice(1) };
           work.events.push({ type: "itemDiscarded", tick, playerId: id, item });
         }
-        if (input.skill && canUseSkill({ tick, freezeUntilTick: this.state.freezeUntilTick, lightsOn: work.lightsOn, running: true }, p)) {
-          const cast = castSkill(p, tick, this.tuning);
+        if (input.skill && canUseSkill({ tick, freezeUntilTick: this.state.freezeUntilTick, lightsOn: work.lightsOn, running: true, placeables: work.placeables }, p, this.grid)) {
+          const cast = castSkill(p, tick, this.tuning, this.grid, work.placeables);
           p = cast.caster;
           work.events.push(cast.event);
           if (cast.timeStopUntil !== null) timeStops.push({ casterId: id, until: cast.timeStopUntil });

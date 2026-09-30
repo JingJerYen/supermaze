@@ -2,6 +2,8 @@ import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuD
 import type { ResultsActions } from "../hud/results.js";
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
+import { cpuCast } from "../characterNames.js";
+import { characters } from "../render/characters.js";
 
 /**
  * Single-player: the simulation runs inside the page. Same code the server runs.
@@ -38,11 +40,14 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
   // Extra participants are CPU opponents driven by the sim's CpuController (the
   // same one the server uses for dropped players).
   const players = Math.max(1, Math.min(options.players ?? 1, DEFAULT_TUNING.round.maxParticipants));
-  const idle = Array.from({ length: players - 1 }, (_, i) => ({
+  // Each CPU is one of the characters, under its default name; never the one you are drawn as.
+  const cast = cpuCast(players - 1, options.seed ?? 1, [characters.resolve(id, options.character)]);
+  const idle = cast.map((c, i) => ({
     id: `cpu${i + 1}`,
     teamId: `cpu${i + 1}`,
     controller: "cpu" as const,
-    name: `CPU ${i + 1}`,
+    name: c.name,
+    character: c.character,
   }));
   const sim = new Simulation({
     seed: options.seed ?? 1,

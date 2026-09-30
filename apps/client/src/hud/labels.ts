@@ -23,6 +23,7 @@ export const SKILL_INFO: Record<string, { label: string; icon: string; blurb: st
   amulet: { label: "護身符", icon: "🛡️", blurb: "擋下一次陷阱或鬼抓" },
   lantern: { label: "點燈", icon: "🔦", blurb: "黑暗中看得更遠（關燈時才能用）" },
   timeStop: { label: "時間暫停", icon: "⏸️", blurb: "所有對手停住不動" },
+  jump: { label: "跳", icon: "🦘", blurb: "跳上面前的牆，或從牆頂跳下" },
 };
 
 export const ACTION_LABEL: Record<string, string> = {

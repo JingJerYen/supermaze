@@ -24,7 +24,7 @@ export function tileKey(x: number, y: number, layer: Layer): string {
 /**
  * Walkability graph of a map. Enforces the two-layer topology from CLAUDE.md
  * section 6: layers only connect at stairs, and nothing else lets a player
- * change height.
+ * change height (the tower run's one-shot jump skill aside, see skills.ts).
  */
 export class MapGrid {
   readonly width: number;
