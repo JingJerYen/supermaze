@@ -60,11 +60,11 @@ export const DEFAULT_TUNING: Tuning = {
 
   placeables: {
     lifetimeSec: {
-      oneWayDoor: 50,
-      obstacle: 50,
+      oneWayDoor: 40,
+      obstacle: 40,
       trap: 40,
     },
-    trapFreezeSec: 8,
+    trapFreezeSec: 7,
   },
 
   ghostEvent: {
@@ -74,7 +74,7 @@ export const DEFAULT_TUNING: Tuning = {
     warningSec: 10,
     durationSec: 15,
     speedMultiplier: 1.5,
-    caughtFreezeSec: 8,
+    caughtFreezeSec: 7,
     caughtProtectionSec: 10,
     catchRadiusTiles: 0.6,
   },
