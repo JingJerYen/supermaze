@@ -19,7 +19,7 @@ export const DEFAULT_NAMES: Record<CharacterId, string> = {
   "character-male-d": "霸總", // suit and tie
   "character-male-e": "周餅輪", // glasses, white shirt, braces
   "character-male-f": "8+9", // scowl, overalls
-  "character-female-a": "阿強愛上阿珍", // hair bun, purple top
+  "character-female-a": "阮月嬌", // hair bun, purple top
   "character-female-b": "國民女友", // two buns, yellow top
   "character-female-c": "房東阿姨", // grey hair bun
   "character-female-d": "法拉利姊", // grey jacket, earrings
