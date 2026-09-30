@@ -3,6 +3,7 @@ import type { PatternKind } from "./themes.js";
 import { crack, roundedBlock, seeded, speckle } from "./canvasDraw.js";
 import { paintBark, paintFlagstone, paintHedge } from "./gardenPatterns.js";
 import { paintPanel, paintPanelGlow, paintPlate, paintTreadPlate } from "./factoryPatterns.js";
+import { paintBiscuit, paintCakeLayer, paintChocolate, paintIcing } from "./candyPatterns.js";
 
 /**
  * Surface patterns for the themes, drawn on a canvas at startup and tiled once
@@ -15,7 +16,7 @@ const textureCache = new Map<string, THREE.CanvasTexture | null>();
  * is the colour on screen and the accents keep theirs. Other kinds are shades
  * of the base, multiplied by a material of the same colour.
  */
-const TRUE_COLOUR: ReadonlySet<PatternKind> = new Set(["panel", "plate", "tread"]);
+const TRUE_COLOUR: ReadonlySet<PatternKind> = new Set(["panel", "plate", "tread", "biscuit", "icing", "chocolate", "cake"]);
 
 export function trueColour(kind: PatternKind): boolean {
   return TRUE_COLOUR.has(kind);
@@ -99,6 +100,18 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0, bake
       break;
     case "tread":
       paintTreadPlate(ctx, size, shade, rnd);
+      break;
+    case "biscuit":
+      paintBiscuit(ctx, size, shade, rnd, growth);
+      break;
+    case "icing":
+      paintIcing(ctx, size, shade, rnd);
+      break;
+    case "chocolate":
+      paintChocolate(ctx, size, shade, rnd);
+      break;
+    case "cake":
+      paintCakeLayer(ctx, size, shade, rnd, growth);
       break;
   }
 

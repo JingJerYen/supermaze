@@ -19,6 +19,12 @@ export interface Theme {
 
   wallSide: number;
   wallTop: number;
+  /**
+   * A second wall-top colour, laid in runs of a few tiles (the candy walls'
+   * pink and cream icing); omitted for one colour. A wall pattern that carries
+   * its top's colour as a band (biscuit under icing) follows the same runs.
+   */
+  wallTopAlt?: number;
   outerWall: number;
   floor: number;
   plaza: number;
@@ -40,12 +46,14 @@ export interface Theme {
   /** Wall lights per eligible inner wall face, roughly 1 in N; 0 disables them. */
   torchEvery: number;
   torchFlame: number;
-  /** A torch on the wall face, or a stone lantern or light beacon standing at the foot of the wall. */
-  lightStyle: "torch" | "lantern" | "beacon";
+  /** A torch on the wall face, or a stone lantern, light beacon or striped candle standing at the foot of the wall. */
+  lightStyle: "torch" | "lantern" | "beacon" | "candle";
+  /** Small props scattered at the wall feet (gumdrops on the candy map); omitted for none. */
+  scatter?: "gumdrops";
   /** Stairs and bridges. */
   structure: StructurePalette;
-  /** The central tower: stacked stone, a giant tree with a deck in its crown, or a steel reactor with a hologram. */
-  towerStyle: "stone" | "tree" | "reactor";
+  /** The central tower: stacked stone, a giant tree with a deck in its crown, a steel reactor with a hologram, or a tall layer cake. */
+  towerStyle: "stone" | "tree" | "reactor" | "cake";
   towerStone: number;
   towerRune: number;
   towerCrystal: number;
@@ -63,7 +71,21 @@ export interface StructurePalette {
   rail: number;
 }
 
-export type PatternKind = "none" | "blocks" | "slab" | "hedge" | "hedgeTop" | "flagstone" | "bark" | "panel" | "plate" | "tread";
+export type PatternKind =
+  | "none"
+  | "blocks"
+  | "slab"
+  | "hedge"
+  | "hedgeTop"
+  | "flagstone"
+  | "bark"
+  | "panel"
+  | "plate"
+  | "tread"
+  | "biscuit"
+  | "icing"
+  | "chocolate"
+  | "cake";
 
 export const THEMES: Record<string, Theme> = {
   stone: {
@@ -174,6 +196,47 @@ export const THEMES: Record<string, Theme> = {
     towerBark: 0x6b4a2f,
     towerLeaf: 0x4f9a3c,
     towerDeck: 0x6fb6e6,
+  },
+  /**
+   * Candy: biscuit walls under pink and cream icing, chocolate-bar floors,
+   * striped candles and gumdrops at the wall feet, and a tall layer cake with a
+   * cherry instead of the tower. True-colour patterns, like the factory's.
+   */
+  candy: {
+    id: "candy",
+    sky: 0x2b1a16,
+    hemiSky: 0xfff0e6,
+    hemiGround: 0x5a3a2a,
+    hemiIntensity: 1.15,
+    sunColor: 0xffe6c8,
+    sunIntensity: 1.3,
+    wallSide: 0xf2c070,
+    wallTop: 0xff9fc2,
+    wallTopAlt: 0xfff4e2,
+    outerWall: 0xe8b262,
+    floor: 0x5a3322,
+    plaza: 0x6a3d28,
+    line: 0x2a140c,
+    linesGlowInDark: false,
+    wallPattern: "biscuit",
+    topPattern: "icing",
+    floorPattern: "chocolate",
+    growth: 0,
+    growthShare: 0,
+    glow: 0,
+    surface: "matte",
+    torchEvery: 7,
+    torchFlame: 0xffc45a,
+    lightStyle: "candle",
+    scatter: "gumdrops",
+    structure: { step: 0xff9fc2, stepAlt: 0xfff4e2, plank: 0xfff4e2, plankAlt: 0xf4e4c8, rail: 0xe8587e },
+    towerStyle: "cake",
+    towerStone: 0x5a3322,
+    towerRune: 0xffc45a,
+    towerCrystal: 0xd81e3a,
+    towerBark: 0x6b4a2f,
+    towerLeaf: 0x4f9a3c,
+    towerDeck: 0xf6ecd8,
   },
 };
 

@@ -37,4 +37,4 @@ finish("maze-10", rows,
        doors=0, traps=0, obstacles=0, time=210,
        candidates=dict(n_keys=8, n_road_keys=5, n_boxes=14, n_box_top=2, n_switch=6, key_gap=5, road_cap=3,
                        key_filter=lambda x, y, layer: x != 15 and y != 11),
-       meta=dict(difficulty="medium", boxes=8, switches=4))
+       meta=dict(difficulty="medium", boxes=8, switches=4, theme="candy"))
