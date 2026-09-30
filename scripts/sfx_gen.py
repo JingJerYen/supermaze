@@ -86,6 +86,9 @@ SOUNDS = {
         tone(523, 0.14, 0.45, "tri", decay=5), tone(659, 0.14, 0.45, "tri", decay=5, start=0.12),
         tone(784, 0.14, 0.45, "tri", decay=5, start=0.24), tone(1047, 0.6, 0.5, "tri", decay=3.5, start=0.36),
         tone(784, 0.6, 0.25, "sine", decay=3.5, start=0.36), tone(1319, 0.6, 0.2, "sine", decay=4, start=0.36)),
+    # Menu button: a soft, short bubbly tick.
+    "click.wav": lambda: mix(
+        tone(880, 0.07, 0.5, "sine", decay=55, glide=500), tone(1760, 0.04, 0.12, "sine", decay=80)),
 }
 
 def wail(f0, f1, dur, vol):

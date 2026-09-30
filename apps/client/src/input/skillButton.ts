@@ -10,6 +10,7 @@ export class SkillButton {
 
   constructor(parent: HTMLElement) {
     this.el = document.createElement("button");
+    this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
     Object.assign(this.el.style, {
       position: "fixed",
       // Left of the discard button, at its height.

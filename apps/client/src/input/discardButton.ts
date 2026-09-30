@@ -9,6 +9,7 @@ export class DiscardButton {
 
   constructor(parent: HTMLElement) {
     this.el = document.createElement("button");
+    this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
     this.el.textContent = "丟棄";
     Object.assign(this.el.style, {
       position: "fixed",

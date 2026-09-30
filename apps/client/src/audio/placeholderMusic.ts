@@ -10,12 +10,13 @@ interface Plan {
   bpm: number;
   /** Chord roots as MIDI notes, one per bar; minor chords marked. */
   bars: { root: number; minor: boolean }[];
-  drums: boolean;
+  /** A gentle beat under the game track; none under the menu. */
+  pulse: boolean;
 }
 
 const C = 48;
 const PLANS: Record<TrackName, Plan> = {
-  // Relaxed: Am F C G twice, arpeggios over a soft bass, no drums.
+  // Relaxed: Am F C G twice, arpeggios over a soft bass, no beat.
   menu: {
     bpm: 88,
     bars: [
@@ -28,11 +29,12 @@ const PLANS: Record<TrackName, Plan> = {
       { root: C + 7, minor: false },
       { root: C + 7, minor: false },
     ],
-    drums: false,
+    pulse: false,
   },
-  // Bouncy: C Am F G twice with a little melody and a light beat.
+  // Light and steady, to walk the maze to without distraction: C Am F G twice,
+  // soft eighth-note arpeggios, a sparse tune and only a gentle pulse.
   game: {
-    bpm: 116,
+    bpm: 100,
     bars: [
       { root: C, minor: false },
       { root: C + 9, minor: true },
@@ -43,12 +45,12 @@ const PLANS: Record<TrackName, Plan> = {
       { root: C + 5, minor: false },
       { root: C + 7, minor: false },
     ],
-    drums: true,
+    pulse: true,
   },
 };
 
-/** A short tune over the chords for the game track: scale steps above each bar's root, per eighth note (null for a rest). */
-const MELODY: (number | null)[] = [7, null, 9, 7, 4, null, 2, null, 4, 5, 7, null, 12, null, 11, 9];
+/** A sparse tune over the chords for the game track: steps above each bar's root, per quarter note (null for a rest). */
+const MELODY: (number | null)[] = [7, null, 4, null, 9, null, 7, null];
 
 const hz = (midi: number): number => 440 * 2 ** ((midi - 69) / 12);
 
@@ -94,7 +96,7 @@ export async function renderPlaceholder(name: TrackName, sampleRate: number): Pr
     o.frequency.setValueAtTime(140, t);
     o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
     const g = ctx.createGain();
-    g.gain.setValueAtTime(0.55, t);
+    g.gain.setValueAtTime(0.22, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
     o.connect(g).connect(out);
     o.start(t);
@@ -105,38 +107,37 @@ export async function renderPlaceholder(name: TrackName, sampleRate: number): Pr
     const t0 = b * 4 * beat;
     const chord = [0, bar.minor ? 3 : 4, 7, 12].map((i) => bar.root + i);
     const eighth = beat / 2;
-    // Bass: root and fifth an octave down, on the eighths.
-    for (let i = 0; i < 8; i++) {
-      const note = bar.root - 12 + (i % 4 === 2 ? 7 : 0);
-      if (plan.drums || i % 2 === 0) tone("triangle", note, t0 + i * eighth, eighth * 0.9, plan.drums ? 0.26 : 0.34);
+    // Bass: root and fifth an octave down, on the beats.
+    for (let q = 0; q < 4; q++) {
+      const note = bar.root - 12 + (q === 2 ? 7 : 0);
+      tone("triangle", note, t0 + q * beat, beat * 0.9, plan.pulse ? 0.24 : 0.34);
     }
-    // Arpeggio: up and down the chord an octave above.
-    const steps = plan.drums ? 16 : 8;
-    const step = (4 * beat) / steps;
+    // Arpeggio: up and down the chord an octave above, soft eighths.
     const order = [0, 1, 2, 3, 2, 1, 0, 1];
-    for (let i = 0; i < steps; i++) {
-      const note = (chord[order[i % order.length] as number] as number) + 12;
-      tone(plan.drums ? "square" : "triangle", note, t0 + i * step, step * 0.85, plan.drums ? 0.035 : 0.16, i % 2 ? 0.3 : -0.3);
+    for (let i = 0; i < 8; i++) {
+      const note = (chord[order[i] as number] as number) + 12;
+      tone("triangle", note, t0 + i * eighth, eighth * 0.85, plan.pulse ? 0.08 : 0.16, i % 2 ? 0.3 : -0.3);
     }
-    if (!plan.drums) {
-      // A soft held chord under the menu.
-      for (const n of chord.slice(0, 3)) tone("sine", n + 12, t0, 4 * beat * 0.95, 0.09);
-      return;
-    }
-    // Melody, every bar but the turnaround one.
-    if (b % 4 !== 3) {
-      MELODY.slice((b % 2) * 8, (b % 2) * 8 + 8).forEach((m, i) => {
-        // On a minor chord the major third and seventh step down a semitone.
-        const deg = m !== null && bar.minor && (m === 4 || m === 11) ? m - 1 : m;
-        if (deg !== null) tone("triangle", bar.root + 12 + deg, t0 + i * eighth, eighth * 1.6, 0.12);
+    // A soft held chord underneath.
+    for (const n of chord.slice(0, 3)) tone("sine", n + 12, t0, 4 * beat * 0.95, plan.pulse ? 0.05 : 0.09);
+    if (!plan.pulse) return;
+    // A sparse tune on alternate bars.
+    if (b % 2 === 0) {
+      MELODY.slice(0, 4).forEach((m, q) => {
+        // On a minor chord the major third steps down a semitone.
+        const deg = m !== null && bar.minor && m === 4 ? 3 : m;
+        if (deg !== null) tone("sine", bar.root + 24 + deg, t0 + q * beat, beat * 1.6, 0.07);
+      });
+    } else {
+      MELODY.slice(4).forEach((m, q) => {
+        if (m !== null) tone("sine", bar.root + 24 + m, t0 + q * beat, beat * 1.6, 0.06);
       });
     }
-    // Drums: kick on 1 and 3, snare on 2 and 4, hats on the off-beats.
+    // A gentle pulse: a soft low kick on 1 and 3 and a faint shaker between; no snare.
     for (let q = 0; q < 4; q++) {
       const t = t0 + q * beat;
       if (q % 2 === 0) kick(t);
-      else hit(t, 0.14, 0.22, "bandpass", 1800);
-      hit(t + eighth, 0.05, 0.07, "highpass", 7000);
+      hit(t + eighth, 0.04, 0.02, "highpass", 8000);
     }
   });
   return ctx.startRendering();

@@ -110,6 +110,8 @@ export const CLIENT_TUNING = {
     othersVolume: 0.3,
     /** Relative volume of the light switch, heard by everyone. */
     lightsVolume: 0.85,
+    /** Relative volume of the tick when a menu button is pressed. */
+    clickVolume: 0.6,
     /** Background music volume relative to the master; 0 turns it off. `?nomusic` also turns it off. */
     musicVolume: 0.45,
     /** Seconds to fade between tracks (home screen and match). */
