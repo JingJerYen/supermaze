@@ -27,6 +27,22 @@ const CSS = `
 .rs-note-line{font-size:14px;color:#e6ebf5;margin-top:4px}
 .rs button{height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;padding:0 16px;font-size:15px;cursor:pointer}
 .rs button.primary{background:#ffd23f;color:#412402;border-color:#ffd23f;font-weight:500}
+@media (max-height:520px){
+  .rs-card{max-height:96vh;padding:10px 16px}
+  .rs-title{font-size:22px;gap:8px}
+  .rs-dot{width:12px;height:12px}
+  .rs-reason{font-size:12px;margin:2px 0 8px}
+  .rs-title+.rs-note{margin-top:8px}
+  .rs-note{padding:5px 12px;margin-bottom:6px}
+  .rs-note-title{font-size:16px}
+  .rs-note-line{font-size:12px;margin-top:1px}
+  .rs table{font-size:13px}
+  .rs th{font-size:11px;padding:2px 8px}
+  .rs td{padding:3px 8px}
+  .rs-foot{margin-top:8px}
+  .rs-count{font-size:12px}
+  .rs button{height:32px;font-size:13px;padding:0 14px}
+}
 `;
 
 const REASON_TEXT: Record<string, string> = {
