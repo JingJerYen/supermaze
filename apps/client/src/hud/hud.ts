@@ -62,8 +62,6 @@ const CSS = `
 .hud-go.show{display:block;animation:hud-go-pop .9s ease-out}
 .hud-go.start{color:#ffd23f}
 @keyframes hud-go-pop{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}
-.hud-dark{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:12px;color:#c9d2e3;display:none}
-.hud-dark.on{display:block}
 .hud-frozen{position:absolute;left:50%;top:64%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:clamp(15px,2.4vw,20px);font-weight:500;padding:6px 16px;border-radius:20px;white-space:nowrap;display:none}
 .hud-frozen.on{display:block}
 .hud-skill{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 22px);background:rgba(110,70,200,.8);color:#fff;font-size:14px;font-weight:500;padding:5px 14px;border-radius:16px;white-space:nowrap;display:none}
@@ -88,7 +86,6 @@ export class Hud {
   private readonly items: HTMLDivElement;
   private readonly toasts: HTMLDivElement;
   private readonly gains: HTMLDivElement;
-  private readonly dark: HTMLDivElement;
   private readonly go: HTMLDivElement;
   private readonly frozen: HTMLDivElement;
   private readonly skill: HTMLDivElement;
@@ -116,12 +113,10 @@ export class Hud {
     top.append(this.left, clock, this.right);
     this.items = el("div", "hud-items");
     this.gains = el("div", "hud-gains");
-    this.dark = el("div", "hud-dark");
-    this.dark.textContent = "全圖黑暗";
     this.go = el("div", "hud-go");
     this.frozen = el("div", "hud-frozen");
     this.skill = el("div", "hud-skill");
-    this.root.append(top, this.items, this.gains, this.dark, this.go, this.frozen, this.skill);
+    this.root.append(top, this.items, this.gains, this.go, this.frozen, this.skill);
     parent.appendChild(this.root);
   }
 
@@ -154,7 +149,6 @@ export class Hud {
     }
 
     this.renderItems(m);
-    this.dark.classList.toggle("on", !m.lightsOn);
 
     // Your own freeze counts down under you; others see a "定身" badge in the roster.
     const f = m.myFreeze;
