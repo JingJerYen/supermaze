@@ -15,6 +15,7 @@ export const SOUND_FILES = {
   caught: "caught.wav",
   catch: "catch.wav",
   climb: "climb.wav",
+  click: "click.wav",
 } as const;
 
 export type SoundName = keyof typeof SOUND_FILES;
@@ -71,6 +72,12 @@ class Sfx {
     for (const type of ["pointerdown", "touchend", "keydown"]) window.addEventListener(type, unlock, { passive: true });
     window.addEventListener("keydown", (e) => {
       if (e.code === "KeyM" && !(e.target instanceof HTMLInputElement)) this.setMuted(!this.muted);
+    });
+    // Every menu button clicks when pressed; the in-game controls (marked data-nosound) stay quiet.
+    window.addEventListener("pointerdown", (e) => {
+      const button = e.target instanceof Element ? e.target.closest("button") : null;
+      if (!button || button.disabled || button.closest("[data-nosound]")) return;
+      this.play("click", CLIENT_TUNING.audio.clickVolume);
     });
   }
 

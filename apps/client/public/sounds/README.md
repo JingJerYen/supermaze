@@ -16,6 +16,7 @@ python3 scripts/sfx_gen.py apps/client/public/sounds
 | `caught.wav` | 有人被鬼抓到 |
 | `catch.wav` | 自己當鬼抓到人 |
 | `climb.wav` | 有人登上塔頂 |
+| `click.wav` | 按下任何選單按鈕（遊戲中的動作鍵、丟棄鍵、技能鍵不響） |
 
 格式：瀏覽器能解碼的都可以（wav、mp3、ogg），但檔名要維持 `.wav` 或同時修改 `SOUND_FILES`。
 建議單聲道、一秒以內。音量在 `apps/client/src/tuning.ts` 的 `audio`。遊戲中按 `M` 靜音，
