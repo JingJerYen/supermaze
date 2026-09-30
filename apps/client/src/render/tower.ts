@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
 import { platformTopY as platformTopYWorld } from "./elevation.js";
@@ -109,4 +110,24 @@ export function towerGeometry(grid: MapGrid): { center: THREE.Vector3; footW: nu
     footD: maxY - minY + 1,
     platformTopY,
   };
+}
+
+/**
+ * Add `meshes` to `parent` as one mesh per material: repeated decorations
+ * (candles, ribs, shards) then cost one draw call per material, not one each.
+ * Each mesh's own position, rotation and scale are baked into the geometry.
+ */
+export function mergeByMaterial(parent: THREE.Object3D, meshes: THREE.Mesh[]): void {
+  const byMat = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  for (const m of meshes) {
+    m.updateMatrix();
+    const list = byMat.get(m.material as THREE.Material) ?? [];
+    list.push(m.geometry.clone().applyMatrix4(m.matrix));
+    byMat.set(m.material as THREE.Material, list);
+  }
+  for (const [material, list] of byMat) {
+    const merged = mergeGeometries(list, false);
+    for (const g of list) g.dispose();
+    if (merged) parent.add(new THREE.Mesh(merged, material));
+  }
 }

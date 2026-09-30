@@ -9,6 +9,7 @@ import { bandedWalls, glowTexture, patternTexture, themeFor, trueColour, type Pa
 import { buildReactorTower } from "./reactorTower.js";
 import { buildCakeTower } from "./cakeTower.js";
 import { buildIceTower } from "./iceTower.js";
+import { buildObeliskTower } from "./obeliskTower.js";
 import { buildStoneTower } from "./stoneTower.js";
 import { buildTreeTower } from "./treeTower.js";
 import type { TowerView } from "./tower.js";
@@ -214,7 +215,7 @@ export function buildMapMesh(
   const floorLines = new THREE.LineSegments(lineGeometry(floorEdges), lineMat(0.12));
   group.add(topLines, floorLines);
 
-  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower, cake: buildCakeTower, ice: buildIceTower }[theme.towerStyle];
+  const buildTower = { stone: buildStoneTower, tree: buildTreeTower, reactor: buildReactorTower, cake: buildCakeTower, ice: buildIceTower, obelisk: buildObeliskTower }[theme.towerStyle];
   const { group: towerGroup, view, animations, center: towerCenter } = buildTower(grid, theme);
   group.add(towerGroup);
   return {

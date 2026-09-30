@@ -33,4 +33,4 @@ finish("maze-09", rows,
        candidates=dict(n_keys=8, n_road_keys=5, n_boxes=14, n_box_top=2, n_switch=10, key_gap=8, road_cap=3,
                        switch_gap=8, key_filter=lambda x, y, layer: not in_alley(x, y),
                        switch_filter=in_alley),
-       meta=dict(difficulty="medium", boxes=8, switches=6))
+       meta=dict(difficulty="medium", boxes=8, switches=6, theme="desert"))

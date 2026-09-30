@@ -3,7 +3,7 @@ import type { MapGrid } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
 import { TowerAnimations } from "./climbSequence.js";
 import { patternTexture, type Theme } from "./themes.js";
-import { TowerView, towerGeometry, type TowerBuild } from "./tower.js";
+import { mergeByMaterial, TowerView, towerGeometry, type TowerBuild } from "./tower.js";
 
 /**
  * The candy map's tower: a tall layer cake. It keeps every measure of the
@@ -48,6 +48,8 @@ export function buildCakeTower(grid: MapGrid, theme: Theme): TowerBuild {
   if (footW === 0) return { group: tower, view, animations: null, center };
   const cx = center.x;
   const cz = center.z;
+  // Repeated decorations, merged into one mesh per material at the end.
+  const parts: THREE.Mesh[] = [];
 
   // Plinth: a biscuit block under pink icing over the whole footprint, then a smaller iced step.
   const tier1 = new THREE.Mesh(new THREE.BoxGeometry(footW, t.baseHeight, footD), icingMat);
@@ -63,7 +65,7 @@ export function buildCakeTower(grid: MapGrid, theme: Theme): TowerBuild {
   const ring = (r: number, tube: number, mat: THREE.Material, y: number) => {
     const m = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 8, 36).rotateX(Math.PI / 2), mat);
     m.position.set(cx, y, cz);
-    tower.add(m);
+    parts.push(m);
   };
   ring(radius + 0.04, 0.09, icingMat, shaftBottom + 0.06);
   for (let h = 4; h < shaftH - 1; h += 4) ring(radius + 0.02, 0.06, icingMat, shaftBottom + h);
@@ -93,15 +95,15 @@ export function buildCakeTower(grid: MapGrid, theme: Theme): TowerBuild {
       const z = cz + sz * (slabD / 2 - 0.18);
       const body = new THREE.Mesh(candleGeo, candleMat);
       body.position.set(x, top + 0.45, z);
-      tower.add(body);
+      parts.push(body);
       for (let b = 0; b < 4; b++) {
         const band = new THREE.Mesh(bandGeo, stripeMat);
         band.position.set(x, top + 0.15 + b * 0.22, z);
-        tower.add(band);
+        parts.push(band);
       }
       const flame = new THREE.Mesh(flameGeo, flameMat);
       flame.position.set(x, top + 1.05, z);
-      tower.add(flame);
+      parts.push(flame);
     }
   }
 
@@ -125,6 +127,7 @@ export function buildCakeTower(grid: MapGrid, theme: Theme): TowerBuild {
   cherry.position.set(cx, cherryY, cz);
   cherry.userData["baseY"] = cherryY;
 
+  mergeByMaterial(tower, parts);
   tower.add(tier1, tier2, shaft, platform, edges, cherry);
   const animations = new TowerAnimations(tower, center, footW, footD, t.shaftWidth, shaftBottom, shaftH, shaftBottom, cherry, theme.towerRune, {
     leaf: 0x4a2a1a,

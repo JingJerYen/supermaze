@@ -5,6 +5,7 @@ import { paintBark, paintFlagstone, paintHedge } from "./gardenPatterns.js";
 import { paintPanel, paintPanelGlow, paintPlate, paintTreadPlate } from "./factoryPatterns.js";
 import { paintBiscuit, paintCakeLayer, paintChocolate, paintIcing } from "./candyPatterns.js";
 import { paintFrostStone, paintIceBrick, paintSnow } from "./icePatterns.js";
+import { paintEarth, paintLimestone, paintSandstone } from "./desertPatterns.js";
 
 /**
  * Surface patterns for the themes, drawn on a canvas at startup and tiled once
@@ -17,7 +18,7 @@ const textureCache = new Map<string, THREE.CanvasTexture | null>();
  * is the colour on screen and the accents keep theirs. Other kinds are shades
  * of the base, multiplied by a material of the same colour.
  */
-const TRUE_COLOUR: ReadonlySet<PatternKind> = new Set(["panel", "plate", "tread", "biscuit", "icing", "chocolate", "cake", "iceBrick", "snow", "frostStone"]);
+const TRUE_COLOUR: ReadonlySet<PatternKind> = new Set(["panel", "plate", "tread", "biscuit", "icing", "chocolate", "cake", "iceBrick", "snow", "frostStone", "sandstone", "limestone", "earth"]);
 
 export function trueColour(kind: PatternKind): boolean {
   return TRUE_COLOUR.has(kind);
@@ -122,6 +123,15 @@ export function patternTexture(kind: PatternKind, base: number, growth = 0, bake
       break;
     case "frostStone":
       paintFrostStone(ctx, size, shade, rnd);
+      break;
+    case "sandstone":
+      paintSandstone(ctx, size, shade, rnd, growth);
+      break;
+    case "limestone":
+      paintLimestone(ctx, size, shade, rnd);
+      break;
+    case "earth":
+      paintEarth(ctx, size, shade, rnd);
       break;
   }
 

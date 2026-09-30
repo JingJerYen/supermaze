@@ -46,14 +46,14 @@ export interface Theme {
   /** Wall lights per eligible inner wall face, roughly 1 in N; 0 disables them. */
   torchEvery: number;
   torchFlame: number;
-  /** A torch on the wall face, or a stone lantern, light beacon, striped candle or ice crystal on a plinth standing at the foot of the wall. */
-  lightStyle: "torch" | "lantern" | "beacon" | "candle" | "crystal";
+  /** A torch on the wall face, or a stone lantern, light beacon, striped candle, ice crystal or fire brazier on a plinth standing at the foot of the wall. */
+  lightStyle: "torch" | "lantern" | "beacon" | "candle" | "crystal" | "brazier";
   /** Small props scattered at the wall feet (gumdrops on the candy map); omitted for none. */
   scatter?: "gumdrops";
   /** Stairs and bridges. */
   structure: StructurePalette;
-  /** The central tower: stacked stone, a giant tree with a deck in its crown, a steel reactor with a hologram, a tall layer cake, or an ice spire. */
-  towerStyle: "stone" | "tree" | "reactor" | "cake" | "ice";
+  /** The central tower: stacked stone, a giant tree with a deck in its crown, a steel reactor with a hologram, a tall layer cake, an ice spire, or an obelisk. */
+  towerStyle: "stone" | "tree" | "reactor" | "cake" | "ice" | "obelisk";
   towerStone: number;
   towerRune: number;
   towerCrystal: number;
@@ -88,7 +88,10 @@ export type PatternKind =
   | "cake"
   | "iceBrick"
   | "snow"
-  | "frostStone";
+  | "frostStone"
+  | "sandstone"
+  | "limestone"
+  | "earth";
 
 /** Wall patterns that carry their wall top's colour as a band along the top edge (icing, snow). */
 export function bandedWalls(kind: PatternKind): boolean {
@@ -285,6 +288,46 @@ export const THEMES: Record<string, Theme> = {
     towerBark: 0x6b4a2f,
     towerLeaf: 0x4f9a3c,
     towerDeck: 0xe6f2ff,
+  },
+  /**
+   * Desert temple: sandstone walls carved with glyphs (some with a turquoise
+   * inlay trimmed in gold), limestone wall tops, red earth with pebbles,
+   * bronze fire braziers, rope bridges, and an obelisk instead of the tower,
+   * in late-afternoon sun. True-colour patterns.
+   */
+  desert: {
+    id: "desert",
+    sky: 0x8a5a38,
+    hemiSky: 0xfff0d8,
+    hemiGround: 0x7a4a2e,
+    hemiIntensity: 1.1,
+    sunColor: 0xffd9a0,
+    sunIntensity: 1.45,
+    wallSide: 0xdcb47a,
+    wallTop: 0xfbf0da,
+    outerWall: 0xd2a970,
+    floor: 0xa85e3c,
+    plaza: 0xb86e4a,
+    line: 0x4a2414,
+    linesGlowInDark: false,
+    wallPattern: "sandstone",
+    topPattern: "limestone",
+    floorPattern: "earth",
+    growth: 0x2fb8b0,
+    growthShare: 0.3,
+    glow: 0,
+    surface: "matte",
+    torchEvery: 7,
+    torchFlame: 0xffa040,
+    lightStyle: "brazier",
+    structure: { step: 0xe6cc9a, stepAlt: 0xd6b884, plank: 0x6b4a2e, plankAlt: 0x5a3d25, rail: 0xc9a24a },
+    towerStyle: "obelisk",
+    towerStone: 0xe2bf88,
+    towerRune: 0x3fd8d0,
+    towerCrystal: 0x3fc8c0,
+    towerBark: 0x6b4a2f,
+    towerLeaf: 0x4f9a3c,
+    towerDeck: 0xfbf0da,
   },
 };
 

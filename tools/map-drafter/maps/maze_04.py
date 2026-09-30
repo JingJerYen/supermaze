@@ -102,4 +102,4 @@ marks = []
 for spots, road, top in [(KEYS, "K", "k"), (BOXES, "B", "b"), (SWITCHES, "L", None)]:
     for x, y in spots:
         marks.append((x, y, road if c.get(x, y) == "." else top))
-save("maze-04", mk.stamp(c.rows(), marks), time=240)
+save("maze-04", mk.stamp(c.rows(), marks), time=240, meta=dict(theme="desert"))
