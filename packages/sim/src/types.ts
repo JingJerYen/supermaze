@@ -1,3 +1,4 @@
+import type { SkillKind } from "./skills.js";
 /** Opaque-ish identifiers. Kept as plain strings so they serialise trivially. */
 export type PlayerId = string;
 export type TeamId = string;
@@ -17,6 +18,10 @@ export interface Participant {
   controller: Controller;
   /** Display name chosen by the player; purely cosmetic. */
   name?: string;
+  /** One-shot skill for this round (tower run only; section 4.1). CPUs never get one. */
+  skill?: SkillKind | null;
+  /** Character model chosen by the player (client-side file name); purely cosmetic. */
+  character?: string | null;
 }
 
 /**

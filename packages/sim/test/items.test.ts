@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DIRS } from "../src/map/grid.js";
 import type { MapData } from "../src/map/types.js";
+import { availableAction, canDiscard } from "../src/actions.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING as BASE_TUNING, type ItemKind, type Tuning } from "../src/tuning/index.js";
 
@@ -217,6 +218,23 @@ describe("bridges", () => {
     sim.step(new Map([["a", press]]));
     expect(Object.values(sim.getState().placeables)).toHaveLength(0);
     expect(sim.getState().players["a"]!.items).toEqual(["obstacle"]);
+  });
+});
+
+describe("frozen players do nothing", () => {
+  it("no action and no discard while caught in a trap, both back once it wears off", () => {
+    const sim = armed("trap", { placeables: { ...DEFAULT_TUNING.placeables, trapFreezeSec: 1 } });
+    sim.step(new Map([["a", press]])); // trap at (2,6)
+    for (let i = 0; i < STEP_TICKS; i++) sim.step(new Map([["a", S]]));
+    expect(sim.getState().players["a"]!.frozenBy).toBe("trap");
+    // Give the caught player a hammer, which can otherwise be swung anywhere: no swinging your way out.
+    const caught = { ...sim.getState().players["a"]!, items: ["hammer" as const] };
+    const state = { ...sim.getState(), players: { ...sim.getState().players, a: caught } };
+    expect(availableAction(sim.grid, state, caught, 3)).toBeNull();
+    expect(canDiscard(state, caught)).toBe(false);
+    const later = { ...state, tick: caught.frozenUntilTick };
+    expect(availableAction(sim.grid, later, caught, 3)).toBe("useItem");
+    expect(canDiscard(later, caught)).toBe(true);
   });
 });
 

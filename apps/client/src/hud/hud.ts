@@ -1,6 +1,6 @@
 import { TEAM_COLORS } from "../render/teamColors.js";
 import { itemIconSvg } from "./itemIcons.js";
-import { ACTION_LABEL, ITEM_GLYPH, ITEM_LABEL } from "./labels.js";
+import { ACTION_LABEL, ITEM_GLYPH, ITEM_LABEL, SKILL_INFO } from "./labels.js";
 import type { HudModel, TeamRow } from "./model.js";
 
 const CSS = `
@@ -8,7 +8,7 @@ const CSS = `
   --pad:max(12px,env(safe-area-inset-left));}
 .hud *{box-sizing:border-box}
 .hud.demo .hud-team,.hud.demo .hud-time,.hud.demo .hud-sub,.hud.demo .hud-go{display:none}
-.hud.demo .hud-items{right:max(24px,env(safe-area-inset-right))}
+.hud.demo .hud-top{justify-content:center}
 .hud-top{position:absolute;top:max(10px,env(safe-area-inset-top));left:var(--pad);right:max(12px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hud-team{display:flex;flex-direction:column;gap:5px;min-width:0}
 .hud-team.right{align-items:flex-end}
@@ -22,7 +22,7 @@ const CSS = `
 .hud-badge{font-size:10px;padding:2px 4px;border-radius:4px;background:rgba(255,255,255,.15);color:#ffe08a}
 .hud-badge.tower{color:#fff;background:rgba(139,255,122,.28);font-size:11px;font-weight:500}.hud-badge.cpu{color:#ff9f7a}
 .hud-score{font-size:12px;color:#c9d2e3;min-width:2.5em;text-align:right}
-.hud-clock{text-align:center;flex:none}
+.hud-clock{text-align:center;flex:none;position:relative}
 .hud-time{font-size:clamp(34px,6vw,48px);font-weight:500;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
 @keyframes hud-pulse{50%{transform:scale(1.08)}}
@@ -36,12 +36,21 @@ const CSS = `
 .hud-badge.frozen{color:#9fd3ff}
 .hud-top,.hud-items{transition:opacity .5s}
 .hud.intro .hud-top,.hud.intro .hud-items{opacity:0;transition:none}
-.hud-items{position:absolute;right:calc(max(24px,env(safe-area-inset-right)) + 84px + 14px);bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:10px;align-items:center}
-.hud-slot{width:clamp(48px,9vh,60px);height:clamp(48px,9vh,60px);border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
-.hud-slot svg{width:80%;height:80%;display:block}
-.hud-slot.next{border:2px solid #ffd23f}
-.hud-slot.empty{border-style:dashed;background:rgba(0,0,0,.25)}
-.hud-toasts{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 84px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
+.hud-items{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:8px;align-items:center}
+.hud-items.hidden{display:none}
+.hud-slot{width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;box-sizing:border-box}
+.hud-slot svg{width:72%;height:72%;display:block}
+.hud-slot.empty,.hud-big.empty{border-style:dashed;background:rgba(0,0,0,.25)}
+.hud-big{position:relative;width:84px;height:84px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:30px;font-weight:500}
+.hud-big svg{width:74%;height:74%;display:block}
+.hud-big.ready{border:3px solid #ffd23f;box-shadow:0 0 14px rgba(255,210,63,.55)}
+.hud-big.dim svg{opacity:.35;filter:grayscale(.7)}
+.hud-big.action{background:rgba(255,210,63,.92);border:2px solid rgba(255,255,255,.75);color:#412402;font:700 19px/1.1 system-ui,-apple-system,"Noto Sans TC",sans-serif;text-align:center;padding:0 6px}
+.hud-big.action.long{font-size:14px}
+.hud-badge-item{position:absolute;left:-6px;top:-6px;width:32px;height:32px;border-radius:50%;background:#1a2130;border:2px solid #ffd23f;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.hud-badge-item svg{width:78%;height:78%}
+.hud-items.locked{filter:grayscale(1);opacity:.55}
+.hud-toasts{position:absolute;left:50%;top:100%;margin-top:8px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
 .hud-toast.big{background:rgba(40,30,0,.78);border:1px solid #ffd23f;color:#fff;font-size:clamp(17px,3vw,24px);font-weight:500;padding:8px 20px;animation-duration:3.4s}
 .hud-gains{position:absolute;left:50%;top:30%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
@@ -55,6 +64,11 @@ const CSS = `
 @keyframes hud-go-pop{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}
 .hud-dark{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));font-size:12px;color:#c9d2e3;display:none}
 .hud-dark.on{display:block}
+.hud-frozen{position:absolute;left:50%;top:64%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:clamp(15px,2.4vw,20px);font-weight:500;padding:6px 16px;border-radius:20px;white-space:nowrap;display:none}
+.hud-frozen.on{display:block}
+.hud-skill{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 22px);background:rgba(110,70,200,.8);color:#fff;font-size:14px;font-weight:500;padding:5px 14px;border-radius:16px;white-space:nowrap;display:none}
+.hud-skill.on{display:block}
+.hud-frozen b{color:#ffd23f;font-size:1.35em;margin-left:.4em;font-variant-numeric:tabular-nums}
 `;
 
 /**
@@ -76,8 +90,11 @@ export class Hud {
   private readonly gains: HTMLDivElement;
   private readonly dark: HTMLDivElement;
   private readonly go: HTMLDivElement;
+  private readonly frozen: HTMLDivElement;
+  private readonly skill: HTMLDivElement;
   private lastGoText = "";
   private lastRosterKey = "";
+  private lastItemsKey = "";
 
   constructor(parent: HTMLElement) {
     const style = document.createElement("style");
@@ -92,16 +109,19 @@ export class Hud {
     this.sub = el("div", "hud-sub");
     this.caption = el("div", "hud-caption");
     this.ghost = el("div", "hud-ghost");
-    clock.append(this.time, this.sub, this.caption, this.ghost);
+    this.toasts = el("div", "hud-toasts");
+    // Toasts hang just below the clock column, which grows with the caption and the ghost banner.
+    clock.append(this.time, this.sub, this.caption, this.ghost, this.toasts);
     this.right = el("div", "hud-team right");
     top.append(this.left, clock, this.right);
     this.items = el("div", "hud-items");
-    this.toasts = el("div", "hud-toasts");
     this.gains = el("div", "hud-gains");
     this.dark = el("div", "hud-dark");
     this.dark.textContent = "全圖黑暗";
     this.go = el("div", "hud-go");
-    this.root.append(top, this.items, this.toasts, this.gains, this.dark, this.go);
+    this.frozen = el("div", "hud-frozen");
+    this.skill = el("div", "hud-skill");
+    this.root.append(top, this.items, this.gains, this.dark, this.go, this.frozen, this.skill);
     parent.appendChild(this.root);
   }
 
@@ -121,7 +141,7 @@ export class Hud {
     const g = m.ghost;
     const gs = Math.ceil(g.secondsLeft);
     this.ghost.className = `hud-ghost ${g.phase !== "idle" ? g.phase : ""} ${g.iAmGhost ? "me" : ""}`.trim();
-    if (g.phase === "warning") this.ghost.textContent = `${gs} 秒後 ${g.teamLabel} 變成鬼`;
+    if (g.phase === "warning") this.ghost.textContent = warningText(gs, g.warningSubject ?? "");
     else if (g.phase === "active") this.ghost.textContent = g.iAmGhost ? `你是鬼，去抓人 ${gs} 秒` : g.myTeamIsGhost ? `我方是鬼 ${gs} 秒` : `鬼抓人！躲開 ${g.teamLabel} ${gs} 秒`;
 
 
@@ -133,23 +153,26 @@ export class Hud {
       renderTeam(this.right, m.otherTeams, false);
     }
 
-    this.items.replaceChildren();
-    // Team colour feeds the teleport icon's pad through currentColor.
-    const teamColor = m.myTeam ? `#${(TEAM_COLORS[m.myTeam.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}` : "#5be6ff";
-    for (let i = 0; i < m.capacity; i++) {
-      const kind = m.items[i];
-      const slot = el("div", `hud-slot${kind ? (i === 0 ? " next" : "") : " empty"}`);
-      if (kind) {
-        const svg = itemIconSvg(kind);
-        if (svg) {
-          slot.innerHTML = svg;
-          slot.style.color = teamColor;
-        } else slot.textContent = ITEM_GLYPH[kind] ?? "?";
-        slot.title = ITEM_LABEL[kind] ?? kind;
-      }
-      this.items.appendChild(slot);
-    }
+    this.renderItems(m);
     this.dark.classList.toggle("on", !m.lightsOn);
+
+    // Your own freeze counts down under you; others see a "定身" badge in the roster.
+    const f = m.myFreeze;
+    this.frozen.classList.toggle("on", f !== null);
+    const frozenHtml = f ? `${f.by === "ghost" ? "被抓到了" : "被鐵籠關住"}<b>${Math.ceil(f.sec)}</b>` : "";
+    if (this.frozen.innerHTML !== frozenHtml) this.frozen.innerHTML = frozenHtml;
+
+    const st = m.skillStatus;
+    const info = st ? SKILL_INFO[st.kind] : undefined;
+    const skillText = st && info ? `${info.icon} ${info.label}${st.sec === null ? " 生效中" : ` ${Math.ceil(st.sec)}`}` : "";
+    this.skill.classList.toggle("on", skillText !== "");
+    if (this.skill.textContent !== skillText) this.skill.textContent = skillText;
+  }
+
+  /** The skill button's face, or null to hide it. */
+  skillButton(m: HudModel): { icon: string; label: string; ready: boolean } | null {
+    const info = m.mySkill ? SKILL_INFO[m.mySkill.kind] : undefined;
+    return m.mySkill && info ? { icon: info.icon, label: info.label, ready: m.mySkill.ready } : null;
   }
 
   /** 3, 2, 1 during the start freeze, then "開始" for a moment; each number pops once. */
@@ -183,11 +206,37 @@ export class Hud {
     this.root.classList.toggle("demo", on);
   }
 
-  /** Label for the single context button, or null to hide it. */
-  actionLabel(m: HudModel): string | null {
-    if (!m.action) return null;
-    if (m.action === "useItem") return `用${ITEM_LABEL[m.items[0] ?? ""] ?? "道具"}`;
-    return ACTION_LABEL[m.action] ?? m.action;
+  /**
+   * The bag and the action button in one row at the bottom right: the big
+   * circle on the right is the next item (bright when it can be used here, dim
+   * when not) or, when the button would climb / flip a switch / pick up a node,
+   * that action in yellow with the next item as a small badge; the small
+   * circles to its left are the items queued behind it. All grey while the bag
+   * is locked (you are the ghost). Rebuilt only when something changed.
+   */
+  private renderItems(m: HudModel): void {
+    const teamColor = m.myTeam ? `#${(TEAM_COLORS[m.myTeam.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}` : "#5be6ff";
+    const key = JSON.stringify([m.items, m.action, m.capacity, m.onTower, m.ghost.iAmGhost, teamColor]);
+    if (key === this.lastItemsKey) return;
+    this.lastItemsKey = key;
+    this.items.className = `hud-items${m.onTower ? " hidden" : ""}${m.ghost.iAmGhost ? " locked" : ""}`;
+    this.items.style.color = teamColor; // the teleport icon's pad takes the team colour through currentColor
+    const icon = (kind: string) => itemIconSvg(kind) ?? `<span>${ITEM_GLYPH[kind] ?? "?"}</span>`;
+    const small = [];
+    for (let i = m.capacity - 1; i >= 1; i--) {
+      const kind = m.items[i];
+      small.push(kind ? `<div class="hud-slot" title="${ITEM_LABEL[kind] ?? kind}">${icon(kind)}</div>` : `<div class="hud-slot empty"></div>`);
+    }
+    const next = m.items[0];
+    let big: string;
+    if (m.action && m.action !== "useItem") {
+      const label = ACTION_LABEL[m.action] ?? m.action;
+      const badge = next ? `<div class="hud-badge-item">${icon(next)}</div>` : "";
+      big = `<div class="hud-big action${label.length > 3 ? " long" : ""}">${label}${badge}</div>`;
+    } else if (next) {
+      big = `<div class="hud-big ${m.action === "useItem" ? "ready" : "dim"}" title="${ITEM_LABEL[next] ?? next}">${icon(next)}</div>`;
+    } else big = `<div class="hud-big empty"></div>`;
+    this.items.innerHTML = small.join("") + big;
   }
 
   dispose(): void {
@@ -262,4 +311,10 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string): H
   const e = document.createElement(tag);
   if (className) e.className = className;
   return e;
+}
+
+/** "10 秒後你變成鬼", "10 秒後 A 隊 變成鬼", "10 秒後 A 隊（我方）變成鬼": no stray space next to CJK. */
+function warningText(sec: number, subject: string): string {
+  if (subject === "你") return `${sec} 秒後你變成鬼`;
+  return `${sec} 秒後 ${subject}${subject.endsWith("）") ? "" : " "}變成鬼`;
 }

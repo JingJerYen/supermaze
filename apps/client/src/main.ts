@@ -1,13 +1,15 @@
 import * as THREE from "three";
-import { rotateMap, type QuarterTurns } from "@supermaze/sim";
+import { SKILL_KINDS, rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { drawMap, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
 import { characters } from "./render/characters.js";
 import { models } from "./render/models.js";
+import { antialiasAtLaunch, createGovernor, installQuality, rememberRatio } from "./render/quality.js";
 import { sfx } from "./audio/sfx.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
+import { loadProfile } from "./profile.js";
 import { Session } from "./session.js";
 import { CLIENT_TUNING } from "./tuning.js";
 
@@ -17,11 +19,14 @@ if (!root) throw new Error("#app not found");
 // Real models (if any) must be in hand before the first key, box or player is created.
 await Promise.all([models.load(), characters.load()]);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-// ?dpr=1 forces a pixel ratio, to check whether fill rate is what limits the frame rate.
 const params = new URLSearchParams(location.search);
+// ?dpr=1 forces a pixel ratio (and turns automatic quality off), to check whether fill rate limits the frame rate.
 const dprOverride = Number(params.get("dpr"));
-renderer.setPixelRatio(dprOverride > 0 ? dprOverride : Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio));
+if (params.get("quality") === "reset") rememberRatio(null);
+const governor = dprOverride > 0 || params.get("quality") === "off" ? null : createGovernor(window.devicePixelRatio);
+installQuality(governor);
+const renderer = new THREE.WebGLRenderer({ antialias: dprOverride > 0 || antialiasAtLaunch() });
+renderer.setPixelRatio(dprOverride > 0 ? dprOverride : (governor?.ratio ?? Math.min(window.devicePixelRatio, CLIENT_TUNING.render.maxPixelRatio)));
 renderer.setSize(root.clientWidth || window.innerWidth, root.clientHeight || window.innerHeight);
 root.appendChild(renderer.domElement);
 
@@ -48,12 +53,15 @@ if (params.has("rules")) {
     players,
     seed,
     name: playerName,
+    character: loadProfile().character,
     difficulty: params.get("cpu") === "hard" ? "hard" : "easy",
+    // Developer aid: ?skill=sprint etc. hands you a skill in the sandbox (normally tower run only).
+    skill: SKILL_KINDS.find((k) => k === params.get("skill")) ?? null,
   });
   new Match(root, renderer, mode);
 } else {
   const endpoint = params.get("server") ?? rememberedServer() ?? `ws://${location.hostname}:2567`;
-  void new Session(root, renderer, endpoint, playerName).start();
+  void new Session(root, renderer, endpoint).start();
 }
 
 /** The server last typed on the home screen, if any. */

@@ -1,31 +1,21 @@
 import * as THREE from "three";
+import { CHARACTER_IDS } from "@supermaze/protocol";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 /**
  * Kenney Mini Characters (CC0) with skeletal animation, from
  * public/models/characters/. All twelve share one texture and the same clip
- * names; a player is assigned one deterministically from their id so every
- * client shows the same person. Missing files -> `ready()` false -> the box
+ * names; a player who picked one (Participant.character) gets it, anyone else
+ * is assigned one deterministically from their id so every client shows the same person. Missing files -> `ready()` false -> the box
  * placeholder in PlayerView stays.
  */
-const NAMES = [
-  "character-male-a",
-  "character-male-b",
-  "character-male-c",
-  "character-male-d",
-  "character-male-e",
-  "character-male-f",
-  "character-female-a",
-  "character-female-b",
-  "character-female-c",
-  "character-female-d",
-  "character-female-e",
-  "character-female-f",
-];
+/** Menu order; the list is shared with the server so it can check a pick. */
+export const CHARACTER_NAMES: readonly string[] = CHARACTER_IDS;
 const BASE = `${import.meta.env.BASE_URL}models/characters/`;
 
 interface Loaded {
+  name: string;
   scene: THREE.Object3D;
   clips: THREE.AnimationClip[];
 }
@@ -46,10 +36,10 @@ export class CharacterLibrary {
   async load(): Promise<number> {
     const loader = new GLTFLoader();
     const results = await Promise.all(
-      NAMES.map(async (name) => {
+      CHARACTER_NAMES.map(async (name) => {
         try {
           const gltf = await loader.loadAsync(`${BASE}${name}.glb`);
-          return { scene: gltf.scene, clips: gltf.animations } as Loaded;
+          return { name, scene: gltf.scene, clips: gltf.animations } as Loaded;
         } catch {
           return null;
         }
@@ -73,7 +63,7 @@ export class CharacterLibrary {
       });
       this.loaded.push(r);
     }
-    console.info(`[characters] loaded ${this.loaded.length}/${NAMES.length}`);
+    console.info(`[characters] loaded ${this.loaded.length}/${CHARACTER_NAMES.length}`);
     return this.loaded.length;
   }
 
@@ -81,10 +71,15 @@ export class CharacterLibrary {
     return this.loaded.length > 0;
   }
 
-  /** Build a rig for `playerId`, standing `height` world units tall. */
-  createRig(playerId: string, height: number): CharacterRig | null {
+  /** Names of the characters that loaded, in menu order. */
+  available(): string[] {
+    return this.loaded.map((l) => l.name);
+  }
+
+  /** Build a rig for `playerId` (as `character` when given and loaded), standing `height` world units tall. */
+  createRig(playerId: string, height: number, character?: string | null): CharacterRig | null {
     if (this.loaded.length === 0) return null;
-    const src = this.loaded[hash(playerId) % this.loaded.length] as Loaded;
+    const src = this.loaded.find((l) => l.name === character) ?? (this.loaded[hash(playerId) % this.loaded.length] as Loaded);
     const model = cloneSkeleton(src.scene);
     // Skinned bounds are computed from the bind pose; never let the camera cull a player.
     model.traverse((o) => {

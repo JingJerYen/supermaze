@@ -60,11 +60,11 @@ export const DEFAULT_TUNING: Tuning = {
 
   placeables: {
     lifetimeSec: {
-      oneWayDoor: 50,
-      obstacle: 50,
+      oneWayDoor: 40,
+      obstacle: 40,
       trap: 40,
     },
-    trapFreezeSec: 8,
+    trapFreezeSec: 7,
   },
 
   ghostEvent: {
@@ -74,7 +74,7 @@ export const DEFAULT_TUNING: Tuning = {
     warningSec: 10,
     durationSec: 15,
     speedMultiplier: 1.5,
-    caughtFreezeSec: 8,
+    caughtFreezeSec: 7,
     caughtProtectionSec: 10,
     catchRadiusTiles: 0.6,
   },
@@ -89,6 +89,13 @@ export const DEFAULT_TUNING: Tuning = {
       easy: { visionTiles: 3, speedMultiplier: 0.5 },
       hard: { visionTiles: 4, speedMultiplier: 0.6 },
     },
+  },
+
+  skills: {
+    sprint: { durationSec: 10, speedMultiplier: 1.5 },
+    eagleEye: { durationSec: 5 },
+    lantern: { durationSec: 20, darkRadiusTiles: 6 },
+    timeStop: { freezeSec: 7 },
   },
 
   towerRun: {

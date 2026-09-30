@@ -1,3 +1,4 @@
+import { skillSpeedFactor } from "./skills.js";
 import { isGhost, type GhostState } from "./ghost.js";
 import type { MapGrid } from "./map/grid.js";
 import { stepMover, type MoveIntent, type MoverState } from "./movement.js";
@@ -34,6 +35,6 @@ export function movePlayer(grid: MapGrid, tuning: Tuning, ctx: MoveContext, p: P
   if (p.phase === "tower") return stepMover(p.mover, input, grid, speed, undefined, turnTicks);
   if (ctx.tick < p.frozenUntilTick) return p.mover;
   const base = p.controller === "cpu" ? speed * tuning.cpu.speedMultiplier : speed;
-  const mine = isGhost(ctx.ghost, p) ? base * tuning.ghostEvent.speedMultiplier : base;
+  const mine = (isGhost(ctx.ghost, p) ? base * tuning.ghostEvent.speedMultiplier : base) * skillSpeedFactor(p, ctx.tick, tuning);
   return stepMover(p.mover, input, grid, mine, placeableMoveFilter(ctx.placeables), turnTicks);
 }

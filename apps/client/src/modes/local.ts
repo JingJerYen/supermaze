@@ -1,4 +1,4 @@
-import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState, type Tuning } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
@@ -16,6 +16,10 @@ export interface LocalOptions {
   difficulty?: CpuDifficulty;
   /** Full tuning for the round; wins over `difficulty` (the tower run sets each floor's CPU strength). */
   tuning?: Tuning;
+  /** One-shot skill for you this round (tower run; CPUs never get one). */
+  skill?: SkillKind | null;
+  /** Your character model (file name in public/models/characters); by player id when omitted. */
+  character?: string | null;
   /** End the round the moment you climb instead of waiting for the CPUs (tower run). */
   endWhenYouClimb?: boolean;
   /** Called once, on the tick the round finishes. */
@@ -46,7 +50,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     teamMode: "solo",
     ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
     tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
-    participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你" }, ...idle],
+    participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你", skill: options.skill ?? null, character: options.character ?? null }, ...idle],
   });
   sim.start();
   const cpu = new CpuController(sim, (options.seed ?? 1) + 1);

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEFAULT_TUNING, NO_INPUT, isGhost, type SimulationState } from "@supermaze/sim";
+import { DEFAULT_TUNING, NO_INPUT, isGhost, skillActive, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
 import { Hud } from "./hud/hud.js";
 import { Minimap } from "./hud/minimap.js";
@@ -24,6 +24,8 @@ import { buildMapMesh } from "./render/mapMesh.js";
 import { themeFor } from "./render/themes.js";
 import { PlaceableViews } from "./render/placeables.js";
 import { PlayerViews } from "./render/players.js";
+import { qualityFrame, qualityStatus, restartQuality } from "./render/quality.js";
+import { useTeams } from "./render/teamColors.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
 import { SwitchViews } from "./render/switches.js";
@@ -74,6 +76,7 @@ export class Match {
     options: { demo?: boolean } = {},
   ) {
     this.demo = options.demo === true;
+    restartQuality();
     this.scene = createScene();
     const theme = themeFor(mode.theme);
     this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
@@ -120,13 +123,16 @@ export class Match {
   private render(alpha: number): void {
     const now = performance.now();
     const tickSec = 1 / this.mode.tickRate;
-    const dt = Math.min((now - this.lastFrame) / 1000, tickSec * 4);
+    const frameSec = (now - this.lastFrame) / 1000;
+    const dt = Math.min(frameSec, tickSec * 4);
     this.lastFrame = now;
+    qualityFrame(this.renderer, frameSec);
 
     const s = this.mode.sample(now, alpha);
     const meId = this.mode.localPlayerId();
     let opening: Opening | null = null;
     if (s) {
+      useTeams(Object.values(s.to.players).map((p) => p.teamId));
       const ghostIds = new Set(Object.values(s.to.players).filter((p) => isGhost(s.to.ghost, p)).map((p) => p.id));
       this.players.update(s.from.players, s.to.players, s.alpha, s.to.tick, dt, meId, ghostIds, s.nudge ?? null);
       this.keys.update(s.to.keys, now / 1000);
@@ -144,8 +150,9 @@ export class Match {
       const model = buildHudModel(s.to, meId, this.mode.grid, this.mode.tickRate, DEFAULT_TUNING.inventory.capacity);
       this.hud.update(model);
       this.hud.setCaption(this.mode.caption?.() ?? null);
-      this.input?.actionButton.setAction(this.hud.actionLabel(model));
+      this.input?.actionButton.setActive(model.status === "running" && !model.onTower);
       this.input?.discardButton.setVisible(model.canDiscard);
+      this.input?.skillButton.setSkill(this.hud.skillButton(model));
       if (this.lastToastState !== s.to) {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t.text, t.big);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);
@@ -158,12 +165,19 @@ export class Match {
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
     const onTower = meState?.phase === "tower";
-    const shot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
+    const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
+    // Eagle eye (tower run skill): the tower top's view from above for a few seconds, from the maze.
+    const tickNow = s?.to.tick ?? 0;
+    const eagle = !onTower && !!meState && skillActive(meState, "eagleEye", tickNow);
+    const shot = eagle ? { ...climbShot, camera: "overview" as const, towerOverview: true, watchTower: false } : climbShot;
+    const lantern = !!meState && skillActive(meState, "lantern", tickNow);
     // The rank is already settled; the result screen waits until every climb has been shown.
     if (s && !shot.busy && this.players.activeClimbs().length === 0) this.results?.update(s.to, meId, this.mode.results());
     this.follow.setMode(shot.camera, shot.camera === "overview" ? CLIENT_TUNING.climb.overviewPerSec : undefined);
     this.mapMesh.tower.setOverview(shot.towerOverview);
-    this.lighting.setRadius(onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles);
+    this.lighting.setRadius(
+      onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : lantern ? DEFAULT_TUNING.skills.lantern.darkRadiusTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles,
+    );
     if (mePos) {
       this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2 + shot.lift), dt);
       // Opening fly-in: from far in front of the tower down to the follow view.
@@ -186,6 +200,7 @@ export class Match {
         drawCalls: r.calls,
         triangles: r.triangles,
         pixels: `${this.renderer.domElement.width}x${this.renderer.domElement.height} @${this.renderer.getPixelRatio()}`,
+        quality: qualityStatus(),
         gpuObjects: `${this.renderer.info.memory.geometries} geo, ${this.renderer.info.memory.textures} tex`,
         jsHeap: jsHeapMB(),
         mode: this.mode.label,

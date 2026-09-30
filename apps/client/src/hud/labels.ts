@@ -16,9 +16,18 @@ export const ITEM_GLYPH: Record<string, string> = {
   teleportNode: "傳",
 };
 
+/** Tower run skills: name, icon and one line on what they do. */
+export const SKILL_INFO: Record<string, { label: string; icon: string; blurb: string }> = {
+  sprint: { label: "衝刺", icon: "⚡", blurb: "一段時間內跑得更快" },
+  eagleEye: { label: "鷹眼", icon: "🦅", blurb: "從高空看整張地圖" },
+  amulet: { label: "護身符", icon: "🛡️", blurb: "擋下一次陷阱或鬼抓" },
+  lantern: { label: "點燈", icon: "🔦", blurb: "黑暗中看得更遠（關燈時才能用）" },
+  timeStop: { label: "時間暫停", icon: "⏸️", blurb: "所有對手停住不動" },
+};
+
 export const ACTION_LABEL: Record<string, string> = {
   climb: "登塔",
   switch: "開關",
   pickUpNode: "收回傳送點",
-  useItem: "使用道具",
+  useItem: "用道具",
 };

@@ -61,7 +61,7 @@ export class PlayerViews {
     this.lastTick = tick;
     this.clockSec += dtSec;
     for (const [id, p] of Object.entries(to)) {
-      const view = this.views.get(id) ?? this.create(id, p.teamId);
+      const view = this.views.get(id) ?? this.create(id, p.teamId, p.character);
       if (newTick) triggerOneShots(view, from[id], p);
       const prevState = from[id];
       if (newTick && prevState && prevState.phase === "maze" && p.phase === "tower") {
@@ -115,8 +115,8 @@ export class PlayerViews {
     return this.views.get(id)?.mesh.position ?? null;
   }
 
-  private create(id: string, teamId: string): PlayerView {
-    const view = new PlayerView(id, TEAM_COLORS[teamColorIndex(teamId) % TEAM_COLORS.length] as number);
+  private create(id: string, teamId: string, character?: string | null): PlayerView {
+    const view = new PlayerView(id, TEAM_COLORS[teamColorIndex(teamId) % TEAM_COLORS.length] as number, character);
     this.scene.add(view.mesh);
     this.views.set(id, view);
     return view;

@@ -1,4 +1,3 @@
-import { NAME_MAX_CHARS } from "@supermaze/protocol";
 import { ICONS } from "./homeIcons.js";
 
 /**
@@ -45,7 +44,10 @@ export const HOME_CSS = `
 .hm-join{display:flex;flex-direction:column;gap:.5em}
 .hm-code{position:relative;display:flex;align-items:center}
 .hm-code svg{position:absolute;left:.7em;color:#8fa0c0}
-.lb .hm #lb-name{flex:none;width:8.5em}
+.lb .hm .hm-profile{justify-content:flex-start;gap:.7em;height:3.2em;padding:0 .8em 0 .3em;border-radius:.6em;border:1px solid #3a4560;background:rgba(4,8,18,.75)}
+.hm-profile img{width:2.6em;height:2.6em;border-radius:.5em;background:#2a3450}
+.hm-profile .n{font-size:1.15em;font-weight:700}
+.hm-profile .s{margin-left:auto;display:flex;align-items:center;gap:.3em;color:#8fb6ff;font-size:.95em}
 .lb .hm .hm-code input{padding-left:2.2em;text-transform:uppercase;letter-spacing:.2em}
 .hm-note{color:#ffd66b;font-size:.92em;text-align:center;min-height:1.3em}
 .hm-note.err{color:#ff8a8a}
@@ -76,6 +78,9 @@ export const HOME_CSS = `
 `;
 
 export interface HomeView {
+  /** The player's name and portrait (character setup). */
+  name: string;
+  portrait?: string | undefined;
   error?: string | undefined;
   best?: { score: number; floor: number } | null | undefined;
 }
@@ -86,7 +91,7 @@ export function homeHtml(v: HomeView): string {
     <div class="hm-logo"><img src="${ICON}" alt="" /><div class="hm-title"><span>SUPER</span> <span>MAZE</span></div></div>
     <div class="hm-panel">
       <div class="hm-fields">
-        <div class="hm-field"><label for="lb-name">${ICONS.user}<span>暱稱</span></label><input id="lb-name" maxlength="${NAME_MAX_CHARS}" placeholder="你的暱稱" /></div>
+        <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}角色設定</span></button>
         <div class="hm-field"><label for="lb-server">${ICONS.server}<span>伺服器</span></label><input id="lb-server" placeholder="wss://…" /></div>
       </div>
       <button class="hm-gold" id="lb-quick">${ICONS.swords}快速配對</button>
@@ -102,4 +107,8 @@ export function homeHtml(v: HomeView): string {
       <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>征服高塔</b><small>單人挑戰・${best}</small></span>${ICONS.chevron}</button>
     </div>
     <div class="hm-rules"><button id="lb-rules">${ICONS.book}遊戲規則</button></div>`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 }

@@ -18,6 +18,32 @@ export const ROOM_NAME = "maze";
 /** Longest display name, in characters; the client input and the server both cap it. */
 export const NAME_MAX_CHARS = 6;
 
+/**
+ * Characters a player may pick (Kenney Mini Characters; the client loads
+ * models/characters/<id>.glb). Shared so the server can refuse anything else.
+ */
+export const CHARACTER_IDS = [
+  "character-male-a",
+  "character-male-b",
+  "character-male-c",
+  "character-male-d",
+  "character-male-e",
+  "character-male-f",
+  "character-female-a",
+  "character-female-b",
+  "character-female-c",
+  "character-female-d",
+  "character-female-e",
+  "character-female-f",
+] as const;
+
+export type CharacterId = (typeof CHARACTER_IDS)[number];
+
+/** A picked character from untrusted input, or null (the id-based default is used). */
+export function sanitizeCharacter(raw: unknown): string | null {
+  return typeof raw === "string" && (CHARACTER_IDS as readonly string[]).includes(raw) ? raw : null;
+}
+
 /** Cut a display name to NAME_MAX_CHARS characters (not UTF-16 units, so emoji stay whole). */
 export function capName(s: string): string {
   return Array.from(s).slice(0, NAME_MAX_CHARS).join("");
@@ -95,6 +121,8 @@ export type LobbyPhase = "lobby" | "countdown" | "playing" | "results";
 export interface LobbyPlayer {
   id: string;
   name: string;
+  /** Picked character (CHARACTER_IDS), or null for the id-based default. */
+  character?: string | null;
   teamId: string;
   ready: boolean;
   connected: boolean;

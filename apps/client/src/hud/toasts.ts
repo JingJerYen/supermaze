@@ -1,5 +1,5 @@
 import type { SimulationState } from "@supermaze/sim";
-import { ITEM_LABEL } from "./labels.js";
+import { ITEM_LABEL, SKILL_INFO } from "./labels.js";
 
 /**
  * Short centre-screen notices derived by diffing consecutive states, since the
@@ -41,7 +41,9 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
     if (a && b) {
       if (b.items.length > a.items.length) out.push(`取得 ${ITEM_LABEL[b.items[b.items.length - 1] ?? ""] ?? "道具"}`);
       // A ghost catch has its own notice below; this one is for traps.
-      if (b.frozenUntilTick > a.frozenUntilTick && b.frozenBy !== "ghost") out.push("踩到陷阱，被鐵籠罩住");
+      if (b.frozenUntilTick > a.frozenUntilTick && b.frozenBy === "trap") out.push("踩到陷阱，被鐵籠罩住");
+      if (a.skill && !b.skill) out.push({ text: `${SKILL_INFO[a.skill]?.icon ?? ""} ${SKILL_INFO[a.skill]?.label ?? "技能"}！`, big: true });
+      if (a.shielded && !b.shielded) out.push({ text: b.protectedUntilTick > a.protectedUntilTick ? "🛡️ 護身符擋下了鬼" : "🛡️ 護身符擋下了陷阱", big: true });
       if (a.teleportImmunity === null && b.teleportImmunity !== null) out.push("傳送");
     }
   }
@@ -53,7 +55,9 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
   if (meId) {
     const a = prev.players[meId];
     const b = next.players[meId];
-    if (a && b && b.protectedUntilTick > a.protectedUntilTick && !(a.keyId !== null && b.keyId === null)) out.push("被鬼抓到了，道具全失");
+    // The amulet raises the protection too, without a catch.
+    const shieldTook = !!a && !!b && a.shielded && !b.shielded;
+    if (a && b && !shieldTook && b.protectedUntilTick > a.protectedUntilTick && !(a.keyId !== null && b.keyId === null)) out.push("被鬼抓到了，道具全失");
   }
   return out;
 }
