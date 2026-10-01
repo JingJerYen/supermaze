@@ -16,6 +16,7 @@ import {
   type TowerRunState,
 } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
+import { t } from "../i18n/index.js";
 import { MAP_POOL } from "../maps.js";
 import { Match } from "../match.js";
 import { showRewardedAd } from "../monetize/ads.js";
@@ -102,7 +103,7 @@ export class TowerRun {
     this.verdict = null;
     this.plan = planFloor(this.run, MAP_POOL);
     if (!this.plan) {
-      this.onHome("沒有可用的地圖，無法開始爬塔挑戰");
+      this.onHome(t("modes.tower.noMap"));
       return;
     }
     const plan = this.plan;
@@ -117,7 +118,7 @@ export class TowerRun {
       endWhenYouClimb: true,
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
-      caption: () => `第 ${plan.floor} / ${this.floorsTotal} 層　分數前 ${plan.passRank} 名晉級　總分 ${this.run.totalScore}`,
+      caption: () => t("modes.tower.caption", { floor: plan.floor, floors: this.floorsTotal, pass: plan.passRank, score: this.run.totalScore }),
       onHome: () => this.quit(),
     });
     this.match = new Match(this.root, this.renderer, mode);
@@ -133,37 +134,36 @@ export class TowerRun {
     // Only a run from the bottom floor competes for the best total.
     const record = run.startFloor === 1 && (!best || run.totalScore > best.score);
     if (record) saveBest({ score: run.totalScore, floor: plan.floor });
-    const where = `分數第 ${outcome.rank} 名`;
-    const total = `總分 ${run.totalScore}（到達第 ${plan.floor} 層）`;
-    const bestLine = record ? "新紀錄！" : best ? `最佳紀錄：總分 ${best.score}（到達第 ${best.floor} 層）` : "";
-    const home = { label: "回首頁", run: () => this.quit() };
+    const total = t("modes.tower.total", { score: run.totalScore, floor: plan.floor });
+    const bestLine = record ? t("modes.tower.newRecord") : best ? t("modes.tower.best", { score: best.score, floor: best.floor }) : "";
+    const home = { label: t("modes.tower.home"), run: () => this.quit() };
 
     if (run.status === "cleared") {
       this.verdict = {
         endsAt: null,
         note: {
-          title: outcome.passed ? `登頂成功！完成全部 ${this.floorsTotal} 層` : `完成全部 ${this.floorsTotal} 層`,
+          title: t(outcome.passed ? "modes.tower.clearedPassed" : "modes.tower.cleared", { n: this.floorsTotal }),
           tone: outcome.passed ? "pass" : "info",
           lines: [total, bestLine].filter(Boolean),
         },
-        buttons: [{ label: "再挑戰一次", primary: true, run: () => this.restart() }, home],
+        buttons: [{ label: t("modes.tower.tryAgain"), primary: true, run: () => this.restart() }, home],
       };
     } else if (run.status === "stopped") {
       const left = DEFAULT_TUNING.towerRun.maxContinues - run.continues;
       const carryOn = canContinue(run)
-        ? { label: `${isPremium() ? "" : "📺 看廣告"}繼續（剩 ${left} 次）`, primary: true, run: () => void this.continueAfterFail() }
-        : { label: "再挑戰一次", primary: true, run: () => this.restart() };
-      const used = canContinue(run) ? "" : `這次挑戰的 ${DEFAULT_TUNING.towerRun.maxContinues} 次繼續已用完`;
+        ? { label: t(isPremium() ? "modes.tower.continue" : "modes.tower.continueAd", { n: left }), primary: true, run: () => void this.continueAfterFail() }
+        : { label: t("modes.tower.tryAgain"), primary: true, run: () => this.restart() };
+      const used = canContinue(run) ? "" : t("modes.tower.continuesUsed", { n: DEFAULT_TUNING.towerRun.maxContinues });
       this.verdict = {
         endsAt: null,
-        note: { title: `挑戰結束：${where}，需要前 ${plan.passRank} 名`, tone: "fail", lines: [total, bestLine, used].filter(Boolean) },
+        note: { title: t("modes.tower.failed", { rank: outcome.rank, pass: plan.passRank }), tone: "fail", lines: [total, bestLine, used].filter(Boolean) },
         buttons: [home, carryOn],
       };
     } else {
       this.verdict = {
         endsAt: null,
-        note: { title: `晉級！${where}`, tone: "pass", lines: [`總分 ${run.totalScore}　下一層：第 ${run.floor} / ${this.floorsTotal} 層`] },
-        buttons: [{ label: `前往第 ${run.floor} 層`, primary: true, run: () => this.prepare() }, home],
+        note: { title: t("modes.tower.advanced", { rank: outcome.rank }), tone: "pass", lines: [t("modes.tower.next", { score: run.totalScore, floor: run.floor, floors: this.floorsTotal })] },
+        buttons: [{ label: t("modes.tower.goTo", { n: run.floor }), primary: true, run: () => this.prepare() }, home],
       };
     }
   }
@@ -171,7 +171,7 @@ export class TowerRun {
   /** After a failed floor: an ad (none with the full version), then on to the next floor with the score kept. */
   private async continueAfterFail(): Promise<void> {
     if (!canContinue(this.run)) return;
-    if (!isPremium() && !(await showRewardedAd("繼續挑戰下一層"))) return;
+    if (!isPremium() && !(await showRewardedAd(t("modes.tower.adReward")))) return;
     this.run = continueRun(this.run);
     this.prepare();
   }

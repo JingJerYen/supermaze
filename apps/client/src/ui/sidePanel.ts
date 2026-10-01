@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.js";
+
 /**
  * The left-hand panel shared by the character setup and the tower run's floor
  * prep; the game canvas behind it shows the character on its stage.
@@ -36,7 +38,7 @@ const CSS = `
 .sp-floors{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .sp-floors button{height:38px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:rgba(70,110,200,.3);color:#fff;font-size:15px;font-weight:600;cursor:pointer;position:relative}
 .sp-floors button.on{border-color:#ffd23f;background:rgba(255,210,63,.3)}
-.sp-floors button.top::after{content:"最高";position:absolute;top:-7px;right:-4px;font-size:9px;font-weight:600;background:#ffd23f;color:#412402;border-radius:4px;padding:0 3px}
+.sp-floors button.top::after{content:${JSON.stringify(t("lobby.panel.top"))};position:absolute;top:-7px;right:-4px;font-size:9px;font-weight:600;background:#ffd23f;color:#412402;border-radius:4px;padding:0 3px}
 .sp-floors button:disabled{opacity:.35;cursor:default;font-size:12px}
 .sp-perks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .sp-perks li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.3)}

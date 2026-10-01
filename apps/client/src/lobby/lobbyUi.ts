@@ -56,7 +56,7 @@ export interface LobbyUiHandlers {
 }
 
 const TEAM_COLOR: Record<string, string> = { A: "#ffb347", B: "#5ec8ff" };
-const MODE_LABEL: Record<TeamMode, string> = { teams: "兩隊對戰", solo: "個人對戰" };
+const MODE_LABEL: Record<TeamMode, string> = { teams: t("lobby.room.mode.teams"), solo: t("lobby.room.mode.solo") };
 
 /** Home screen (name + quick/private) and the room lobby with two team columns. */
 export class LobbyUi {
@@ -112,7 +112,7 @@ export class LobbyUi {
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
     this.card.querySelector("#lb-online")!.addEventListener("click", () => {
       if (online) this.handlers.onOnline();
-      else this.setNotice("#lb-home-notice", "連線對戰即將推出，敬請期待！");
+      else this.setNotice("#lb-home-notice", t("lobby.home.onlineSoon"));
     });
   }
 
@@ -130,7 +130,7 @@ export class LobbyUi {
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {
       const code = this.card.querySelector<HTMLInputElement>("#lb-code")!.value.trim().toUpperCase();
       if (code.length !== 4) {
-        this.setNotice("#lb-online-notice", "請輸入四碼房間代碼");
+        this.setNotice("#lb-online-notice", t("lobby.online.needCode"));
         return;
       }
       this.handlers.onJoin({ kind: "join", name: name(), character, code, server: server() });
@@ -158,10 +158,10 @@ export class LobbyUi {
     return src ? `<img class="lb-av" alt="" src="${src}">` : "";
   }
 
-  showConnecting(text = "連線中..."): void {
+  showConnecting(text = t("lobby.connecting.default")): void {
     this.stopTicking();
     this.showCard();
-    this.card.innerHTML = `<h1>迷宮高塔</h1><div class="lb-muted">${text}</div>`;
+    this.card.innerHTML = `<h1>${t("lobby.connecting.title")}</h1><div class="lb-muted">${text}</div>`;
   }
 
   /** Render the room; called on every lobby message and once a second for the countdowns. */
@@ -174,54 +174,56 @@ export class LobbyUi {
     const now = Date.now();
     const lobbyOpen = msg.phase === "lobby" || msg.phase === "countdown";
     const teamsMode = msg.teamMode === "teams";
-    let headline = msg.mode === "quick" ? `${connected} / ${msg.maxPlayers} 人，1 對 1` : `${connected} / ${msg.maxPlayers} 人，至少 ${msg.minPlayers} 人`;
+    const counts = { n: connected, max: msg.maxPlayers, min: msg.minPlayers };
+    let headline = t(msg.mode === "quick" ? "lobby.room.quickHead" : "lobby.room.privateHead", counts);
     let big = "";
-    if (msg.phase === "countdown" && msg.countdownEndsAt) big = `${Math.max(0, Math.ceil((msg.countdownEndsAt - now) / 1000))} 秒後開始`;
-    else if (msg.phase === "results" && msg.resultsEndAt) big = `${Math.max(0, Math.ceil((msg.resultsEndAt - now) / 1000))} 秒後回到大廳`;
-    else if (msg.phase === "playing") big = "比賽進行中";
-    else headline += msg.mode === "quick" ? "，兩人到齊就開始" : isHost ? "，你是房主" : "，等房主開始";
+    if (msg.phase === "countdown" && msg.countdownEndsAt) big = t("lobby.room.startsIn", { n: Math.max(0, Math.ceil((msg.countdownEndsAt - now) / 1000)) });
+    else if (msg.phase === "results" && msg.resultsEndAt) big = t("lobby.room.backIn", { n: Math.max(0, Math.ceil((msg.resultsEndAt - now) / 1000)) });
+    else if (msg.phase === "playing") big = t("lobby.room.playing");
+    else headline = t(msg.mode === "quick" ? "lobby.room.quickHeadWait" : isHost ? "lobby.room.privateHeadHost" : "lobby.room.privateHeadGuest", counts);
 
+    const empty = `<div class="lb-p empty">${t("lobby.room.empty")}</div>`;
     const team = (id: string, label: string) => {
       const members = msg.players.filter((p) => p.teamId === id);
       const rows = members
         .map((p) => {
-          const state = !p.connected ? `<span class="lb-off">斷線</span>` : p.ready ? `<span class="lb-ready">準備好了</span>` : `<span class="lb-wait">未準備</span>`;
-          const tags = [p.id === this.meId ? "（你）" : "", p.id === msg.hostId ? " 房主" : ""].join("");
+          const state = !p.connected ? `<span class="lb-off">${t("lobby.room.offline")}</span>` : p.ready ? `<span class="lb-ready">${t("lobby.room.ready")}</span>` : `<span class="lb-wait">${t("lobby.room.notReady")}</span>`;
+          const tags = [p.id === this.meId ? t("lobby.room.you") : "", p.id === msg.hostId ? t("lobby.room.host") : ""].join("");
           return `<div class="lb-p"><span>${this.face(p.character)}${escapeHtml(p.name)}${tags}</span>${state}</div>`;
         })
         .join("");
-      const empty = `<div class="lb-p empty">空位</div>`.repeat(Math.max(0, Math.ceil(msg.maxPlayers / 2) - members.length));
-      return `<div class="lb-team"><div class="lb-team-h"><span class="lb-dot" style="background:${TEAM_COLOR[id]}"></span>${label}<span class="lb-muted">${members.length} 人</span></div>${rows}${empty}</div>`;
+      const slots = empty.repeat(Math.max(0, Math.ceil(msg.maxPlayers / 2) - members.length));
+      return `<div class="lb-team"><div class="lb-team-h"><span class="lb-dot" style="background:${TEAM_COLOR[id]}"></span>${label}<span class="lb-muted">${t("lobby.room.teamSize", { n: members.length })}</span></div>${rows}${slots}</div>`;
     };
 
     const playerRow = (p: LobbyMessage["players"][number]) => {
-      const state = !p.connected ? `<span class="lb-off">斷線</span>` : p.ready ? `<span class="lb-ready">準備好了</span>` : `<span class="lb-wait">未準備</span>`;
-      const tags = [p.id === this.meId ? "（你）" : "", p.id === msg.hostId ? " 房主" : ""].join("");
+      const state = !p.connected ? `<span class="lb-off">${t("lobby.room.offline")}</span>` : p.ready ? `<span class="lb-ready">${t("lobby.room.ready")}</span>` : `<span class="lb-wait">${t("lobby.room.notReady")}</span>`;
+      const tags = [p.id === this.meId ? t("lobby.room.you") : "", p.id === msg.hostId ? t("lobby.room.host") : ""].join("");
       return `<div class="lb-p"><span>${this.face(p.character)}${escapeHtml(p.name)}${tags}</span>${state}</div>`;
     };
-    const soloList = `<div class="lb-solo"><div class="lb-team-h">個人對戰<span class="lb-muted">每人一隊，依分數排名，沒有勝隊加成</span></div>${msg.players.map(playerRow).join("")}${`<div class="lb-p empty">空位</div>`.repeat(Math.max(0, msg.maxPlayers - msg.players.length))}</div>`;
+    const soloList = `<div class="lb-solo"><div class="lb-team-h">${MODE_LABEL.solo}<span class="lb-muted">${t("lobby.room.soloNote")}</span></div>${msg.players.map(playerRow).join("")}${empty.repeat(Math.max(0, msg.maxPlayers - msg.players.length))}</div>`;
     // Only a private room has a choice; its host switches, everyone else just sees the mode.
     const modeRow =
       msg.mode !== "private"
         ? ""
         : isHost
-          ? `<div class="lb-row"><span class="lb-muted">模式</span>${(["teams", "solo"] as TeamMode[])
+          ? `<div class="lb-row"><span class="lb-muted">${t("lobby.room.mode")}</span>${(["teams", "solo"] as TeamMode[])
               .map((m) => `<button data-mode="${m}" class="lb-mode ${msg.teamMode === m ? "on" : ""}" ${lobbyOpen ? "" : "disabled"}>${MODE_LABEL[m]}</button>`)
-              .join("")}<span class="lb-muted">${teamsMode ? "兩隊人數相同才能開始" : "2 到 6 人都能開始"}</span></div>`
-          : `<div class="lb-row"><span class="lb-muted">模式：${MODE_LABEL[msg.teamMode]}${teamsMode ? "，兩隊人數相同才能開始" : ""}</span></div>`;
+              .join("")}<span class="lb-muted">${t(teamsMode ? "lobby.room.teamsRule" : "lobby.room.soloRule")}</span></div>`
+          : `<div class="lb-row"><span class="lb-muted">${t(teamsMode ? "lobby.room.modeIsTeams" : "lobby.room.modeIs", { mode: MODE_LABEL[msg.teamMode] })}</span></div>`;
 
     this.card.innerHTML = `
       <div class="lb-head">
-        <div><div class="lb-muted">${msg.mode === "private" ? "房間代碼" : "快速配對"}</div><div class="lb-big">${msg.code ?? ""}</div></div>
+        <div><div class="lb-muted">${t(msg.mode === "private" ? "lobby.room.code" : "lobby.room.quickMatch")}</div><div class="lb-big">${msg.code ?? ""}</div></div>
         <div style="text-align:right"><div class="lb-muted">${headline}</div><div class="lb-big">${big}</div></div>
       </div>
       ${modeRow}
-      ${teamsMode ? `<div class="lb-teams">${team("A", "A 隊")}${team("B", "B 隊")}</div>` : soloList}
+      ${teamsMode ? `<div class="lb-teams">${team("A", t("lobby.room.team", { id: "A" }))}${team("B", t("lobby.room.team", { id: "B" }))}</div>` : soloList}
       <div class="lb-row" style="margin-top:14px">
-        <button class="primary" id="lb-ready" ${lobbyOpen ? "" : "disabled"}>${me?.ready ? "取消準備" : "準備"}</button>
-        ${teamsMode && msg.mode === "private" ? `<button id="lb-switch" ${lobbyOpen ? "" : "disabled"}>換隊</button>` : ""}
-        ${isHost && msg.mode === "private" ? `<button id="lb-start" ${msg.phase === "lobby" ? "" : "disabled"}>開始</button>` : ""}
-        <button id="lb-leave" style="margin-left:auto">離開</button>
+        <button class="primary" id="lb-ready" ${lobbyOpen ? "" : "disabled"}>${t(me?.ready ? "lobby.room.unready" : "lobby.room.readyBtn")}</button>
+        ${teamsMode && msg.mode === "private" ? `<button id="lb-switch" ${lobbyOpen ? "" : "disabled"}>${t("lobby.room.switchTeam")}</button>` : ""}
+        ${isHost && msg.mode === "private" ? `<button id="lb-start" ${msg.phase === "lobby" ? "" : "disabled"}>${t("lobby.room.start")}</button>` : ""}
+        <button id="lb-leave" style="margin-left:auto">${t("lobby.room.leave")}</button>
       </div>
       <div class="lb-notice">${msg.notice ? escapeHtml(noticeText(msg.notice)) : ""}</div>`;
     this.card.querySelector("#lb-ready")!.addEventListener("click", () => this.handlers.onReady(!me?.ready));

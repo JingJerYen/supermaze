@@ -107,18 +107,18 @@ export interface HomeView {
 }
 
 export function homeHtml(v: HomeView): string {
-  const best = v.best ? `最佳：第 ${v.best.floor} 層・${v.best.score} 分` : "20 層・每層前一半晉級";
+  const sub = v.best ? t("lobby.home.towerSubBest", { floor: v.best.floor, score: v.best.score }) : t("lobby.home.towerSubNew", { floors: 20 });
   return `
     ${LOGO}
     <div class="hm-panel">
-      <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}角色設定</span></button>
-      <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>征服高塔</b><small>單人挑戰・${best}</small></span>${ICONS.chevron}</button>
-      <button class="hm-stone hm-online" id="lb-online">${ICONS.swords}連線對戰${v.online ? "" : `<span class="hm-soon">即將推出</span>`}</button>
+      <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}${t("lobby.home.profile")}</span></button>
+      <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>${t("lobby.home.towerRun")}</b><small>${sub}</small></span>${ICONS.chevron}</button>
+      <button class="hm-stone hm-online" id="lb-online">${ICONS.swords}${t("lobby.home.online")}${v.online ? "" : `<span class="hm-soon">${t("lobby.home.soon")}</span>`}</button>
       <div class="hm-note ${v.error ? "err" : ""}" id="lb-home-notice">${v.error ?? ""}</div>
     </div>
     <div class="hm-rules">
-      <button id="lb-rules">${ICONS.book}遊戲規則</button>
-      <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? "已擁有完整版" : "完整版"}</button>
+      <button id="lb-rules">${ICONS.book}${t("lobby.home.rules")}</button>
+      <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? t("lobby.home.fullVersionOwned") : t("lobby.home.fullVersion")}</button>
     </div>`;
 }
 
