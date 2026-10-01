@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.js";
+
 /**
  * On-screen button that throws away the oldest carried item. Small and above
  * the action button so a thumb reaching for "use" does not hit it by accident;
@@ -10,7 +12,7 @@ export class DiscardButton {
   constructor(parent: HTMLElement) {
     this.el = document.createElement("button");
     this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
-    this.el.textContent = "丟棄";
+    this.el.textContent = t("hud.discard");
     Object.assign(this.el.style, {
       position: "fixed",
       // Centred over the 84px action button, 12px above it.

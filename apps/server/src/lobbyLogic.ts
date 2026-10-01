@@ -1,4 +1,4 @@
-import type { LobbyPlayer, RoomMode, TeamMode } from "@supermaze/protocol";
+import type { LobbyNotice, LobbyPlayer, RoomMode, TeamMode } from "@supermaze/protocol";
 
 /**
  * Pure lobby rules (CLAUDE.md 2.1). No Colyseus here so they can be unit-tested.
@@ -55,12 +55,12 @@ export function teamsEqual(players: readonly LobbyPlayer[]): boolean {
  * Why the match cannot start right now, or null if it can. Used both for the
  * automatic countdown and for a private host's manual start.
  */
-export function startBlocker(players: readonly LobbyPlayer[], rules: LobbyRules, requireReady: boolean): string | null {
+export function startBlocker(players: readonly LobbyPlayer[], rules: LobbyRules, requireReady: boolean): LobbyNotice | null {
   const connected = players.filter((p) => p.connected);
-  if (connected.length < rules.minPlayers) return `至少需要 ${rules.minPlayers} 人`;
-  if (connected.length > rules.maxPlayers) return `最多 ${rules.maxPlayers} 人`;
-  if (rules.teamMode === "teams" && !teamsEqual(connected)) return "兩隊人數必須相同";
-  if (requireReady && !connected.every((p) => p.ready)) return "還有人沒準備好";
+  if (connected.length < rules.minPlayers) return { kind: "needPlayers", n: rules.minPlayers };
+  if (connected.length > rules.maxPlayers) return { kind: "tooManyPlayers", n: rules.maxPlayers };
+  if (rules.teamMode === "teams" && !teamsEqual(connected)) return { kind: "teamsUneven" };
+  if (requireReady && !connected.every((p) => p.ready)) return { kind: "notReady" };
   return null;
 }
 

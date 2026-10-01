@@ -9,6 +9,8 @@ import { antialiasAtLaunch, createGovernor, installQuality, rememberRatio } from
 import { sfx } from "./audio/sfx.js";
 import { music } from "./audio/music.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
+import { applyDocumentLocale } from "./i18n/index.js";
+import { FALLBACK_NAME } from "./characterNames.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 import { loadProfile } from "./profile.js";
 import { Session } from "./session.js";
@@ -31,6 +33,7 @@ renderer.setPixelRatio(dprOverride > 0 ? dprOverride : (governor?.ratio ?? Math.
 renderer.setSize(root.clientWidth || window.innerWidth, root.clientHeight || window.innerHeight);
 root.appendChild(renderer.domElement);
 
+applyDocumentLocale();
 fullscreenOnFirstTouch();
 sfx.init();
 music.init();
@@ -86,5 +89,5 @@ function resolveName(fromUrl: string | null): string {
   } catch {
     /* storage unavailable */
   }
-  return (name || "玩家").slice(0, 12);
+  return (name || FALLBACK_NAME).slice(0, 12);
 }

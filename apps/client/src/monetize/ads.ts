@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
 /**
@@ -15,10 +16,10 @@ export function showRewardedAd(reward: string): Promise<boolean> {
     root.className = "ad";
     root.innerHTML = `
       <div class="ad-card">
-        <div class="ad-tag">廣告</div>
-        <div class="ad-body">這裡會播放一則廣告<br><small>（測試用的佔位畫面）</small></div>
-        <div class="ad-reward">看完可以：${reward}</div>
-        <div class="ad-foot"><span class="ad-count"></span><button class="ad-close" data-nosound>關閉</button></div>
+        <div class="ad-tag">${t("modes.ad.tag")}</div>
+        <div class="ad-body">${t("modes.ad.body")}<br><small>${t("modes.ad.placeholder")}</small></div>
+        <div class="ad-reward">${t("modes.ad.reward", { reward })}</div>
+        <div class="ad-foot"><span class="ad-count"></span><button class="ad-close" data-nosound>${t("modes.ad.close")}</button></div>
       </div>`;
     document.body.appendChild(root);
     const count = root.querySelector<HTMLElement>(".ad-count")!;
@@ -30,8 +31,8 @@ export function showRewardedAd(reward: string): Promise<boolean> {
       resolve(earned);
     };
     const tick = () => {
-      count.textContent = left > 0 ? `${left} 秒後獲得獎勵` : "已獲得獎勵";
-      close.textContent = left > 0 ? "略過（沒有獎勵）" : "領取獎勵";
+      count.textContent = left > 0 ? t("modes.ad.countdown", { n: left }) : t("modes.ad.earned");
+      close.textContent = left > 0 ? t("modes.ad.skip") : t("modes.ad.claim");
       close.classList.toggle("done", left <= 0);
     };
     const timer = window.setInterval(() => {

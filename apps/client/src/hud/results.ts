@@ -1,4 +1,5 @@
 import type { SimulationState } from "@supermaze/sim";
+import { t, type MessageKey } from "../i18n/index.js";
 import { TEAM_COLORS, teamColorIndex } from "../render/teamColors.js";
 
 const CSS = `
@@ -45,16 +46,17 @@ const CSS = `
 }
 `;
 
-const REASON_TEXT: Record<string, string> = {
-  allClimbed: "全員登頂",
-  lastOneLeft: "只剩一人未登塔，回合結束；最先全員登頂的隊伍獲勝",
-  "solo:score": "只剩一人未登塔，回合結束；分數最高者獲勝",
-  "solo:climbed": "你已登塔，回合立即結算；分數最高者獲勝",
-  "solo:timeout": "時間到；分數最高者獲勝",
-  "timeout:climbed": "時間到，登塔人數較多",
-  "timeout:score": "時間到，登塔人數相同，總分較高",
-  "timeout:earlier": "時間到，人數與分數相同，較早達成",
-  "timeout:draw": "時間到，完全平手",
+/** Why the round ended, by the sim's result reason. */
+const REASON_TEXT: Record<string, MessageKey> = {
+  allClimbed: "hud.result.reason.allClimbed",
+  lastOneLeft: "hud.result.reason.lastOneLeft",
+  "solo:score": "hud.result.reason.soloScore",
+  "solo:climbed": "hud.result.reason.soloClimbed",
+  "solo:timeout": "hud.result.reason.soloTimeout",
+  "timeout:climbed": "hud.result.reason.timeoutClimbed",
+  "timeout:score": "hud.result.reason.timeoutScore",
+  "timeout:earlier": "hud.result.reason.timeoutEarlier",
+  "timeout:draw": "hud.result.reason.timeoutDraw",
 };
 
 export interface ResultsActions {
@@ -116,7 +118,7 @@ export class ResultsPanel {
     const teamName = (id: string) =>
       solo
         ? escapeHtml(Object.values(state.players).find((p) => p.teamId === id)?.name ?? id.slice(0, 6))
-        : `${letters[teamColorIndex(id) % letters.length]} 隊`;
+        : t("hud.team.letter", { letter: letters[teamColorIndex(id) % letters.length] as string });
     const teamColor = (id: string) => `#${(TEAM_COLORS[teamColorIndex(id) % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
 
     const rows = Object.values(state.players)
@@ -125,10 +127,10 @@ export class ResultsPanel {
       .map(({ p, final }, i) => {
         const win = p.teamId === winner;
         const boosted = win && !solo; // the x2 exists in teams mode only
-        const placement = p.phase === "tower" && p.towerArrival !== null ? `第 ${p.towerArrival + 1} 名登塔` : "未登塔";
+        const placement = p.phase === "tower" && p.towerArrival !== null ? t("hud.climbedPlace", { n: p.towerArrival + 1 }) : t("hud.result.notClimbed");
         return `<tr class="${p.id === meId ? "me" : ""} ${win ? "win" : ""}">
           <td class="rs-rank">${i + 1}</td>
-          <td><span class="rs-team" style="background:${teamColor(p.teamId)}"></span>${escapeHtml(p.name ?? p.id.slice(0, 6))}${p.id === meId ? "（你）" : ""}</td>
+          <td><span class="rs-team" style="background:${teamColor(p.teamId)}"></span>${p.id === meId ? t("hud.nameYou", { name: escapeHtml(p.name ?? p.id.slice(0, 6)) }) : escapeHtml(p.name ?? p.id.slice(0, 6))}</td>
           <td>${placement}</td>
           ${solo ? "" : `<td class="num">${p.score}${boosted ? `<span class="rs-mult">×2</span>` : ""}</td>`}
           <td class="num"><strong>${final}</strong></td>
@@ -137,8 +139,8 @@ export class ResultsPanel {
       .join("");
 
     this.card.innerHTML = `
-      <div class="rs-title">${winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${teamName(winner)} 獲勝` : solo ? "平手" : "沒有獲勝隊伍"}</div>
-      ${actions.note ? "" : `<div class="rs-reason">${REASON_TEXT[r.reason] ?? r.reason}</div>`}
+      <div class="rs-title">${winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${t("hud.result.wins", { team: teamName(winner) })}` : solo ? t("hud.result.draw") : t("hud.result.noWinner")}</div>
+      ${actions.note ? "" : `<div class="rs-reason">${REASON_TEXT[r.reason] ? t(REASON_TEXT[r.reason] as MessageKey) : r.reason}</div>`}
       ${
         actions.note
           ? `<div class="rs-note ${actions.note.tone}"><div class="rs-note-title">${escapeHtml(actions.note.title)}</div>${actions.note.lines
@@ -147,7 +149,7 @@ export class ResultsPanel {
           : ""
       }
       <table>
-        <thead><tr><th></th><th>玩家</th><th>登塔</th><th class="num">分數</th>${solo ? "" : `<th class="num">最終</th>`}</tr></thead>
+        <thead><tr><th></th><th>${t("hud.result.col.player")}</th><th>${t("hud.result.col.climb")}</th><th class="num">${t("hud.result.col.score")}</th>${solo ? "" : `<th class="num">${t("hud.result.col.final")}</th>`}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="rs-foot"><span class="rs-count" id="rs-count"></span><span id="rs-buttons"></span></div>`;
@@ -170,7 +172,7 @@ export class ResultsPanel {
       return;
     }
     const s = Math.max(0, Math.ceil((this.endsAt - Date.now()) / 1000));
-    this.count.textContent = `${s} 秒後回到大廳`;
+    this.count.textContent = t("hud.result.backToLobby", { sec: s });
   }
 
   hide(): void {

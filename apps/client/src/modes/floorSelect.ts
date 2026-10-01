@@ -1,10 +1,9 @@
 import type * as THREE from "three";
 import { DEFAULT_TUNING, passRank } from "@supermaze/sim";
+import { t } from "../i18n/index.js";
 import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
-
-const DIFFICULTY_LABEL = { easy: "簡單", medium: "中等", hard: "困難" } as const;
 
 /**
  * Full version only: pick the floor a tower run starts on, any floor up to
@@ -51,14 +50,14 @@ export class FloorSelect {
     const f = floors[this.picked - 1]!;
     const players = f.cpus + 1;
     this.panel.innerHTML = `
-      <h2>選擇起始樓層</h2>
-      <div class="sp-sub">⭐ 完整版：可以從打過的任一層開始，選最高層就是接著往上打</div>
+      <h2>${t("modes.select.title")}</h2>
+      <div class="sp-sub">${t("modes.select.sub")}</div>
       <div class="sp-floors">${buttons}</div>
-      <div class="sp-note">第 ${this.picked} 層：${DIFFICULTY_LABEL[f.map]}地圖・對手 ${f.cpus} 人・分數前 ${passRank(players)} 名晉級${
-        this.picked > 1 ? "<br>從第 1 層以外開始的挑戰不計入最佳紀錄。" : ""
+      <div class="sp-note">${t("modes.select.floorInfo", { n: this.picked, difficulty: t(`modes.select.${f.map}`), cpus: f.cpus, pass: passRank(players) })}${
+        this.picked > 1 ? `<br>${t("modes.select.noBest")}` : ""
       }</div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="fs-home">回首頁</button><button class="primary" id="fs-go">從第 ${this.picked} 層開始</button></div>`;
+      <div class="sp-row"><button id="fs-home">${t("modes.select.home")}</button><button class="primary" id="fs-go">${t("modes.select.start", { n: this.picked })}</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-floor]")) {
       b.addEventListener("click", () => {
         this.picked = Number(b.dataset["floor"]);

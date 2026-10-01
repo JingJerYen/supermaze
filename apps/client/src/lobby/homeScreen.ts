@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.js";
 import { ICONS } from "./homeIcons.js";
 
 /**
@@ -22,12 +23,16 @@ export const HOME_CSS = `
 .lb.home{justify-content:flex-start;align-items:stretch}
 .lb.home::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,9,24,.72) 0%,rgba(3,9,24,.45) 38%,rgba(3,9,24,0) 60%);pointer-events:none}
 .hm{position:relative;font-size:clamp(11px,1.9vh,17px);display:flex;flex-direction:column;gap:.9em;padding:1.6em 0 1.6em max(2.2em,env(safe-area-inset-left));width:min(34em,52vw);overflow:auto}
-.hm-logo{display:flex;align-items:center;gap:.6em}
-.hm-logo img{width:4.6em;height:4.6em;border-radius:1em;box-shadow:0 0 1.4em rgba(80,170,255,.55)}
+.hm-logo{display:flex;align-items:center;gap:.9em}
+.hm-logo img{width:7.4em;height:7.4em;border-radius:1.4em;box-shadow:0 0 1.6em rgba(80,170,255,.55)}
 .hm-title{font:900 3.3em/1 "Arial Black","Segoe UI Black",Impact,"Noto Sans TC",sans-serif;letter-spacing:.02em;white-space:nowrap}
 .hm-title span{background:linear-gradient(#f4fbff,#9cc6ee 55%,#5f8fc4);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.05em #16213d;filter:drop-shadow(0 .06em 0 #0b1122)}
 .hm-title span+span{background-image:linear-gradient(#fff3b0,#ffc53a 50%,#d98a0c)}
-.hm-panel{background:linear-gradient(180deg,rgba(20,30,52,.9),rgba(10,16,32,.92));border:.18em solid #3d4658;border-radius:1.1em;box-shadow:inset 0 0 0 .12em #10151f,inset 0 0 1.6em rgba(80,150,255,.12),0 .6em 2em rgba(0,0,0,.5);padding:1.3em 1.5em;display:flex;flex-direction:column;gap:.85em}
+.hm-name{display:flex;flex-direction:column;gap:.25em}
+.hm-zh{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;letter-spacing:.12em}
+/* Chinese strokes are dense: an outline fills them in, so a dark rim of shadows does the job instead. */
+.hm-zh span{-webkit-text-stroke:0;filter:drop-shadow(0 .05em 0 #0b1122) drop-shadow(0 0 .03em #16213d) drop-shadow(0 0 .03em #16213d)}
+.hm-panel{background:linear-gradient(180deg,rgba(20,30,52,.9),rgba(10,16,32,.92));border:.18em solid #3d4658;border-radius:1.1em;box-shadow:inset 0 0 0 .12em #10151f,inset 0 0 1.6em rgba(80,150,255,.12),0 .6em 2em rgba(0,0,0,.5);padding:1.3em 1.5em;display:flex;flex-direction:column;gap:.85em;margin:auto 0}
 .hm-field{display:flex;align-items:center;gap:.7em}
 .hm-field label{display:flex;align-items:center;gap:.4em;width:5.2em;flex:none;color:#8fb6ff;font-size:1.05em}
 .hm-field label svg{font-size:1.3em;color:#c9d3e6}
@@ -66,7 +71,7 @@ export const HOME_CSS = `
 .hm-rules #lb-store.owned{color:#ffe08a}
 @media (max-height:520px){
   .hm{font-size:clamp(10px,3.1vh,14px);gap:.5em;padding-top:.8em;padding-bottom:.8em;width:min(40em,58vw)}
-  .hm-logo img{width:2.8em;height:2.8em;border-radius:.6em}
+  .hm-logo img{width:4.8em;height:4.8em;border-radius:.9em}
   .hm-title{font-size:2.2em}
   .hm-panel{padding:.8em 1em;gap:.55em}
   .hm-field label{width:auto}
@@ -78,8 +83,16 @@ export const HOME_CSS = `
 }
 `;
 
-/** App icon and the SUPER MAZE word mark, top left of the home and online pages. */
-export const LOGO = `<div class="hm-logo"><img src="${ICON}" alt="" /><div class="hm-title"><span>SUPER</span> <span>MAZE</span></div></div>`;
+/** App icon, the SUPER MAZE word mark and the Chinese name at the same size, top left of the home and online pages. */
+export const LOGO = `<div class="hm-logo"><img src="${ICON}" alt="" /><div class="hm-name"><div class="hm-title"><span>SUPER</span> <span>MAZE</span></div>${zhLine()}</div></div>`;
+
+/** The name under the word mark in two tones, like SUPER MAZE; nothing in a language without one. */
+function zhLine(): string {
+  const name = t("app.nameZh");
+  if (!name) return "";
+  const half = Math.ceil(name.length / 2);
+  return `<div class="hm-title hm-zh"><span>${name.slice(0, half)}</span><span>${name.slice(half)}</span></div>`;
+}
 
 export interface HomeView {
   /** The player's name and portrait (character setup). */
@@ -94,18 +107,18 @@ export interface HomeView {
 }
 
 export function homeHtml(v: HomeView): string {
-  const best = v.best ? `最佳：第 ${v.best.floor} 層・${v.best.score} 分` : "20 層・每層前一半晉級";
+  const sub = v.best ? t("lobby.home.towerSubBest", { floor: v.best.floor, score: v.best.score }) : t("lobby.home.towerSubNew", { floors: 20 });
   return `
     ${LOGO}
     <div class="hm-panel">
-      <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}角色設定</span></button>
-      <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>征服高塔</b><small>單人挑戰・${best}</small></span>${ICONS.chevron}</button>
-      <button class="hm-stone hm-online" id="lb-online">${ICONS.swords}連線對戰${v.online ? "" : `<span class="hm-soon">即將推出</span>`}</button>
+      <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}${t("lobby.home.profile")}</span></button>
+      <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>${t("lobby.home.towerRun")}</b><small>${sub}</small></span>${ICONS.chevron}</button>
+      <button class="hm-stone hm-online" id="lb-online">${ICONS.swords}${t("lobby.home.online")}${v.online ? "" : `<span class="hm-soon">${t("lobby.home.soon")}</span>`}</button>
       <div class="hm-note ${v.error ? "err" : ""}" id="lb-home-notice">${v.error ?? ""}</div>
     </div>
     <div class="hm-rules">
-      <button id="lb-rules">${ICONS.book}遊戲規則</button>
-      <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? "已擁有完整版" : "完整版"}</button>
+      <button id="lb-rules">${ICONS.book}${t("lobby.home.rules")}</button>
+      <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? t("lobby.home.fullVersionOwned") : t("lobby.home.fullVersion")}</button>
     </div>`;
 }
 

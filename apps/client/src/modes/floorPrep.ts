@@ -1,6 +1,7 @@
 import type * as THREE from "three";
 import { DEFAULT_TUNING, SKILL_KINDS, type SkillKind } from "@supermaze/sim";
 import { SKILL_INFO } from "../hud/labels.js";
+import { t } from "../i18n/index.js";
 import { showRewardedAd } from "../monetize/ads.js";
 import { portraits, type Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
@@ -54,57 +55,49 @@ export class FloorPrep {
 
   private render(): void {
     const s = DEFAULT_TUNING.skills;
-    const detail: Record<SkillKind, string> = {
-      sprint: `${s.sprint.durationSec} 秒內速度 ${s.sprint.speedMultiplier} 倍`,
-      eagleEye: `${s.eagleEye.durationSec} 秒俯瞰整張地圖`,
-      amulet: "擋下一次陷阱或鬼抓",
-      lantern: `關燈時 ${s.lantern.durationSec} 秒看得更遠`,
-      timeStop: `所有對手定身 ${s.timeStop.freezeSec} 秒`,
-      jump: "跳上或跳下面前一格",
-      pierce: `${s.pierce.durationSec} 秒穿過障礙與陷阱`,
-      warp: "移到隨機位置",
-      supply: "背包補滿隨機道具",
+    // The numbers each skill's text quotes, from the tuning.
+    const params: Record<SkillKind, Record<string, number>> = {
+      sprint: { sec: s.sprint.durationSec, mult: s.sprint.speedMultiplier },
+      eagleEye: { sec: s.eagleEye.durationSec },
+      amulet: {},
+      lantern: { sec: s.lantern.durationSec, tiles: s.lantern.darkRadiusTiles },
+      timeStop: { sec: s.timeStop.freezeSec },
+      jump: {},
+      pierce: { sec: s.pierce.durationSec },
+      warp: {},
+      supply: {},
     };
+    const detail = (k: SkillKind) => t(`modes.prep.skill.${k}.short`, params[k]);
     // The longer explanation under the buttons, for the skill last picked (phones hide the buttons' second line).
-    const explain: Record<SkillKind, string> = {
-      sprint: `${s.sprint.durationSec} 秒內移動速度變成 ${s.sprint.speedMultiplier} 倍。`,
-      eagleEye: `${s.eagleEye.durationSec} 秒內從高空俯瞰整張地圖，看清鑰匙和路線。`,
-      amulet: "擋下下一次陷阱或鬼抓：不會被定身，也不會失去道具和鑰匙。",
-      lantern: `只能在關燈時用：${s.lantern.durationSec} 秒內黑暗中看得到 ${s.lantern.darkRadiusTiles} 格遠。`,
-      timeStop: `迷宮裡所有對手原地定身 ${s.timeStop.freezeSec} 秒。`,
-      jump: "面向牆時跳上牆頂，站在牆頂時跳下道路，不用找樓梯。面前能落腳時技能鈕才會亮。",
-      pierce: `${s.pierce.durationSec} 秒內直接穿過障礙物和單向門（兩個方向都行），踩到陷阱也不會觸發。牆還是過不去。`,
-      warp: "瞬間移到迷宮裡隨機的一格，可能更近也可能更遠，看運氣。只會落在走得到的地方。",
-      supply: "背包空著的格子立刻補滿隨機道具。背包滿了或當鬼時不能用。",
-    };
+    const explain = (k: SkillKind) => t(`modes.prep.skill.${k}.desc`, params[k]);
     const name = (k: SkillKind) => `${SKILL_INFO[k]!.icon} ${SKILL_INFO[k]!.label}`;
-    const note = this.shown ? `${name(this.shown)}：${explain[this.shown]}` : "點技能選擇，最多兩個；再點一次取消。";
+    const note = this.shown ? t("modes.prep.note", { skill: name(this.shown), text: explain(this.shown) }) : t("modes.prep.pickHint");
     const face = this.profile.character ? portraits(this.renderer).get(this.profile.character) : undefined;
     const skills = SKILL_KINDS.map((k) => {
       const at = this.picks.indexOf(k);
       const tag = this.premium && at >= 0 ? `<i>${at + 1}</i>` : "";
-      return `<button data-skill="${k}" class="${at >= 0 ? "on" : ""}" ${this.unlocked ? "" : "disabled"}>${tag}<b>${name(k)}</b><small>${detail[k]}</small></button>`;
+      return `<button data-skill="${k}" class="${at >= 0 ? "on" : ""}" ${this.unlocked ? "" : "disabled"}>${tag}<b>${name(k)}</b><small>${detail(k)}</small></button>`;
     }).join("");
     const label = this.premium
-      ? `這一層的技能（⭐ 完整版：可選兩個，已選 ${this.picks.length} / 2）`
+      ? t("modes.prep.labelPremium", { n: this.picks.length })
       : this.unlocked
-        ? "這一層的技能（點一個更換）"
-        : "這一層的技能（隨機抽到）";
+        ? t("modes.prep.labelUnlocked")
+        : t("modes.prep.labelRandom");
     const adRow = this.premium
       ? ""
       : `<div class="sp-row">${
           this.unlocked
-            ? `<button class="owned" disabled>✓ 已解鎖，點技能更換</button>`
-            : `<button class="skill" id="fp-ad">📺 看廣告，自己挑技能</button>`
+            ? `<button class="owned" disabled>${t("modes.prep.unlocked")}</button>`
+            : `<button class="skill" id="fp-ad">${t("modes.prep.watchAd")}</button>`
         }</div>`;
     this.panel.innerHTML = `
-      <h2>第 ${this.floor} / ${this.floorsTotal} 層</h2>
+      <h2>${t("modes.prep.title", { n: this.floor, total: this.floorsTotal })}</h2>
       <div class="sp-who">${face ? `<img alt="" src="${face}">` : ""}<span>${escapeHtml(this.profile.name)}</span></div>
       <div><label>${label}</label><div class="sp-skills">${skills}</div></div>
       ${adRow}
       <div class="sp-note">${note}</div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="fp-home">回首頁</button><button class="primary" id="fp-go">開始第 ${this.floor} 層</button></div>`;
+      <div class="sp-row"><button id="fp-home">${t("modes.prep.home")}</button><button class="primary" id="fp-go">${t("modes.prep.start", { n: this.floor })}</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-skill]")) {
       b.addEventListener("click", () => this.pick(b.dataset["skill"] as SkillKind));
     }
@@ -123,7 +116,7 @@ export class FloorPrep {
   }
 
   private async watchAd(): Promise<void> {
-    if (await showRewardedAd("這一層自己挑技能")) this.unlocked = true;
+    if (await showRewardedAd(t("modes.prep.adReward"))) this.unlocked = true;
     this.render();
   }
 }

@@ -148,7 +148,10 @@ F3、F4 只有鍵盤觸發，手機上碰不到，第一階段可保留；`?loca
 ## 7. 需要使用者決定的事（開始 T1 前先問）
 
 1. **appId**（例如 `com.<名字>.supermaze`）：上架後不可更改。
-2. **App 顯示名稱**：正式遊戲名稱仍待確認（`CLAUDE.md` 第 16 節），第一階段可暫用 `Super Maze`。
+2. **App 顯示名稱**：中文名已定為「迷宮高塔」，英文名暫用 `Super Maze`（`CLAUDE.md` 第 1 節）。名稱依手機語言顯示：
+   - `android/app/src/main/res/values/strings.xml`（預設，英文與其他語言）：`app_name` 與 `title_activity_main` 設為 `Super Maze`。`capacitor.config.ts` 的 `appName` 也填 `Super Maze`。
+   - 新增 `android/app/src/main/res/values-zh-rTW/strings.xml` 與 `values-zh-rHK/strings.xml`，內容只放這兩個字串，值為 `迷宮高塔`。簡體中文目前不另外設定，會顯示英文名。
+   - 裝在繁體中文的手機上確認桌面圖示下顯示「迷宮高塔」，切到英文顯示「Super Maze」。
 3. **App 內是否保留線上模式按鈕**：第一階段保留；上架版本待定。
 4. **最低支援的 Android 版本**：Capacitor 預設的 `minSdkVersion` 通常即可，除非要支援很舊的手機。
 

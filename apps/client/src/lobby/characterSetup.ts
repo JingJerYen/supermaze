@@ -1,6 +1,7 @@
 import type * as THREE from "three";
 import { NAME_MAX_CHARS } from "@supermaze/protocol";
 import { defaultNameFor, FALLBACK_NAME } from "../characterNames.js";
+import { t } from "../i18n/index.js";
 import { hasOwnName, loadProfile, portraits, saveProfile, type Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { characters } from "../render/characters.js";
@@ -45,12 +46,12 @@ export class CharacterSetup {
       .map((n) => `<button data-char="${n}" class="${n === this.profile.character ? "on" : ""}"><img alt="" src="${faces.get(n) ?? ""}"></button>`)
       .join("");
     this.panel.innerHTML = `
-      <h2>角色設定</h2>
-      <div class="sp-sub">連線對戰與爬塔挑戰都用這個角色</div>
-      <div><label>暱稱（最多 ${NAME_MAX_CHARS} 個字）</label><input id="cs-name" maxlength="${NAME_MAX_CHARS * 2}" value="${escapeHtml(this.profile.name)}"></div>
-      <div><label>角色</label><div class="sp-chars">${chars}</div></div>
+      <h2>${t("lobby.profile.title")}</h2>
+      <div class="sp-sub">${t("lobby.profile.sub")}</div>
+      <div><label>${t("lobby.profile.name", { n: NAME_MAX_CHARS })}</label><input id="cs-name" maxlength="${NAME_MAX_CHARS * 2}" value="${escapeHtml(this.profile.name)}"></div>
+      <div><label>${t("lobby.profile.character")}</label><div class="sp-chars">${chars}</div></div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button class="primary" id="cs-done">完成</button></div>`;
+      <div class="sp-row"><button class="primary" id="cs-done">${t("lobby.profile.done")}</button></div>`;
     const nameInput = this.panel.querySelector<HTMLInputElement>("#cs-name")!;
     nameInput.addEventListener("input", () => (this.profile.name = nameInput.value));
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-char]")) {

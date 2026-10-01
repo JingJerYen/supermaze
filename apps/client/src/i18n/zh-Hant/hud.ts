@@ -1,0 +1,138 @@
+/** Text for the hud area (keys start with "hud."): in-game overlay, results, item and skill names. */
+export const hud = {
+  // Words shared by several places
+  "hud.you": "你",
+  "hud.nameYou": "{name}（你）",
+  "hud.player": "玩家",
+  "hud.team.letter": "{letter} 隊",
+  "hud.team.ours": "{team}（我方）",
+  "hud.climbedPlace": "第 {n} 名登塔",
+
+  // Items: full name, and the one-glyph fallback when an icon is missing
+  "hud.item.generic": "道具",
+  "hud.item.oneWayDoor": "單向門",
+  "hud.item.obstacle": "障礙物",
+  "hud.item.hammer": "鐵鎚",
+  "hud.item.trap": "陷阱",
+  "hud.item.teleportNode": "傳送點",
+  "hud.glyph.oneWayDoor": "門",
+  "hud.glyph.obstacle": "障",
+  "hud.glyph.hammer": "鎚",
+  "hud.glyph.trap": "阱",
+  "hud.glyph.teleportNode": "傳",
+
+  // Tower run skills
+  "hud.skill.generic": "技能",
+  "hud.skill.sprint.label": "衝刺",
+  "hud.skill.sprint.blurb": "一段時間內跑得更快",
+  "hud.skill.eagleEye.label": "鷹眼",
+  "hud.skill.eagleEye.blurb": "從高空看整張地圖",
+  "hud.skill.amulet.label": "護身符",
+  "hud.skill.amulet.blurb": "擋下一次陷阱或鬼抓",
+  "hud.skill.lantern.label": "點燈",
+  "hud.skill.lantern.blurb": "黑暗中看得更遠（關燈時才能用）",
+  "hud.skill.timeStop.label": "時間暫停",
+  "hud.skill.timeStop.blurb": "所有對手停住不動",
+  "hud.skill.jump.label": "跳",
+  "hud.skill.jump.blurb": "跳上面前的牆，或從牆頂跳下",
+  "hud.skill.pierce.label": "穿透",
+  "hud.skill.pierce.blurb": "穿過障礙物、單向門與陷阱",
+  "hud.skill.warp.label": "隨機傳送",
+  "hud.skill.warp.blurb": "瞬間移到隨機的位置",
+  "hud.skill.supply.label": "補給",
+  "hud.skill.supply.blurb": "背包補滿隨機道具",
+  "hud.skill.active": "{icon} {label} 生效中",
+  "hud.skill.used": "{icon} {label}！",
+
+  // The context action button
+  "hud.action.climb": "登塔",
+  "hud.action.switch": "開關",
+  "hud.action.pickUpNode": "收回傳送點",
+  "hud.action.useItem": "用道具",
+  "hud.discard": "丟棄",
+
+  // Clock, countdown, freeze
+  "hud.roundOver": "回合結束",
+  "hud.go": "開始",
+  "hud.freeze.ghost": "被抓到了",
+  "hud.freeze.trap": "被鐵籠關住",
+
+  // Ghost tag banner
+  "hud.ghost.warning.you": "{sec} 秒後你變成鬼",
+  "hud.ghost.warning.ours": "{sec} 秒後 {team}（我方）變成鬼",
+  "hud.ghost.warning.other": "{sec} 秒後 {who} 變成鬼",
+  "hud.ghost.active.you": "你是鬼，去抓人 {sec} 秒",
+  "hud.ghost.active.ours": "我方是鬼 {sec} 秒",
+  "hud.ghost.active.other": "鬼抓人！躲開 {who} {sec} 秒",
+
+  // Rosters
+  "hud.roster.myTeam": "我方 {team}",
+  "hud.roster.tower": "🏰 第{n}名",
+  "hud.roster.hasKey": "已拿到鑰匙",
+  "hud.roster.noKey": "還沒有鑰匙",
+  "hud.roster.frozen": "定身",
+
+  // Score pop-ups
+  "hud.gain.key": "拿到鑰匙",
+  "hud.gain.leftover": "剩餘道具 ×{n}",
+  "hud.gain.lightsOn": "開燈",
+  "hud.gain.lightsOff": "關燈",
+  "hud.gain.caught": "抓到 {name}",
+  "hud.gain.trapped": "陷阱抓到 {name}",
+  "hud.gain.other": "得分",
+
+  // Event toasts
+  "hud.toast.youClimbed": "你登上塔頂，第 {n} 名",
+  "hud.toast.climbed": "{name} 登上塔頂，第 {n} 名",
+  "hud.toast.youGotKey": "🔑 你拿到鑰匙",
+  "hud.toast.gotKey": "🔑 {name} 拿到鑰匙",
+  "hud.toast.youStole": "👻 你偷走了 {victim} 的鑰匙",
+  "hud.toast.stoleYours": "👻 {thief} 偷走了你的鑰匙",
+  "hud.toast.stole": "👻 {thief} 偷走了 {victim} 的鑰匙",
+  "hud.toast.lightsOn": "燈亮了",
+  "hud.toast.lightsOff": "全圖進入黑暗",
+  "hud.toast.gotItem": "取得 {item}",
+  "hud.toast.trapped": "踩到陷阱，被鐵籠罩住",
+  "hud.toast.amuletGhost": "🛡️ 護身符擋下了鬼",
+  "hud.toast.amuletTrap": "🛡️ 護身符擋下了陷阱",
+  "hud.toast.teleported": "傳送",
+  "hud.toast.teamFinished": "有隊伍全員登頂",
+  "hud.toast.ghostStart": "鬼抓人開始",
+  "hud.toast.ghostEnd": "鬼抓人結束",
+  "hud.toast.caughtByGhost": "被鬼抓到了，道具全失",
+
+  // Results
+  "hud.result.wins": "{team} 獲勝",
+  "hud.result.draw": "平手",
+  "hud.result.noWinner": "沒有獲勝隊伍",
+  "hud.result.notClimbed": "未登塔",
+  "hud.result.col.player": "玩家",
+  "hud.result.col.climb": "登塔",
+  "hud.result.col.score": "分數",
+  "hud.result.col.final": "最終",
+  "hud.result.backToLobby": "{sec} 秒後回到大廳",
+  "hud.result.reason.allClimbed": "全員登頂",
+  "hud.result.reason.lastOneLeft": "只剩一人未登塔，回合結束；最先全員登頂的隊伍獲勝",
+  "hud.result.reason.soloScore": "只剩一人未登塔，回合結束；分數最高者獲勝",
+  "hud.result.reason.soloClimbed": "你已登塔，回合立即結算；分數最高者獲勝",
+  "hud.result.reason.soloTimeout": "時間到；分數最高者獲勝",
+  "hud.result.reason.timeoutClimbed": "時間到，登塔人數較多",
+  "hud.result.reason.timeoutScore": "時間到，登塔人數相同，總分較高",
+  "hud.result.reason.timeoutEarlier": "時間到，人數與分數相同，較早達成",
+  "hud.result.reason.timeoutDraw": "時間到，完全平手",
+  "hud.result.leaveRoom": "離開房間",
+  "hud.result.again": "再玩一次",
+  "hud.result.home": "回首頁",
+
+  // Mute and quit buttons
+  "hud.sys.quitConfirm": "再按一次退出",
+  "hud.sys.soundOn": "開啟音效",
+  "hud.sys.mute": "靜音",
+  "hud.sys.quit": "退出",
+
+  // Developer aids (F4, F3)
+  "hud.debug.forceGhost": "除錯：強制鬼抓人",
+  "hud.debug.unsupported": "除錯：此模式不支援",
+  "hud.debug.quality.noGain": "降解析度沒有變快（{before}→{after} fps），已還原",
+  "hud.debug.quality.lowest": "已是最低解析度（{fps} fps）",
+} as const;

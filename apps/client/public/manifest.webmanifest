@@ -1,6 +1,6 @@
 {
-  "name": "Super Maze",
-  "short_name": "Super Maze",
+  "name": "迷宮高塔 Super Maze",
+  "short_name": "迷宮高塔",
   "description": "競速型走迷宮遊戲",
   "start_url": "./",
   "scope": "./",

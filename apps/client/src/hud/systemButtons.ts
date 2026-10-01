@@ -1,4 +1,5 @@
 import { sfx } from "../audio/sfx.js";
+import { t } from "../i18n/index.js";
 
 const CSS = `
 .sys{position:fixed;right:max(10px,env(safe-area-inset-right));top:42%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:7}
@@ -54,7 +55,7 @@ export class SystemButtons {
           return;
         }
         exit.className = "ask";
-        exit.textContent = "再按一次退出";
+        exit.textContent = t("hud.sys.quitConfirm");
         this.confirmTimer = window.setTimeout(() => this.clearConfirm(), CONFIRM_MS);
       });
       this.exit = exit;
@@ -67,7 +68,7 @@ export class SystemButtons {
   private refreshMute(): void {
     this.mute.textContent = sfx.isMuted ? "🔇" : "🔊";
     this.mute.className = sfx.isMuted ? "off" : "";
-    this.mute.title = sfx.isMuted ? "開啟音效" : "靜音";
+    this.mute.title = t(sfx.isMuted ? "hud.sys.soundOn" : "hud.sys.mute");
   }
 
   private clearConfirm(): void {
@@ -76,7 +77,7 @@ export class SystemButtons {
     if (!this.exit) return;
     this.exit.className = "";
     this.exit.textContent = "✕";
-    this.exit.title = "退出";
+    this.exit.title = t("hud.sys.quit");
   }
 
   dispose(): void {

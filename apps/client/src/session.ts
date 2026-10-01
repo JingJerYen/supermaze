@@ -1,6 +1,7 @@
 import type * as THREE from "three";
 import type { LobbyMessage, MatchStartedMessage } from "@supermaze/protocol";
 import { rotateMap } from "@supermaze/sim";
+import { t } from "./i18n/index.js";
 import { CharacterSetup } from "./lobby/characterSetup.js";
 import { LobbyUi } from "./lobby/lobbyUi.js";
 import { onlineAvailable } from "./lobby/onlineScreen.js";
@@ -77,7 +78,7 @@ export class Session {
       this.showHome();
       return;
     }
-    this.ui.showConnecting("嘗試接回上一場...");
+    this.ui.showConnecting(t("lobby.connecting.rejoin"));
     if (await this.conn.tryReconnect()) {
       this.startPing();
       return; // lobby / matchStarted / full will arrive and drive the UI
@@ -151,7 +152,7 @@ export class Session {
       }
     }
     const endpoint = this.conn.getEndpoint();
-    this.ui.showConnecting(`連線中... ${endpoint}`);
+    this.ui.showConnecting(t("lobby.connecting.server", { server: endpoint }));
     try {
       await this.conn.connect(req);
       this.startPing();
@@ -160,7 +161,7 @@ export class Session {
       console.warn(`connect to ${endpoint} failed`, e);
       // The server answered and turned the join down: the code matched no open room.
       const refused = !(e instanceof ConnectTimeout) && e instanceof Error && e.name === "ServerError";
-      this.showOnline(req.kind === "join" && refused ? `找不到房間 ${req.code.toUpperCase()}` : "伺服器無效");
+      this.showOnline(req.kind === "join" && refused ? t("lobby.online.noRoom", { code: req.code.toUpperCase() }) : t("lobby.online.badServer"));
     }
   }
 
@@ -218,7 +219,7 @@ export class Session {
     this.stopPing();
     this.teardownMatch();
     if (code !== 4000) console.warn(`disconnected, code ${code}`);
-    this.showOnline(code === 4000 ? undefined : "連線中斷");
+    this.showOnline(code === 4000 ? undefined : t("lobby.online.lost"));
     void this.lastLobby;
   }
 

@@ -143,9 +143,21 @@ export interface LobbyMessage {
   countdownEndsAt: number | null;
   /** Server clock when results give way to the lobby, while phase is "results". */
   resultsEndAt: number | null;
-  /** One-line notice for everyone, e.g. the quick-match wait timed out. */
-  notice: string | null;
+  /** One-line notice for everyone, e.g. the quick-match wait timed out; the client words it in its own language. */
+  notice: LobbyNotice | null;
 }
+
+/**
+ * What a lobby notice says, as a code plus the one number some of them need;
+ * the client turns it into text (`lobby.notice.<kind>`).
+ */
+export type LobbyNotice =
+  | { kind: "needPlayers"; n: number } // fewer than n connected
+  | { kind: "tooManyPlayers"; n: number } // more than n connected
+  | { kind: "teamsUneven" }
+  | { kind: "notReady" }
+  | { kind: "quickTimeout" } // a minute alone in quick match
+  | { kind: "noMap"; n: number }; // no map takes n players
 
 export interface MatchStartedMessage {
   mapId: string;

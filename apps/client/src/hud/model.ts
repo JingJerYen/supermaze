@@ -1,5 +1,6 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
 import { availableAction, canDiscard, canUseSkill, isGhost, skillIn, type SkillKind, type SkillSlot } from "@supermaze/sim";
+import { t } from "../i18n/index.js";
 import { openingOf } from "../opening.js";
 import { teamColorIndex } from "../render/teamColors.js";
 
@@ -77,7 +78,7 @@ export function buildHudModel(
   const me = meId ? state.players[meId] : undefined;
   const solo = state.teamMode === "solo";
   const nameOfTeam = (teamId: string): string => {
-    if (!solo) return `${LETTERS[teamIndex(teamId) % LETTERS.length]} 隊`;
+    if (!solo) return t("hud.team.letter", { letter: LETTERS[teamIndex(teamId) % LETTERS.length] as string });
     const owner = Object.values(state.players).find((p) => p.teamId === teamId);
     return owner?.name ?? teamId.slice(0, 6);
   };
@@ -106,8 +107,8 @@ export function buildHudModel(
     status: state.status,
     solo,
     lightsOn: state.lightsOn,
-    myTeam: teams.find((t) => t.teamId === me?.teamId) ?? null,
-    otherTeams: teams.filter((t) => t.teamId !== me?.teamId),
+    myTeam: teams.find((row) => row.teamId === me?.teamId) ?? null,
+    otherTeams: teams.filter((row) => row.teamId !== me?.teamId),
     items: me?.items ?? [],
     capacity,
     action: me ? availableAction(grid, state, me, capacity) : null,
@@ -151,7 +152,7 @@ function warningSubject(state: SimulationState, me: PlayerState | undefined, nam
   const teamId = state.ghost.teamId;
   if (!teamId) return null;
   if (!me || me.teamId !== teamId) return nameOfTeam(teamId);
-  return state.teamMode === "solo" ? "你" : `${nameOfTeam(teamId)}（我方）`;
+  return state.teamMode === "solo" ? t("hud.you") : t("hud.team.ours", { team: nameOfTeam(teamId) });
 }
 
 /** The skill `me` holds in `slot` and whether it can be cast now. */

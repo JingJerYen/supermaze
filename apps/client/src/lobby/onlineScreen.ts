@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.js";
 import { ICONS } from "./homeIcons.js";
 import { LOGO } from "./homeScreen.js";
 
@@ -27,17 +28,17 @@ export function onlineHtml(error?: string): string {
   return `
     ${LOGO}
     <div class="hm-panel">
-      <div class="hm-head">${ICONS.swords}連線對戰</div>
-      <div class="hm-field"><label for="lb-server">${ICONS.server}<span>伺服器</span></label><input id="lb-server" placeholder="wss://…" /></div>
-      <button class="hm-gold" id="lb-quick">${ICONS.swords}快速配對</button>
+      <div class="hm-head">${ICONS.swords}${t("lobby.online.title")}</div>
+      <div class="hm-field"><label for="lb-server">${ICONS.server}<span>${t("lobby.online.server")}</span></label><input id="lb-server" placeholder="wss://…" /></div>
+      <button class="hm-gold" id="lb-quick">${ICONS.swords}${t("lobby.online.quickMatch")}</button>
       <div class="hm-pair">
-        <button class="hm-stone" id="lb-create">${ICONS.users}建立私人房</button>
+        <button class="hm-stone" id="lb-create">${ICONS.users}${t("lobby.online.create")}</button>
         <div class="hm-join">
-          <button class="hm-stone" id="lb-join">${ICONS.doorIn}加入私人房</button>
-          <div class="hm-code">${ICONS.key}<input id="lb-code" maxlength="4" placeholder="輸入四碼房間代碼" /></div>
+          <button class="hm-stone" id="lb-join">${ICONS.doorIn}${t("lobby.online.join")}</button>
+          <div class="hm-code">${ICONS.key}<input id="lb-code" maxlength="4" placeholder="${t("lobby.online.codePlaceholder")}" /></div>
         </div>
       </div>
-      <div class="hm-note ${error ? "err" : ""}" id="lb-online-notice">${error ?? "同一個伺服器上的朋友輸入四碼代碼就能加入你的私人房"}</div>
-      <button class="hm-stone hm-back" id="lb-back">${ICONS.back}回首頁</button>
+      <div class="hm-note ${error ? "err" : ""}" id="lb-online-notice">${error ?? t("lobby.online.hint")}</div>
+      <button class="hm-stone hm-back" id="lb-back">${ICONS.back}${t("lobby.online.home")}</button>
     </div>`;
 }
