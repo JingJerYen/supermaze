@@ -34,7 +34,7 @@
 - [ ] 建立上架用的簽名金鑰（keystore）。**備份到安全的地方，絕不放進 git**；弄丟就再也不能更新這個 App。在 `apps/client/android/keystore.properties`（不進 git）寫上 `storeFile`、`storePassword`、`keyAlias`、`keyPassword` 與 `admobAppId`。
 - [ ] 在 `apps/client/.env.production.local`（不進 git）填入 `VITE_ADMOB_REWARDED_ID` 與 `VITE_REVENUECAT_KEY`。
 - [ ] 用授權測試人員的帳號實際買一次完整版（不會扣款），確認購買、恢復購買、重裝後自動恢復。
-- [ ] `npm run android:release` 出 AAB，上傳到 Play Console 的封閉測試軌道。
+- [ ] `npm run android:release` 出 AAB（同時也出一份可直接安裝的 release APK），上傳到 Play Console 的封閉測試軌道。
 
 ## 四、商店頁（你）
 

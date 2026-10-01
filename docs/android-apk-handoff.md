@@ -78,10 +78,10 @@
 "build:release": "VITE_RELEASE=1 VITE_ONLINE=off vite build",
 "android:sync": "vite build && cap sync android",
 "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
-"android:release": "npm run build:release && cap sync android && cd android && ./gradlew bundleRelease"
+"android:release": "npm run build:release && cap sync android && cd android && ./gradlew assembleRelease bundleRelease"
 ```
 
-根目錄也有轉呼叫的 `npm run android:apk`、`npm run android:release`、`npm run build:release`。`android:release` 需要先設定好簽名（第 6 節）。
+根目錄也有轉呼叫的 `npm run android:apk`、`npm run android:release`、`npm run build:release`。`android:release` 同時產出可直接安裝的 APK（`app/build/outputs/apk/release/app-release.apk`）與上架用的 AAB（`app/build/outputs/bundle/release/app-release.aab`），需要先設定好簽名（第 6 節）。
 
 產出在 `apps/client/android/app/build/outputs/apk/debug/app-debug.apk`。根目錄 `package.json` 可再加一個轉呼叫的 `android:apk`，與 `build:client` 同樣寫法。確認 `BASE_PATH` 沒被設定（要是 `/`）。正式上架的建置要加 `VITE_ONLINE=off`（例如 `VITE_ONLINE=off vite build`），首頁的「連線對戰」會顯示「即將推出」（CLAUDE.md 第 2.1 節）；試玩用的 debug APK 可以不加，保留連線。
 
