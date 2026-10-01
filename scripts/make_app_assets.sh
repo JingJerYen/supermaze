@@ -4,7 +4,7 @@
 #   scripts/make_app_assets.sh [source]   default: apps/client/assets-src/app-icon.webp
 # Adaptive icon: the tile with rounded corners at 70% (inside the launcher's
 # safe zone) over a blurred, darker copy of itself, like the maskable web icon.
-# Splash: the tile on black (Android 12+ shows the launcher icon instead).
+# Splash: the tile on black, landscape only (Android 12+ shows the launcher icon instead).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC=${1:-apps/client/assets-src/app-icon.webp}
@@ -23,4 +23,7 @@ cp "$OUT/splash.png" "$OUT/splash-dark.png"
 rm "$OUT/tile.png"
 cd apps/client
 npx --yes @capacitor/assets@3 generate --android --assetPath .app-assets --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'
+# The game is landscape only and the splash is the same in dark mode: drop the
+# portrait and night copies (about 4 MB of the APK).
+rm -rf android/app/src/main/res/drawable-port-* android/app/src/main/res/drawable-*night*
 echo "android icons and splash written to apps/client/android/app/src/main/res"

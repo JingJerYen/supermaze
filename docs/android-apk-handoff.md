@@ -148,7 +148,7 @@
 
 - **正式簽章**：release keystore 一旦遺失就無法更新已上架的 App，要備份在安全的地方，絕不進 git；上架用 AAB（`./gradlew bundleRelease`）。
 - **Google Play**：開發者帳號、隱私權政策、資料安全表單、內容分級；個人新帳號須先完成一段封閉測試（十多位測試者、持續約兩週，以 Play Console 當時規定為準）。
-- **圖示與啟動畫面**：已完成（2026-10-01）。`scripts/make_app_assets.sh` 由網頁圖示同一張原圖 `apps/client/assets-src/app-icon.webp` 以 `@capacitor/assets` 產生：自適應圖示是圓角圖塊縮到 70% 疊在自身模糊放大的底圖上，啟動畫面是黑底中央一個圖示。換圖時覆蓋原圖再執行腳本（需要 ImageMagick）。
+- **圖示與啟動畫面**：已完成（2026-10-01）。`scripts/make_app_assets.sh` 由網頁圖示同一張原圖 `apps/client/assets-src/app-icon.webp` 以 `@capacitor/assets` 產生：自適應圖示是圓角圖塊縮到 70% 疊在自身模糊放大的底圖上，啟動畫面是黑底中央一個圖示，只留橫向版（遊戲只有橫向，直向與深色模式的副本會刪掉，省約 4 MB）。換圖時覆蓋原圖再執行腳本（需要 ImageMagick）。
 - **iOS**：必須 macOS + Xcode，或雲端 Mac／CI（GitHub Actions macOS runner、Codemagic）；Apple Developer 帳號。
 - **「繼續」的代價**：只改 `apps/client/src/modes/towerRun.ts` 的 `continueGate()`。廣告可用 AdMob 的 Capacitor 外掛（獎勵廣告），付費在 iOS 必須走 App 內購買（可用 RevenueCat 之類同時處理兩平台）；有廣告就要處理 iOS 的 ATT 與歐盟同意視窗。最佳紀錄目前不區分是否用過「繼續」（`CLAUDE.md` 第 4.1 節）。
 
