@@ -1,5 +1,8 @@
-# Builds the Android debug APK (Capacitor wrapper of the client) and attaches it
-# to the run: open the run in the Actions tab and download "super-maze-debug-apk".
+# Builds the Android debug APK (Capacitor wrapper of the client).
+# On main it replaces the "debug-latest" pre-release, so a phone can install it
+# straight from https://github.com/<owner>/<repo>/releases/tag/debug-latest
+# (stable link: .../releases/download/debug-latest/super-maze-debug.apk).
+# Other branches only attach it to the run as the "super-maze-debug-apk" artifact (a zip).
 # Debug builds show Google's test ads and keep online play; see docs/android-apk-handoff.md.
 # GitHub's ubuntu runner already has the Android SDK (ANDROID_HOME).
 name: android
@@ -20,6 +23,8 @@ concurrency:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,3 +43,14 @@ jobs:
           name: super-maze-debug-apk
           path: apps/client/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+      - name: Publish as the debug-latest pre-release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp apps/client/android/app/build/outputs/apk/debug/app-debug.apk super-maze-debug.apk
+          gh release delete debug-latest --cleanup-tag --yes || true
+          gh release create debug-latest super-maze-debug.apk \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "測試版 debug APK（最新）" \
+            --notes "main 最新的 debug 版，$(date -u '+%Y-%m-%d %H:%M') UTC，commit ${GITHUB_SHA::7}。用手機瀏覽器點下面的 super-maze-debug.apk 下載安裝（需允許安裝未知應用程式）。測試廣告、保留連線對戰；不是上架版。"

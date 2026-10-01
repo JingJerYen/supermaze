@@ -1,6 +1,6 @@
 # 交接：用 Capacitor 包成 Android APK（第一階段）
 
-> 建立於 2026-09-29。2026-10-01 更新：已在雲端先做好不需要 Android SDK 的部分（Capacitor 與外掛的 JS 端、T1 原生專案、T3、T4 原生設定、T5、T10、圖示與啟動畫面、廣告與付款的程式、上架版建置指令），各步驟標註「已完成」；appId 為 `com.jjy.supermaze`。**APK 不一定要在 WSL2 編譯**：`.github/workflows/android.yml` 在 GitHub 的機器上編譯 debug APK（每次推送改到客戶端就跑，也可在 Actions 頁手動執行），從該次執行的頁面下載 `super-maze-debug-apk` 即可安裝；第 3 節的 WSL2 環境只在要在自己電腦編譯或用 adb 偵錯時才需要。上架的整體清單在 `docs/release-checklist.md`。接手者（人或 AI Agent）請先讀完根目錄的 `CLAUDE.md`，特別是第 15 節（工作規則）、
+> 建立於 2026-09-29。2026-10-01 更新：已在雲端先做好不需要 Android SDK 的部分（Capacitor 與外掛的 JS 端、T1 原生專案、T3、T4 原生設定、T5、T10、圖示與啟動畫面、廣告與付款的程式、上架版建置指令），各步驟標註「已完成」；appId 為 `com.jjy.supermaze`。**APK 不一定要在 WSL2 編譯**：`.github/workflows/android.yml` 在 GitHub 的機器上編譯 debug APK（每次推送改到客戶端就跑，也可在 Actions 頁手動執行）。推上 main 的版本會取代預先發行版 `debug-latest`，用手機瀏覽器開 https://github.com/JingJerYen/supermaze/releases/tag/debug-latest 點 `super-maze-debug.apk` 就能直接下載安裝；其他分支的只附在該次執行的 artifact（zip，要用電腦版網頁下載）。debug 簽名金鑰固定放在 `apps/client/android/app/debug.keystore`（debug 金鑰不是機密），所以新版可以直接覆蓋安裝、保留存檔；第 3 節的 WSL2 環境只在要在自己電腦編譯或用 adb 偵錯時才需要。上架的整體清單在 `docs/release-checklist.md`。接手者（人或 AI Agent）請先讀完根目錄的 `CLAUDE.md`，特別是第 15 節（工作規則）、
 > 第 17 節（技術決策）與第 4.1 節（爬塔挑戰）。本文件只描述這一階段要做的事；做完後把結果與新決策寫回 `CLAUDE.md`。
 
 ## 1. 目標與範圍

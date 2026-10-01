@@ -26,11 +26,11 @@
 - [x] `capacitor.config.ts` 與原生專案 `apps/client/android/`（2026-10-01）。
 - [x] 原生專案設定：AdMob App ID（預設測試 ID，正式的寫在 `android/keystore.properties`）、release 簽名讀 `keystore.properties`、橫向、全螢幕、依語言的 App 名稱（2026-10-01，待實機確認）。
 - [x] App 圖示與啟動畫面（`scripts/make_app_assets.sh`，2026-10-01）。
-- [x] GitHub Actions 編譯 debug APK（`.github/workflows/android.yml`，2026-10-01）：從 Actions 頁下載 `super-maze-debug-apk`。
+- [x] GitHub Actions 編譯 debug APK（`.github/workflows/android.yml`，2026-10-01）：main 的最新版在 Releases 的 `debug-latest`（https://github.com/JingJerYen/supermaze/releases/tag/debug-latest），手機瀏覽器直接下載安裝。
 
 ## 三、編譯與實機測試（你，或 Agent 在你的電腦上做）
 
-- [ ] 從 GitHub Actions 的 android 工作下載 debug APK（或在 WSL2 依 `docs/android-apk-handoff.md` 第 3 節裝好 JDK 與 Android SDK 後 `npm run android:apk`），裝到手機跑一遍該文件第 5 節的驗收清單。debug 版一律是 Google 的測試廣告。
+- [ ] 用手機瀏覽器從 Releases 的 `debug-latest` 下載 debug APK（或在 WSL2 依 `docs/android-apk-handoff.md` 第 3 節裝好 JDK 與 Android SDK 後 `npm run android:apk`），裝到手機跑一遍該文件第 5 節的驗收清單。debug 版一律是 Google 的測試廣告。
 - [ ] 建立上架用的簽名金鑰（keystore）。**備份到安全的地方，絕不放進 git**；弄丟就再也不能更新這個 App。在 `apps/client/android/keystore.properties`（不進 git）寫上 `storeFile`、`storePassword`、`keyAlias`、`keyPassword` 與 `admobAppId`。
 - [ ] 在 `apps/client/.env.production.local`（不進 git）填入 `VITE_ADMOB_REWARDED_ID` 與 `VITE_REVENUECAT_KEY`。
 - [ ] 用授權測試人員的帳號實際買一次完整版（不會扣款），確認購買、恢復購買、重裝後自動恢復。

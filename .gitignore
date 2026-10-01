@@ -16,3 +16,4 @@ __pycache__/
 
 # Release signing and AdMob App ID (apps/client/android/keystore.properties)
 keystore.properties
+!apps/client/android/app/debug.keystore
