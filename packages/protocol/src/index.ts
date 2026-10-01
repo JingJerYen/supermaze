@@ -15,8 +15,15 @@ export const PROTOCOL_VERSION = 3;
 
 export const ROOM_NAME = "maze";
 
-/** Longest display name, in characters; the client input and the server both cap it. */
-export const NAME_MAX_CHARS = 6;
+/**
+ * Longest display name: 6 wide characters (Chinese, Japanese, Korean, emoji)
+ * or 10 narrow ones (Latin letters, digits, most punctuation), mixed in
+ * proportion. The client input and the server both cap it with `capName`.
+ */
+export const NAME_MAX_WIDE = 6;
+export const NAME_MAX_NARROW = 10;
+/** A wide character costs 5 of the 30 units, a narrow one 3: 6 wide or 10 narrow. */
+const NAME_BUDGET = 30;
 
 /**
  * Characters a player may pick (Kenney Mini Characters; the client loads
@@ -44,9 +51,21 @@ export function sanitizeCharacter(raw: unknown): string | null {
   return typeof raw === "string" && (CHARACTER_IDS as readonly string[]).includes(raw) ? raw : null;
 }
 
-/** Cut a display name to NAME_MAX_CHARS characters (not UTF-16 units, so emoji stay whole). */
+/** Cut a display name to the name budget (counting whole characters, so emoji stay whole). */
 export function capName(s: string): string {
-  return Array.from(s).slice(0, NAME_MAX_CHARS).join("");
+  let used = 0;
+  let out = "";
+  for (const ch of s) {
+    used += nameWidth(ch);
+    if (used > NAME_BUDGET) break;
+    out += ch;
+  }
+  return out;
+}
+
+/** Budget units one character takes: everything from Hangul Jamo (U+1100) up is drawn wide. */
+function nameWidth(ch: string): number {
+  return (ch.codePointAt(0) ?? 0) >= 0x1100 ? 5 : 3;
 }
 
 /** Client -> server message names. */

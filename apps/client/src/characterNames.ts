@@ -6,7 +6,7 @@ import { locale, type Locale } from "./i18n/index.js";
  * Names per language. `fallback` is the name of a player who has picked no
  * character and typed no name; `names` is the one prefilled in the name field
  * for each character (character setup), which the player can clear or change.
- * At most NAME_MAX_CHARS (6) characters each and all different within a
+ * Within the name limit (`capName`: 6 Chinese characters or 10 letters) and all different within a
  * language; a test checks. Every character must have one (the type insists).
  * The a..f letters match the portraits' order in the picker: males on the
  * first row, females on the second.

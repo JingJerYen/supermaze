@@ -71,7 +71,7 @@ export const lobby: Record<keyof typeof zh, string> = {
 
   "lobby.profile.title": "Character",
   "lobby.profile.sub": "Used in Online and Super Maze",
-  "lobby.profile.name": "Name (max {n} chars)",
+  "lobby.profile.name": "Name (max {narrow} letters)",
   "lobby.profile.character": "Look",
   "lobby.profile.done": "Done",
 

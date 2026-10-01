@@ -75,7 +75,7 @@ export const lobby = {
   // Character setup (characterSetup.ts)
   "lobby.profile.title": "角色設定",
   "lobby.profile.sub": "連線對戰與爬塔挑戰都用這個角色",
-  "lobby.profile.name": "暱稱（最多 {n} 個字）",
+  "lobby.profile.name": "暱稱（最多 {wide} 個字）",
   "lobby.profile.character": "角色",
   "lobby.profile.done": "完成",
 
