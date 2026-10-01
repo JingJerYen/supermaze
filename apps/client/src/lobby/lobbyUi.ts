@@ -160,7 +160,7 @@ export class LobbyUi {
   showConnecting(text = "連線中..."): void {
     this.stopTicking();
     this.showCard();
-    this.card.innerHTML = `<h1>Super Maze</h1><div class="lb-muted">${text}</div>`;
+    this.card.innerHTML = `<h1>迷宮高塔</h1><div class="lb-muted">${text}</div>`;
   }
 
   /** Render the room; called on every lobby message and once a second for the countdowns. */
