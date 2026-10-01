@@ -56,20 +56,26 @@ function createPlaceable(p: PlaceableState): THREE.Object3D {
 }
 
 /**
- * Map fixtures get an aged look so players can tell them from what someone
- * just put down and know they will not time out: every colour is pulled toward
- * a rusty iron tone and darkened. Same shapes, so the kind still reads at once.
+ * Map fixtures get their own colour so players can tell them from what someone
+ * just put down and know they will not time out: every colour (the trap's glow
+ * too) is turned violet, which no placed item uses, and slightly darkened.
+ * Same shapes, so the kind still reads at once.
  */
 function weather(root: THREE.Object3D): void {
   const t = CLIENT_TUNING.fixtureLook;
-  const rust = new THREE.Color(t.tint);
+  const hsl = { h: 0, s: 0, l: 0 };
+  const recolor = (c: THREE.Color, darken: number): void => {
+    c.getHSL(hsl);
+    c.setHSL(t.hue, hsl.s, hsl.l * darken);
+  };
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     mesh.material = mats.map((src) => {
       const mat = src.clone() as THREE.MeshLambertMaterial | THREE.MeshBasicMaterial;
-      if (mat.color) mat.color.lerp(rust, t.mix).multiplyScalar(t.darken);
+      if (mat.color) recolor(mat.color, t.darken);
+      if ("emissive" in mat) recolor(mat.emissive, 1);
       return mat;
     });
     if (mesh.material.length === 1) mesh.material = mesh.material[0] as THREE.Material;
