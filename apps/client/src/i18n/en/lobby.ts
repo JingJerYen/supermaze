@@ -85,7 +85,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.store.startFloorDesc": "Start on any floor you've reached; pick the highest to carry on up",
   "lobby.store.buy": "Buy {price}",
   "lobby.store.payNote": "Payment is handled by Google Play / App Store (test build: Buy unlocks right away).",
-  "lobby.store.payNoteApp": "Payment is handled by Google Play. On a new phone, sign in with the same Google account and restore.",
+  "lobby.store.payNoteApp": "Payment is handled by Google Play. Your purchase follows your Google account and comes back on its own on a new phone.",
   "lobby.store.buyNoPrice": "Buy",
   "lobby.store.unavailable": "Can't reach the store right now. Check your connection and try again.",
   "lobby.store.bought": "Purchase complete. Thanks for your support!",

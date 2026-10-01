@@ -90,7 +90,7 @@ export const lobby = {
   "lobby.store.startFloorDesc": "從打過的任一層開始，選最高層就接著往上打",
   "lobby.store.buy": "購買　{price}",
   "lobby.store.payNote": "付款由 Google Play / App Store 處理（測試版：按下購買直接解鎖）。",
-  "lobby.store.payNoteApp": "付款由 Google Play 處理，換手機用同一個 Google 帳號可以恢復購買。",
+  "lobby.store.payNoteApp": "付款由 Google Play 處理。購買紀錄跟著 Google 帳號，換手機或重裝會自動恢復。",
   "lobby.store.buyNoPrice": "購買",
   "lobby.store.unavailable": "暫時連不上商店，請確認網路後再試一次。",
   "lobby.store.bought": "購買完成，謝謝支持！",
