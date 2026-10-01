@@ -1,5 +1,5 @@
 import { capName, type LobbyMessage, type LobbyNotice, type TeamMode } from "@supermaze/protocol";
-import { t } from "../i18n/index.js";
+import { nextLocale, switchLocale, t } from "../i18n/index.js";
 import { isPremium } from "../monetize/premium.js";
 import type { JoinRequest } from "../net/connection.js";
 import { HOME_CSS, homeHtml } from "./homeScreen.js";
@@ -108,6 +108,7 @@ export class LobbyUi {
     this.showPage(homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium(), online }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
     this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
+    this.card.querySelector("#lb-lang")!.addEventListener("click", () => switchLocale(nextLocale()));
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
     this.card.querySelector("#lb-online")!.addEventListener("click", () => {

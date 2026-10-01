@@ -56,6 +56,34 @@ export function fill(text: string, params: Readonly<Record<string, string | numb
   return text.replace(/\{(\w+)\}/g, (all, name: string) => (name in params ? String(params[name]) : all));
 }
 
+/** Each language's own name for itself, shown on the language button. */
+export const LOCALE_NAMES: Record<Locale, string> = { "zh-Hant": "中文", en: "English" };
+
+/** The language after this page's one, for the home screen's language button. */
+export function nextLocale(): Locale {
+  return LOCALES[(LOCALES.indexOf(locale) + 1) % LOCALES.length] as Locale;
+}
+
+/**
+ * Switch the game to `lang`: remember it in this browser and reload, since
+ * text is picked once at load. A `?lang=` in the address would win again, so
+ * it is dropped from the reloaded address (or set to `lang` when this browser
+ * cannot store the choice).
+ */
+export function switchLocale(lang: Locale): void {
+  let saved = false;
+  try {
+    localStorage.setItem(KEY, lang);
+    saved = true;
+  } catch {
+    /* storage unavailable: the address carries the choice instead */
+  }
+  const url = new URL(location.href);
+  if (saved) url.searchParams.delete("lang");
+  else url.searchParams.set("lang", lang);
+  location.replace(url.toString());
+}
+
 /** Page language and title; called once at startup. */
 export function applyDocumentLocale(): void {
   document.documentElement.lang = locale;

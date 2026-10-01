@@ -16,6 +16,7 @@ export const lobby = {
   "lobby.home.soon": "即將推出",
   "lobby.home.onlineSoon": "連線對戰即將推出，敬請期待！",
   "lobby.home.rules": "遊戲規則",
+  "lobby.home.language": "切換語言",
   "lobby.home.fullVersion": "完整版",
   "lobby.home.fullVersionOwned": "已擁有完整版",
 
