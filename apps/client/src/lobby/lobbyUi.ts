@@ -2,6 +2,7 @@ import { capName, type LobbyMessage, type TeamMode } from "@supermaze/protocol";
 import { isPremium } from "../monetize/premium.js";
 import type { JoinRequest } from "../net/connection.js";
 import { HOME_CSS, homeHtml } from "./homeScreen.js";
+import { ONLINE_CSS, onlineAvailable, onlineHtml } from "./onlineScreen.js";
 
 const CSS = `
 .lb{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#101318;color:#fff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;z-index:30}
@@ -35,6 +36,10 @@ export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
   /** Single-player tower run against CPUs, run inside the page. */
   onTowerRun(): void;
+  /** Open the online page (only when this build has online play). */
+  onOnline(): void;
+  /** Back to the home screen from the online page. */
+  onHome(): void;
   /** Open the character setup (name and character). */
   onProfile(): void;
   /** Open the rules cards. */
@@ -64,7 +69,7 @@ export class LobbyUi {
 
   constructor(parent: HTMLElement, private readonly handlers: LobbyUiHandlers) {
     const style = document.createElement("style");
-    style.textContent = CSS + HOME_CSS;
+    style.textContent = CSS + HOME_CSS + ONLINE_CSS;
     document.head.appendChild(style);
     this.root = document.createElement("div");
     this.root.className = "lb";
@@ -98,11 +103,21 @@ export class LobbyUi {
 
   /** `best` is the tower-run record shown next to its button. */
   showHome(profile: { name: string; character: string | null }, error?: string, best?: { score: number; floor: number } | null): void {
-    this.stopTicking();
-    this.show();
-    this.root.classList.add("home");
-    this.card.className = "hm";
-    this.card.innerHTML = homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium() });
+    const online = onlineAvailable();
+    this.showPage(homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium(), online }));
+    this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
+    this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
+    this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
+    this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
+    this.card.querySelector("#lb-online")!.addEventListener("click", () => {
+      if (online) this.handlers.onOnline();
+      else this.setNotice("#lb-home-notice", "連線對戰即將推出，敬請期待！");
+    });
+  }
+
+  /** Server field, quick match and private rooms; `error` is why the last try failed. */
+  showOnline(profile: { name: string; character: string | null }, error?: string): void {
+    this.showPage(onlineHtml(error));
     const name = () => capName(profile.name);
     const character = profile.character;
     const serverEl = this.card.querySelector<HTMLInputElement>("#lb-server")!;
@@ -110,18 +125,31 @@ export class LobbyUi {
     const server = () => serverEl.value.trim();
     this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), character, server: server() }));
     this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), character, server: server() }));
-    this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
-    this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
-    this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
-    this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
+    this.card.querySelector("#lb-back")!.addEventListener("click", () => this.handlers.onHome());
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {
       const code = this.card.querySelector<HTMLInputElement>("#lb-code")!.value.trim().toUpperCase();
       if (code.length !== 4) {
-        this.card.querySelector("#lb-home-notice")!.textContent = "請輸入四碼房間代碼";
+        this.setNotice("#lb-online-notice", "請輸入四碼房間代碼");
         return;
       }
       this.handlers.onJoin({ kind: "join", name: name(), character, code, server: server() });
     });
+  }
+
+  /** The home and online pages: logo top left, panel on the painted background. */
+  private showPage(panel: string): void {
+    this.stopTicking();
+    this.show();
+    this.root.classList.add("home");
+    this.card.className = "hm";
+    this.card.innerHTML = panel;
+  }
+
+  private setNotice(selector: string, text: string): void {
+    const el = this.card.querySelector(selector);
+    if (!el) return;
+    el.classList.remove("err");
+    el.textContent = text;
   }
 
   private face(character: string | null | undefined): string {

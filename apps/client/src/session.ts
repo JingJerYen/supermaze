@@ -3,6 +3,7 @@ import type { LobbyMessage, MatchStartedMessage } from "@supermaze/protocol";
 import { rotateMap } from "@supermaze/sim";
 import { CharacterSetup } from "./lobby/characterSetup.js";
 import { LobbyUi } from "./lobby/lobbyUi.js";
+import { onlineAvailable } from "./lobby/onlineScreen.js";
 import { loadProfile, portraits } from "./profile.js";
 import { loadMapById } from "./maps.js";
 import { Match } from "./match.js";
@@ -14,7 +15,7 @@ import { Connection, ConnectTimeout, type JoinRequest } from "./net/connection.j
 import { RulesScreen } from "./rules/rulesScreen.js";
 
 /**
- * Online flow: home -> room lobby -> match -> results -> lobby, on one socket.
+ * Online flow: home -> online page -> room lobby -> match -> results -> lobby, on one socket.
  * Owns the connection and swaps the Match on screen as the room changes phase.
  */
 export class Session {
@@ -39,6 +40,8 @@ export class Session {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
       onTowerRun: () => this.playTowerRun(),
+      onOnline: () => this.showOnline(),
+      onHome: () => this.showHome(),
       onProfile: () => this.showProfile(),
       onRules: () => this.showRules(),
       onStore: () => this.showStore(),
@@ -70,6 +73,10 @@ export class Session {
 
   async start(): Promise<void> {
     this.ui.setServer(this.conn.getEndpoint());
+    if (!onlineAvailable()) {
+      this.showHome();
+      return;
+    }
     this.ui.showConnecting("嘗試接回上一場...");
     if (await this.conn.tryReconnect()) {
       this.startPing();
@@ -127,6 +134,11 @@ export class Session {
     this.ui.showHome(loadProfile(), notice, loadTowerBest());
   }
 
+  /** The online page; `notice` is why the last connection failed or ended. */
+  private showOnline(notice?: string): void {
+    this.ui.showOnline(loadProfile(), notice);
+  }
+
   private async join(req: JoinRequest): Promise<void> {
     if (req.server) {
       const url = normalizeServerUrl(req.server);
@@ -148,14 +160,14 @@ export class Session {
       console.warn(`connect to ${endpoint} failed`, e);
       // The server answered and turned the join down: the code matched no open room.
       const refused = !(e instanceof ConnectTimeout) && e instanceof Error && e.name === "ServerError";
-      this.showHome(req.kind === "join" && refused ? `找不到房間 ${req.code.toUpperCase()}` : "伺服器無效");
+      this.showOnline(req.kind === "join" && refused ? `找不到房間 ${req.code.toUpperCase()}` : "伺服器無效");
     }
   }
 
   private async leave(): Promise<void> {
     await this.conn.leave();
     this.teardownMatch();
-    this.showHome();
+    this.showOnline();
   }
 
   private onLobby(m: LobbyMessage): void {
@@ -206,7 +218,7 @@ export class Session {
     this.stopPing();
     this.teardownMatch();
     if (code !== 4000) console.warn(`disconnected, code ${code}`);
-    this.showHome(code === 4000 ? undefined : "連線中斷");
+    this.showOnline(code === 4000 ? undefined : "連線中斷");
     void this.lastLobby;
   }
 
