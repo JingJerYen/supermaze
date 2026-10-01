@@ -12,7 +12,8 @@ export class DiscardButton {
   constructor(parent: HTMLElement) {
     this.el = document.createElement("button");
     this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
-    this.el.textContent = t("hud.discard");
+    const label = t("hud.discard");
+    this.el.textContent = label;
     Object.assign(this.el.style, {
       position: "fixed",
       // Centred over the 84px action button, 12px above it.
@@ -24,7 +25,10 @@ export class DiscardButton {
       border: "2px solid rgba(255,255,255,0.6)",
       background: "rgba(190,60,60,0.8)",
       color: "#fff",
-      font: "bold 14px system-ui, sans-serif",
+      // A longer word ("Discard") gets a smaller size to stay inside the circle.
+      font: `bold ${label.length > 4 ? 11 : 14}px system-ui, sans-serif`,
+      padding: "0",
+      whiteSpace: "nowrap",
       display: "none",
       zIndex: "6",
       touchAction: "none",
