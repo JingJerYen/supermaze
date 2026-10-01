@@ -13,3 +13,6 @@ __pycache__/
 # Android signing keys
 *.keystore
 *.jks
+
+# Release signing and AdMob App ID (apps/client/android/keystore.properties)
+keystore.properties

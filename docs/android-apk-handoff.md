@@ -1,6 +1,6 @@
 # 交接：用 Capacitor 包成 Android APK（第一階段）
 
-> 建立於 2026-09-29。2026-10-01 更新：已在雲端先做好不需要 Android SDK 的部分（Capacitor 與外掛的 JS 端、T3、T5、T10、廣告與付款的程式、上架版建置指令），各步驟標註「已完成」；上架的整體清單在 `docs/release-checklist.md`。接手者（人或 AI Agent）請先讀完根目錄的 `CLAUDE.md`，特別是第 15 節（工作規則）、
+> 建立於 2026-09-29。2026-10-01 更新：已在雲端先做好不需要 Android SDK 的部分（Capacitor 與外掛的 JS 端、T1 原生專案、T3、T4 原生設定、T5、T10、圖示與啟動畫面、廣告與付款的程式、上架版建置指令），各步驟標註「已完成」；appId 為 `com.jjy.supermaze`。**APK 不一定要在 WSL2 編譯**：`.github/workflows/android.yml` 在 GitHub 的機器上編譯 debug APK（每次推送改到客戶端就跑，也可在 Actions 頁手動執行），從該次執行的頁面下載 `super-maze-debug-apk` 即可安裝；第 3 節的 WSL2 環境只在要在自己電腦編譯或用 adb 偵錯時才需要。上架的整體清單在 `docs/release-checklist.md`。接手者（人或 AI Agent）請先讀完根目錄的 `CLAUDE.md`，特別是第 15 節（工作規則）、
 > 第 17 節（技術決策）與第 4.1 節（爬塔挑戰）。本文件只描述這一階段要做的事；做完後把結果與新決策寫回 `CLAUDE.md`。
 
 ## 1. 目標與範圍
@@ -65,14 +65,9 @@
 ### T1 加入 Capacitor
 
 - **已完成（2026-10-01）**：`apps/client` 已裝好 `@capacitor/core`、`@capacitor/app`、`@capacitor-community/admob`、`@revenuecat/purchases-capacitor`（dependency）與 `@capacitor/cli`、`@capacitor/android`（devDependency），都是 Capacitor 8 系列；`npm ci` 就會裝好。
-- 在 `apps/client` 執行 `npx cap init`，`webDir` 設 `dist`。**appId（例如 `com.xxx.supermaze`）上架後不能改，先問使用者**（見第 7 節）。設定檔用 `capacitor.config.ts`。
-- `npx cap add android` 產生 `apps/client/android/`，**原生專案要進 git**（Capacitor 的建議做法；它自己產生的 `.gitignore` 已排除 build 產物與 `local.properties`）。
+- **已完成（2026-10-01）**：`apps/client/capacitor.config.ts`（appId `com.jjy.supermaze`、appName `Super Maze`、`webDir` 為 `dist`），`npx cap add android` 產生的 `apps/client/android/` 已進 git（它自己的 `.gitignore` 排除 build 產物、`local.properties` 與複製進去的網頁檔）。
 - 外掛的原生部分由 `npx cap sync android` 自動加進原生專案。全螢幕另用 `@capacitor/status-bar` 或自己寫幾行 Java。不要引入第 17 節以外的遊戲引擎或框架。
-- **AdMob 的 App ID 一定要寫進 `android/app/src/main/AndroidManifest.xml`**，否則 App 一啟動就閃退：在 `<application>` 裡加
-  ```xml
-  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"/>
-  ```
-  還沒有 AdMob 帳號時，可先填 Google 公布的測試 App ID `ca-app-pub-3940256099942544~3347511713`，上架前換成自己的。
+- **AdMob 的 App ID 必須在 `AndroidManifest.xml`**，否則 App 一啟動就閃退。**已完成（2026-10-01）**：Manifest 的 `<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID">` 由 `app/build.gradle` 的 `manifestPlaceholders` 填入，預設是 Google 公布的測試 App ID `ca-app-pub-3940256099942544~3347511713`；上架時在 `apps/client/android/keystore.properties`（不進 git）寫 `admobAppId=ca-app-pub-…~…`，同一個檔也放簽名金鑰的 `storeFile`、`storePassword`、`keyAlias`、`keyPassword`，`app/build.gradle` 讀到就用來簽 release。
 - 廣告單元與 RevenueCat 金鑰是建置變數，寫在 `apps/client/.env.production.local`（已被 `.gitignore` 排除）：`VITE_ADMOB_REWARDED_ID=ca-app-pub-…/…`、`VITE_REVENUECAT_KEY=goog_…`。說明在 `apps/client/src/monetize/config.ts`。
 
 ### T2 打包指令
@@ -95,6 +90,8 @@
 **已完成（2026-10-01）**：`apps/client/src/platform.ts` 的 `isNativeApp()`；`main.ts` 在 App 內已不呼叫 `fullscreenOnFirstTouch()`（T4 的第一點）。
 
 ### T4 橫向與全螢幕
+
+**原生設定已完成（2026-10-01，待實機驗證）**：MainActivity 加了 `android:screenOrientation="sensorLandscape"`；`MainActivity.java` 在 `onCreate` 與重新取得焦點時隱藏狀態列與導覽列（滑動邊緣暫時出現）。待實機確認瀏海與圓角手機上 HUD 沒被切掉（Android 15 起 App 一律畫到螢幕邊緣）。
 
 - 網頁版的 `apps/client/src/fullscreen.ts` 在第一次觸控時要求 Fullscreen API 並鎖橫向；**在 App 內不要呼叫它**（`main.ts` 裡 `fullscreenOnFirstTouch()` 前加判斷）。
 - 橫向：在 `android/app/src/main/AndroidManifest.xml` 的 MainActivity 加 `android:screenOrientation="sensorLandscape"`。
@@ -151,14 +148,14 @@
 
 - **正式簽章**：release keystore 一旦遺失就無法更新已上架的 App，要備份在安全的地方，絕不進 git；上架用 AAB（`./gradlew bundleRelease`）。
 - **Google Play**：開發者帳號、隱私權政策、資料安全表單、內容分級；個人新帳號須先完成一段封閉測試（十多位測試者、持續約兩週，以 Play Console 當時規定為準）。
-- **圖示與啟動畫面**：`apps/client/public/icons/` 已有各尺寸圖示，可用 `@capacitor/assets` 產生原生需要的尺寸。
+- **圖示與啟動畫面**：已完成（2026-10-01）。`scripts/make_app_assets.sh` 由網頁圖示同一張原圖 `apps/client/assets-src/app-icon.webp` 以 `@capacitor/assets` 產生：自適應圖示是圓角圖塊縮到 70% 疊在自身模糊放大的底圖上，啟動畫面是黑底中央一個圖示，只留橫向版（遊戲只有橫向，直向與深色模式的副本會刪掉，省約 4 MB）。換圖時覆蓋原圖再執行腳本（需要 ImageMagick）。
 - **iOS**：必須 macOS + Xcode，或雲端 Mac／CI（GitHub Actions macOS runner、Codemagic）；Apple Developer 帳號。
 - **「繼續」的代價**：只改 `apps/client/src/modes/towerRun.ts` 的 `continueGate()`。廣告可用 AdMob 的 Capacitor 外掛（獎勵廣告），付費在 iOS 必須走 App 內購買（可用 RevenueCat 之類同時處理兩平台）；有廣告就要處理 iOS 的 ATT 與歐盟同意視窗。最佳紀錄目前不區分是否用過「繼續」（`CLAUDE.md` 第 4.1 節）。
 
 ## 7. 需要使用者決定的事（開始 T1 前先問）
 
-1. **appId**（例如 `com.<名字>.supermaze`）：上架後不可更改。
-2. **App 顯示名稱**：中文名已定為「迷宮高塔」，英文名暫用 `Super Maze`（`CLAUDE.md` 第 1 節）。名稱依手機語言顯示：
+1. **appId**：已定為 `com.jjy.supermaze`（2026-10-01），上架後不可更改。
+2. **App 顯示名稱**（已完成，2026-10-01，待實機確認）：中文名已定為「迷宮高塔」，英文名暫用 `Super Maze`（`CLAUDE.md` 第 1 節）。名稱依手機語言顯示：
    - `android/app/src/main/res/values/strings.xml`（預設，英文與其他語言）：`app_name` 與 `title_activity_main` 設為 `Super Maze`。`capacitor.config.ts` 的 `appName` 也填 `Super Maze`。
    - 新增 `android/app/src/main/res/values-zh-rTW/strings.xml` 與 `values-zh-rHK/strings.xml`，內容只放這兩個字串，值為 `迷宮高塔`。簡體中文目前不另外設定，會顯示英文名。
    - 裝在繁體中文的手機上確認桌面圖示下顯示「迷宮高塔」，切到英文顯示「Super Maze」。
