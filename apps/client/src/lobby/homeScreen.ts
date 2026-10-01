@@ -58,7 +58,7 @@ export const HOME_CSS = `
 #lb-home-notice:empty{display:none}
 .lb .hm .hm-online{--bh:3.6em;font-size:1.25em!important;letter-spacing:.12em}
 .hm-soon{font-size:.62em;letter-spacing:.04em;font-weight:700;color:#3b1d00;background:#ffd23f;border-radius:1em;padding:.15em .6em}
-.lb .hm-blue{--bh:4.6em;${plate("blue")};color:#082a4a!important;justify-content:flex-start!important;padding-left:.4em!important}
+.lb .hm-blue{--bh:5.4em;${plate("blue")};color:#082a4a!important;justify-content:flex-start!important;padding-left:.4em!important}
 .hm-blue>svg:first-child{font-size:2.6em;color:#0b2c52;margin-right:.2em}
 .hm-blue .t{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}
 .hm-blue .t b{font-size:1.8em;font-weight:900;letter-spacing:.1em}
@@ -78,7 +78,7 @@ export const HOME_CSS = `
   .hm-field label span{display:none}
   .lb .hm-gold{--bh:3.1em}
   .lb .hm-stone{--bh:2.7em}
-  .lb .hm-blue{--bh:3.6em}
+  .lb .hm-blue{--bh:4.3em}
   .lb .hm .hm-online{--bh:3em}
 }
 `;
