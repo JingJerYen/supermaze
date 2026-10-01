@@ -64,7 +64,8 @@ export interface ResultsActions {
   endsAt: number | null;
   /** Extra verdict above the table (tower run: passed or not, run total); it replaces the line saying why the round ended. */
   note?: { title: string; lines: string[]; tone: "pass" | "fail" | "info" };
-  buttons: { label: string; primary?: boolean; run: () => void }[];
+  /** `back` marks the one the Android back button presses (see native/backButton.ts). */
+  buttons: { label: string; primary?: boolean; back?: boolean; run: () => void }[];
 }
 
 /**
@@ -159,6 +160,7 @@ export class ResultsPanel {
       const el = document.createElement("button");
       el.textContent = b.label;
       if (b.primary) el.className = "primary";
+      if (b.back) el.dataset["back"] = "";
       el.addEventListener("click", b.run);
       buttons.appendChild(el);
     }

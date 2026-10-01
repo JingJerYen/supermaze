@@ -1,14 +1,16 @@
 import type * as THREE from "three";
 import { t } from "../i18n/index.js";
-import { buyFullVersion, FULL_VERSION_PRICE, isPremium, restorePurchases } from "../monetize/premium.js";
+import { buyFullVersion, fullVersionPrice, isPremium, restorePurchases, syncPremium } from "../monetize/premium.js";
+import { isNativeApp } from "../platform.js";
 import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
 
 /**
  * The full version's page, opened from the home screen: what it gives, buy,
- * and restore an earlier purchase (the stores require the latter). Buying is
- * a placeholder until the app's in-app purchase is wired (`monetize/premium.ts`).
+ * and restore an earlier purchase (the stores require the latter). In the app
+ * this goes through Google Play (`monetize/premium.ts`); in a browser buying
+ * is a placeholder that unlocks at once.
  */
 export class StoreScreen {
   private readonly panel: HTMLDivElement;
@@ -26,6 +28,8 @@ export class StoreScreen {
     this.preview.start();
     this.panel = createSidePanel(root);
     this.render();
+    // The app learns the store's price (and any refund) when the page opens.
+    if (isNativeApp()) void syncPremium().then(() => this.panel.isConnected && this.render());
   }
 
   dispose(): void {
@@ -46,23 +50,25 @@ export class StoreScreen {
       <div class="sp-row">${
         owned
           ? `<button class="owned" disabled>✓ ${t("lobby.home.fullVersionOwned")}</button>`
-          : `<button class="primary" id="st-buy">${t("lobby.store.buy", { price: FULL_VERSION_PRICE })}</button>`
+          : `<button class="primary" id="st-buy">${fullVersionPrice() ? t("lobby.store.buy", { price: fullVersionPrice() }) : t("lobby.store.buyNoPrice")}</button>`
       }</div>
-      <div class="sp-note">${this.notice || t("lobby.store.payNote")}</div>
+      <div class="sp-note">${this.notice || t(isNativeApp() ? "lobby.store.payNoteApp" : "lobby.store.payNote")}</div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="st-home">${t("lobby.store.home")}</button><button id="st-restore">${t("lobby.store.restore")}</button></div>`;
+      <div class="sp-row"><button id="st-home" data-back>${t("lobby.store.home")}</button><button id="st-restore">${t("lobby.store.restore")}</button></div>`;
     this.panel.querySelector("#st-buy")?.addEventListener("click", () => void this.buy());
     this.panel.querySelector("#st-restore")!.addEventListener("click", () => void this.restore());
     this.panel.querySelector("#st-home")!.addEventListener("click", () => this.onHome());
   }
 
   private async buy(): Promise<void> {
-    this.notice = (await buyFullVersion()) ? t("lobby.store.bought") : t("lobby.store.notBought");
+    const outcome = await buyFullVersion();
+    this.notice = t(outcome === "owned" ? "lobby.store.bought" : outcome === "cancelled" ? "lobby.store.notBought" : "lobby.store.unavailable");
     this.render();
   }
 
   private async restore(): Promise<void> {
-    this.notice = (await restorePurchases()) ? t("lobby.store.restored") : t("lobby.store.nothingToRestore");
+    const has = await restorePurchases();
+    this.notice = t(has === null ? "lobby.store.unavailable" : has ? "lobby.store.restored" : "lobby.store.nothingToRestore");
     this.render();
   }
 }

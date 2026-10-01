@@ -51,7 +51,7 @@ export class CharacterSetup {
       <div><label>${t("lobby.profile.name", { wide: NAME_MAX_WIDE, narrow: NAME_MAX_NARROW })}</label><input id="cs-name" value="${escapeHtml(this.profile.name)}"></div>
       <div><label>${t("lobby.profile.character")}</label><div class="sp-chars">${chars}</div></div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button class="primary" id="cs-done">${t("lobby.profile.done")}</button></div>`;
+      <div class="sp-row"><button class="primary" id="cs-done" data-back>${t("lobby.profile.done")}</button></div>`;
     const nameInput = this.panel.querySelector<HTMLInputElement>("#cs-name")!;
     nameInput.addEventListener("input", () => {
       // Cut as the player types, so the limit shows instead of a silent trim on save.

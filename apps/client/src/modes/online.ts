@@ -141,7 +141,7 @@ export class OnlineMatchMode implements GameMode {
   results() {
     return {
       endsAt: this.resultsEndAt,
-      buttons: this.onLeaveRoom ? [{ label: t("hud.result.leaveRoom"), run: this.onLeaveRoom }] : [],
+      buttons: this.onLeaveRoom ? [{ label: t("hud.result.leaveRoom"), back: true, run: this.onLeaveRoom }] : [],
     };
   }
 }

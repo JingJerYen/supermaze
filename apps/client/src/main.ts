@@ -9,6 +9,9 @@ import { antialiasAtLaunch, createGovernor, installQuality, rememberRatio } from
 import { sfx } from "./audio/sfx.js";
 import { music } from "./audio/music.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
+import { isNativeApp } from "./platform.js";
+import { installBackButton } from "./native/backButton.js";
+import { warmUpMonetization } from "./monetize/ads.js";
 import { applyDocumentLocale } from "./i18n/index.js";
 import { FALLBACK_NAME } from "./characterNames.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
@@ -34,7 +37,10 @@ renderer.setSize(root.clientWidth || window.innerWidth, root.clientHeight || win
 root.appendChild(renderer.domElement);
 
 applyDocumentLocale();
-fullscreenOnFirstTouch();
+// The app is fullscreen and landscape natively (Android handoff T4); only a browser needs the Fullscreen API.
+if (!isNativeApp()) fullscreenOnFirstTouch();
+installBackButton();
+warmUpMonetization();
 sfx.init();
 music.init();
 music.play("menu");

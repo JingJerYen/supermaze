@@ -32,6 +32,7 @@ import { useTeams } from "./render/teamColors.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
 import { SwitchViews } from "./render/switches.js";
+import { DEV_TOOLS } from "./platform.js";
 import { CLIENT_TUNING } from "./tuning.js";
 
 /**
@@ -62,7 +63,7 @@ export class Match {
   private lastToastState: SimulationState | null = null;
   /** F4: force the next ghost event. Developer aid; the server may ignore it. */
   private readonly onDebugKey = (e: KeyboardEvent) => {
-    if (e.code === "F4") {
+    if (e.code === "F4" && DEV_TOOLS) {
       e.preventDefault();
       this.hud.toast(t(this.mode.debug ? "hud.debug.forceGhost" : "hud.debug.unsupported"));
       this.mode.debug?.("ghost");

@@ -97,7 +97,7 @@ export class FloorPrep {
       ${adRow}
       <div class="sp-note">${note}</div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="fp-home">${t("modes.prep.home")}</button><button class="primary" id="fp-go">${t("modes.prep.start", { n: this.floor })}</button></div>`;
+      <div class="sp-row"><button id="fp-home" data-back>${t("modes.prep.home")}</button><button class="primary" id="fp-go">${t("modes.prep.start", { n: this.floor })}</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-skill]")) {
       b.addEventListener("click", () => this.pick(b.dataset["skill"] as SkillKind));
     }

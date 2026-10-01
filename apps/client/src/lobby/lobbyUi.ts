@@ -224,7 +224,7 @@ export class LobbyUi {
         <button class="primary" id="lb-ready" ${lobbyOpen ? "" : "disabled"}>${t(me?.ready ? "lobby.room.unready" : "lobby.room.readyBtn")}</button>
         ${teamsMode && msg.mode === "private" ? `<button id="lb-switch" ${lobbyOpen ? "" : "disabled"}>${t("lobby.room.switchTeam")}</button>` : ""}
         ${isHost && msg.mode === "private" ? `<button id="lb-start" ${msg.phase === "lobby" ? "" : "disabled"}>${t("lobby.room.start")}</button>` : ""}
-        <button id="lb-leave" style="margin-left:auto">${t("lobby.room.leave")}</button>
+        <button id="lb-leave" data-back style="margin-left:auto">${t("lobby.room.leave")}</button>
       </div>
       <div class="lb-notice">${msg.notice ? escapeHtml(noticeText(msg.notice)) : ""}</div>`;
     this.card.querySelector("#lb-ready")!.addEventListener("click", () => this.handlers.onReady(!me?.ready));

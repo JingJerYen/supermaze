@@ -136,7 +136,7 @@ export class TowerRun {
     if (record) saveBest({ score: run.totalScore, floor: plan.floor });
     const total = t("modes.tower.total", { score: run.totalScore, floor: plan.floor });
     const bestLine = record ? t("modes.tower.newRecord") : best ? t("modes.tower.best", { score: best.score, floor: best.floor }) : "";
-    const home = { label: t("modes.tower.home"), run: () => this.quit() };
+    const home = { label: t("modes.tower.home"), back: true, run: () => this.quit() };
 
     if (run.status === "cleared") {
       this.verdict = {

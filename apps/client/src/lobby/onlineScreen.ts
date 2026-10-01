@@ -39,6 +39,6 @@ export function onlineHtml(error?: string): string {
         </div>
       </div>
       <div class="hm-note ${error ? "err" : ""}" id="lb-online-notice">${error ?? t("lobby.online.hint")}</div>
-      <button class="hm-stone hm-back" id="lb-back">${ICONS.back}${t("lobby.online.home")}</button>
+      <button class="hm-stone hm-back" id="lb-back" data-back>${ICONS.back}${t("lobby.online.home")}</button>
     </div>`;
 }
