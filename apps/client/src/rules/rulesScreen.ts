@@ -1,5 +1,6 @@
 import type * as THREE from "three";
 import { DEFAULT_TUNING } from "@supermaze/sim";
+import { t } from "../i18n/index.js";
 import { Match } from "../match.js";
 import { createDemoMode } from "./demoMode.js";
 import { RULE_SCENES, ruleText } from "./scenes.js";
@@ -66,11 +67,12 @@ export class RulesScreen {
     this.match = new Match(this.root, this.renderer, createDemoMode(scene), { demo: true });
 
     this.panel.innerHTML = `
-      <div class="rs-rules-page">遊戲規則 ${index + 1} / ${RULE_SCENES.length}</div>
+      <div class="rs-rules-page"></div>
       <h2></h2>
       <div class="rs-rules-text"></div>
-      <div class="rs-rules-nav"><button id="rs-prev">上一張</button><button id="rs-next" class="primary">下一張</button></div>
-      <div class="rs-rules-nav"><button id="rs-close">回首頁</button></div>`;
+      <div class="rs-rules-nav"><button id="rs-prev"></button><button id="rs-next" class="primary"></button></div>
+      <div class="rs-rules-nav"><button id="rs-close"></button></div>`;
+    this.panel.querySelector(".rs-rules-page")!.textContent = t("rules.screen.page", { page: index + 1, total: RULE_SCENES.length });
     this.panel.querySelector("h2")!.textContent = scene.title;
     const text = this.panel.querySelector(".rs-rules-text")!;
     for (const line of ruleText(scene, DEFAULT_TUNING)) {
@@ -90,11 +92,15 @@ export class RulesScreen {
     }
     const prev = this.panel.querySelector<HTMLButtonElement>("#rs-prev")!;
     const next = this.panel.querySelector<HTMLButtonElement>("#rs-next")!;
+    const close = this.panel.querySelector<HTMLButtonElement>("#rs-close")!;
+    prev.textContent = t("rules.screen.prev");
+    next.textContent = t("rules.screen.next");
+    close.textContent = t("rules.screen.home");
     prev.disabled = index === 0;
     next.disabled = index === RULE_SCENES.length - 1;
     prev.addEventListener("click", () => this.show(this.index - 1));
     next.addEventListener("click", () => this.show(this.index + 1));
-    this.panel.querySelector("#rs-close")!.addEventListener("click", () => this.onClose());
+    close.addEventListener("click", () => this.onClose());
   }
 
   dispose(): void {
