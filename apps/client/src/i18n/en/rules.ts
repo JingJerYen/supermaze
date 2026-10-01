@@ -61,11 +61,10 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.scoring.line2": "Free-for-All: the highest score when the round ends wins.",
   "rules.scoring.line3": "The round ends when only one person hasn't climbed, or when time runs out. No climb, no placement points.",
 
-  "rules.towerRun.title": "Tower Challenge (single player)",
-  "rules.towerRun.line1": "Single player is a {floors}-floor Tower Challenge. Each floor is a Free-for-All against CPUs; higher floors bring harder maps and stronger CPUs.",
-  "rules.towerRun.line2": "The floor ends the moment you climb. Score in the top half to advance; ties go to whoever climbed first. Floor scores add up.",
-  "rules.towerRun.line3":
-    "Before each floor, pick one of nine skills (like Sprint, Phase or Warp); use it once with R or the skill button. If you don't advance, the challenge ends, or press Continue to go on to the next floor (up to 2 times per challenge).",
+  "rules.towerRun.title": "Tower Run (solo)",
+  "rules.towerRun.line1": "Solo play is a {floors}-floor Tower Run against CPUs. Each floor up has harder maps and stronger CPUs.",
+  "rules.towerRun.line2": "Climbing ends the floor. Score in the top half to advance (ties go to who climbed first); floor scores add up.",
+  "rules.towerRun.line3": "Pick a skill before each floor and use it once with R or the skill button. Miss the cut and you can Continue, up to 2 times.",
 
   // Names of the demo players, shown over their heads and in the HUD's notices.
   "rules.name.you": "You",
