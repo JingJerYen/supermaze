@@ -11,6 +11,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // The WebView scales text by the phone's font size setting, which would
+        // overflow the game's fixed landscape layout; keep text at its designed size.
+        getBridge().getWebView().getSettings().setTextZoom(100);
         hideSystemBars();
     }
 

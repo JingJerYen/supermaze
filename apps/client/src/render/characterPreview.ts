@@ -15,6 +15,8 @@ export class CharacterPreview {
   private frame = 0;
   private last = performance.now();
   private running = false;
+  /** An element kept just above the character's head (the name on the floor prep). */
+  private tag: HTMLElement | null = null;
 
   constructor(private readonly renderer: THREE.WebGLRenderer) {
     this.scene.background = new THREE.Color(0x141a26);
@@ -42,6 +44,11 @@ export class CharacterPreview {
       const rig = this.rig;
       rig.mixer.addEventListener("finished", () => rig.idle?.reset().play());
     }
+  }
+
+  /** Keep `el` (position: fixed) just above the character's head, or stop with null. */
+  setTag(el: HTMLElement | null): void {
+    this.tag = el;
   }
 
   start(): void {
@@ -77,6 +84,12 @@ export class CharacterPreview {
     this.camera.lookAt(-shift, 0.8, 0);
     this.camera.updateProjectionMatrix();
     this.renderer.render(this.scene, this.camera);
+    if (this.tag) {
+      const box = this.renderer.domElement.getBoundingClientRect();
+      const head = new THREE.Vector3(0, 1.7, 0).project(this.camera);
+      this.tag.style.left = `${box.left + ((head.x + 1) / 2) * box.width}px`;
+      this.tag.style.top = `${box.top + ((1 - head.y) / 2) * box.height}px`;
+    }
   }
 
   /** Head-and-shoulders portraits of every loaded character, as image URLs. */

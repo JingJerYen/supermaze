@@ -3,14 +3,15 @@ import { DEFAULT_TUNING, SKILL_KINDS, type SkillKind } from "@supermaze/sim";
 import { SKILL_INFO } from "../hud/labels.js";
 import { t } from "../i18n/index.js";
 import { showRewardedAd } from "../monetize/ads.js";
-import { portraits, type Profile } from "../profile.js";
+import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
-import { createSidePanel, escapeHtml } from "../ui/sidePanel.js";
+import { createSidePanel } from "../ui/sidePanel.js";
 
 /**
  * Before each tower run floor (CLAUDE.md 4.1): only the floor's skills. Who the
  * player is (name, character) is set once on the home screen's character
- * setup, the same for online rooms, so it is shown here but not chosen.
+ * setup, the same for online rooms, so it is shown here but not chosen: the
+ * character turns on the right with the name above its head.
  *
  * Free: the floor comes with a skill drawn at random; watching an ad lets the
  * player pick another one instead. Full version: no ad, and up to two skills
@@ -19,6 +20,8 @@ import { createSidePanel, escapeHtml } from "../ui/sidePanel.js";
 export class FloorPrep {
   private readonly panel: HTMLDivElement;
   private readonly preview: CharacterPreview;
+  /** The player's name, above the character on the right. */
+  private readonly tag: HTMLDivElement;
   /** The skills taken onto the floor, in cast-button order. */
   private picks: SkillKind[];
   /** The free player watched the ad: any skill may be picked. */
@@ -45,12 +48,19 @@ export class FloorPrep {
     this.preview.show(profile.character ?? "local");
     this.preview.start();
     this.panel = createSidePanel(root);
+    this.panel.classList.add("sp-wide");
+    this.tag = document.createElement("div");
+    this.tag.className = "sp-tag";
+    this.tag.textContent = profile.name;
+    root.appendChild(this.tag);
+    this.preview.setTag(this.tag);
     this.render();
   }
 
   dispose(): void {
     this.preview.stop();
     this.panel.remove();
+    this.tag.remove();
   }
 
   private render(): void {
@@ -72,7 +82,6 @@ export class FloorPrep {
     const explain = (k: SkillKind) => t(`modes.prep.skill.${k}.desc`, params[k]);
     const name = (k: SkillKind) => `${SKILL_INFO[k]!.icon} ${SKILL_INFO[k]!.label}`;
     const note = this.shown ? t("modes.prep.note", { skill: name(this.shown), text: explain(this.shown) }) : t("modes.prep.pickHint");
-    const face = this.profile.character ? portraits(this.renderer).get(this.profile.character) : undefined;
     const skills = SKILL_KINDS.map((k) => {
       const at = this.picks.indexOf(k);
       const tag = this.premium && at >= 0 ? `<i>${at + 1}</i>` : "";
@@ -92,7 +101,6 @@ export class FloorPrep {
         }</div>`;
     this.panel.innerHTML = `
       <h2>${t("modes.prep.title", { n: this.floor, total: this.floorsTotal })}</h2>
-      <div class="sp-who">${face ? `<img alt="" src="${face}">` : ""}<span>${escapeHtml(this.profile.name)}</span></div>
       <div><label>${label}</label><div class="sp-skills">${skills}</div></div>
       ${adRow}
       <div class="sp-note">${note}</div>

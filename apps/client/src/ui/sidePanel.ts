@@ -21,7 +21,7 @@ const CSS = `
 .sp-who img{width:44px;height:44px;border-radius:10px;background:#2a3450}
 .sp-skills{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .sp-skills button{text-align:left;padding:6px 8px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:rgba(110,70,200,.25);color:#fff;cursor:pointer;font-size:13px;line-height:1.3}
-.sp-skills button b{display:block;font-size:14px}
+.sp-skills button b{display:block;font-size:14px;white-space:nowrap}
 .sp-skills button small{color:#d8d0f0;font-size:11px}
 .sp-skills button.on{border-color:#c9a6ff;background:rgba(110,70,200,.6)}
 .sp-skills button{position:relative}
@@ -45,9 +45,18 @@ const CSS = `
 .sp-perks b{font-size:15px;font-weight:600}
 .sp-perks span{font-size:12px;color:#d8dbe6}
 .sp-spacer{flex:1}
+/* The floor prep: a wider panel with roomier skill buttons, and the name over the character. */
+.sp.sp-wide{width:min(480px,58vw)}
+.sp-wide .sp-skills{gap:8px}
+.sp-wide .sp-skills button{padding:8px 10px}
+.sp-wide .sp-skills button b{font-size:15px}
+.sp-tag{position:fixed;transform:translate(-50%,-100%);z-index:24;pointer-events:none;white-space:nowrap;padding:4px 14px;border-radius:999px;
+  background:rgba(16,19,24,.78);border:1px solid rgba(255,255,255,.2);color:#fff;font:600 18px system-ui,-apple-system,"Noto Sans TC",sans-serif}
 /* Phones in landscape: a narrower panel so the character on the right stays clear; portraits keep two rows of six, skills two rows of three. */
 @media (max-height:520px){.sp{width:min(320px,44vw);padding:10px 12px;gap:6px}.sp h2{font-size:17px}.sp-chars{gap:4px}
   .sp-skills button{padding:4px 5px}.sp-skills button small{display:none}.sp-row button{height:36px}
+  .sp.sp-wide{width:min(370px,50vw)}.sp-wide .sp-skills{gap:6px}.sp-wide .sp-skills button{padding:8px 6px}.sp-wide .sp-skills button b{font-size:14px}
+  .sp-tag{font-size:15px;padding:3px 12px}
   .sp-floors{gap:4px}.sp-floors button{height:30px;font-size:13px}.sp-perks{gap:5px}.sp-perks li{padding:5px 8px}.sp-perks b{font-size:13px}.sp-perks span{font-size:11px}}
 `;
 
