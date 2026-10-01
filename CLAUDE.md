@@ -467,6 +467,7 @@
 - 鬼抓人事件的正式數值是否維持試玩值（第一次預告與間隔各為回合時間的 20%、預告 10 秒、持續 15 秒、被抓定身 7 秒）。
 - 鬼是否需要移速以外的能力，以及事件結束後是否有保護期。
 - 伺服器託管與部署方式。客戶端（含單機沙盒）已可由 `.github/workflows/pages.yml` 在推上 main 時自動部署到 GitHub Pages（需在 repo 設定啟用 Pages，來源選 GitHub Actions），網址為 `https://<帳號>.github.io/supermaze/?local&players=4`；Vite 的 `base` 由 `BASE_PATH` 決定，模型路徑跟著 `import.meta.env.BASE_URL`；改用自訂網域時把 repo 變數 `PAGES_BASE_PATH` 設為 `/`。連線版的 Node／Colyseus 伺服器不能放在 Pages，需另找主機並以 `?server=wss://…` 指定；頁面是 https 時必須用 wss。伺服器已有 `apps/server/Dockerfile`（從 repo 根目錄建置，tsx 直接跑 TypeScript，`PORT` 環境變數）與 Render 免費方案的 `render.yaml`。測試期最省錢的作法是在自己電腦跑 `npm run dev:server`，用 Cloudflare 快速通道（`cloudflared tunnel --url http://localhost:2567`，免帳號免費）取得 https 網址，朋友開 `https://<帳號>.github.io/supermaze/?server=wss://<通道網址>` 即可進私人房。
+- 錄下朋友的過程離線對戰（2026-10-01 提出，尚未實作）：模擬層是決定性的，只要存種子、地圖、旋轉、參賽者與每個 tick 的輸入（只記變化）就能重現一局，3 分鐘約數 KB，不需錄影也不需伺服器。不能把朋友的輸入直接放進自己的對局當對手：鑰匙、道具箱、放置物、鬼抓人與燈光都會互相影響，自己一改變局面，朋友錄下的輸入就對不上。建議做法：朋友打完一層分享「挑戰碼」（種子、地圖與輸入紀錄），自己用同一個挑戰碼打同一層（地圖、鑰匙、道具箱與 CPU 的開局相同，CPU 之後會因自己的行動而不同），打完比分數與登塔時間；第二步再另跑一份朋友的原始對局，把朋友畫成半透明幽靈，不與自己的對局互動（類似賽車的計時賽幽靈）。不採用「照朋友的輸入走、對不上時改由 CPU 接手」，因為很快就偏離。挑戰碼必須帶版本號，地圖、規則或調校參數不同時拒絕播放；數 KB 放進網址可能太長，分享方式（連結、QR code、檔案、App 的系統分享）待定。之後若接排行榜，需另外處理偽造的紀錄。
 
 ## 17. 技術架構決策
 
