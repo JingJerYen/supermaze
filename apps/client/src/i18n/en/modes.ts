@@ -43,7 +43,7 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.select.home": "Home",
   "modes.select.start": "Start on Floor {n}",
 
-  "modes.tower.noMap": "No map available, so Super Maze can't start",
+  "modes.tower.noMap": "No map available, so the game can't start",
   "modes.tower.caption": "Floor {floor}/{floors} · Advance: top {pass} · Total {score}",
   "modes.tower.total": "Total {score} (reached Floor {floor})",
   "modes.tower.newRecord": "New record!",

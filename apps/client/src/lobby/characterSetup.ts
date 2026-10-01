@@ -1,5 +1,5 @@
 import type * as THREE from "three";
-import { NAME_MAX_CHARS } from "@supermaze/protocol";
+import { capName, NAME_MAX_NARROW, NAME_MAX_WIDE } from "@supermaze/protocol";
 import { defaultNameFor, FALLBACK_NAME } from "../characterNames.js";
 import { t } from "../i18n/index.js";
 import { hasOwnName, loadProfile, portraits, saveProfile, type Profile } from "../profile.js";
@@ -48,12 +48,17 @@ export class CharacterSetup {
     this.panel.innerHTML = `
       <h2>${t("lobby.profile.title")}</h2>
       <div class="sp-sub">${t("lobby.profile.sub")}</div>
-      <div><label>${t("lobby.profile.name", { n: NAME_MAX_CHARS })}</label><input id="cs-name" maxlength="${NAME_MAX_CHARS * 2}" value="${escapeHtml(this.profile.name)}"></div>
+      <div><label>${t("lobby.profile.name", { wide: NAME_MAX_WIDE, narrow: NAME_MAX_NARROW })}</label><input id="cs-name" value="${escapeHtml(this.profile.name)}"></div>
       <div><label>${t("lobby.profile.character")}</label><div class="sp-chars">${chars}</div></div>
       <div class="sp-spacer"></div>
       <div class="sp-row"><button class="primary" id="cs-done">${t("lobby.profile.done")}</button></div>`;
     const nameInput = this.panel.querySelector<HTMLInputElement>("#cs-name")!;
-    nameInput.addEventListener("input", () => (this.profile.name = nameInput.value));
+    nameInput.addEventListener("input", () => {
+      // Cut as the player types, so the limit shows instead of a silent trim on save.
+      const capped = capName(nameInput.value);
+      if (capped !== nameInput.value) nameInput.value = capped;
+      this.profile.name = capped;
+    });
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-char]")) {
       b.addEventListener("click", () => {
         // A name still at the old character's default (or cleared) follows the new pick; a typed one stays.
