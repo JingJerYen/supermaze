@@ -165,6 +165,12 @@ export const CLIENT_TUNING = {
   monetize: {
     /** Seconds the placeholder rewarded ad runs before the reward is earned; the real ad's length is the network's. */
     placeholderAdSec: 5,
+    /**
+     * When the app cannot load a rewarded ad (offline, no fill), grant the
+     * reward anyway: no ad could be shown, so nothing is lost, and the game is
+     * meant to play offline. False makes the player wait for an ad instead.
+     */
+    grantWhenNoAd: true,
   },
     /** The tower run's pierce skill: the character turns see-through while it lasts. */
   pierce: {

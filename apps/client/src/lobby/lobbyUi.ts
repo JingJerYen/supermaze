@@ -1,5 +1,5 @@
 import { capName, type LobbyMessage, type LobbyNotice, type TeamMode } from "@supermaze/protocol";
-import { t } from "../i18n/index.js";
+import { nextLocale, switchLocale, t } from "../i18n/index.js";
 import { isPremium } from "../monetize/premium.js";
 import type { JoinRequest } from "../net/connection.js";
 import { HOME_CSS, homeHtml } from "./homeScreen.js";
@@ -108,6 +108,7 @@ export class LobbyUi {
     this.showPage(homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium(), online }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
     this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
+    this.card.querySelector("#lb-lang")!.addEventListener("click", () => switchLocale(nextLocale()));
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
     this.card.querySelector("#lb-online")!.addEventListener("click", () => {
@@ -223,7 +224,7 @@ export class LobbyUi {
         <button class="primary" id="lb-ready" ${lobbyOpen ? "" : "disabled"}>${t(me?.ready ? "lobby.room.unready" : "lobby.room.readyBtn")}</button>
         ${teamsMode && msg.mode === "private" ? `<button id="lb-switch" ${lobbyOpen ? "" : "disabled"}>${t("lobby.room.switchTeam")}</button>` : ""}
         ${isHost && msg.mode === "private" ? `<button id="lb-start" ${msg.phase === "lobby" ? "" : "disabled"}>${t("lobby.room.start")}</button>` : ""}
-        <button id="lb-leave" style="margin-left:auto">${t("lobby.room.leave")}</button>
+        <button id="lb-leave" data-back style="margin-left:auto">${t("lobby.room.leave")}</button>
       </div>
       <div class="lb-notice">${msg.notice ? escapeHtml(noticeText(msg.notice)) : ""}</div>`;
     this.card.querySelector("#lb-ready")!.addEventListener("click", () => this.handlers.onReady(!me?.ready));

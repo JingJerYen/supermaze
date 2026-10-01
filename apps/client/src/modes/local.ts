@@ -110,7 +110,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
       endsAt: null,
       buttons: [
         { label: t("hud.result.again"), primary: true, run: options.onAgain ?? (() => location.reload()) },
-        { label: t("hud.result.home"), run: options.onHome ?? (() => (location.href = location.pathname)) },
+        { label: t("hud.result.home"), back: true, run: options.onHome ?? (() => (location.href = location.pathname)) },
       ],
     })),
   };

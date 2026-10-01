@@ -16,6 +16,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.home.soon": "Coming Soon",
   "lobby.home.onlineSoon": "Online play is coming soon. Stay tuned!",
   "lobby.home.rules": "How to Play",
+  "lobby.home.language": "Change language",
   "lobby.home.fullVersion": "Full Version",
   "lobby.home.fullVersionOwned": "Full Version Owned",
 
@@ -84,6 +85,9 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.store.startFloorDesc": "Start on any floor you've reached; pick the highest to carry on up",
   "lobby.store.buy": "Buy {price}",
   "lobby.store.payNote": "Payment is handled by Google Play / App Store (test build: Buy unlocks right away).",
+  "lobby.store.payNoteApp": "Payment is handled by Google Play. On a new phone, sign in with the same Google account and restore.",
+  "lobby.store.buyNoPrice": "Buy",
+  "lobby.store.unavailable": "Can't reach the store right now. Check your connection and try again.",
   "lobby.store.bought": "Purchase complete. Thanks for your support!",
   "lobby.store.notBought": "Purchase not completed.",
   "lobby.store.restored": "Full Version restored.",

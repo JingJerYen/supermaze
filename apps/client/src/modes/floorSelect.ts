@@ -57,7 +57,7 @@ export class FloorSelect {
         this.picked > 1 ? `<br>${t("modes.select.noBest")}` : ""
       }</div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="fs-home">${t("modes.select.home")}</button><button class="primary" id="fs-go">${t("modes.select.start", { n: this.picked })}</button></div>`;
+      <div class="sp-row"><button id="fs-home" data-back>${t("modes.select.home")}</button><button class="primary" id="fs-go">${t("modes.select.start", { n: this.picked })}</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-floor]")) {
       b.addEventListener("click", () => {
         this.picked = Number(b.dataset["floor"]);

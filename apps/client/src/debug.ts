@@ -1,3 +1,5 @@
+import { DEV_TOOLS } from "./platform.js";
+
 /**
  * Always-on debug overlay. Exists before any gameplay so problems can be described
  * precisely ("fps drops to 30 when 4 players are visible") instead of "feels off".
@@ -32,9 +34,9 @@ export class DebugOverlay {
       display: "none",
     } satisfies Partial<CSSStyleDeclaration>);
     parent.appendChild(this.el);
-    // Developer panel: hidden by default, F3 toggles it.
+    // Developer panel: hidden by default, F3 toggles it (not in a release build).
     window.addEventListener("keydown", (e) => {
-      if (e.code === "F3") {
+      if (e.code === "F3" && DEV_TOOLS) {
         e.preventDefault();
         this.el.style.display = this.el.style.display === "none" ? "block" : "none";
       }

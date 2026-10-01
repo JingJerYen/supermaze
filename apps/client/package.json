@@ -8,15 +8,25 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:release": "VITE_RELEASE=1 VITE_ONLINE=off vite build",
+    "android:sync": "vite build && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:release": "npm run build:release && cap sync android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.1.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
     "@colyseus/sdk": "^0.18.4",
+    "@revenuecat/purchases-capacitor": "^13.7.0",
     "@supermaze/protocol": "*",
     "@supermaze/sim": "*",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
     "@types/three": "^0.186.0",
     "vite": "^8.3.1"
   }

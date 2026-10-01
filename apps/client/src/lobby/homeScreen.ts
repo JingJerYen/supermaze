@@ -1,4 +1,4 @@
-import { t } from "../i18n/index.js";
+import { LOCALE_NAMES, nextLocale, t } from "../i18n/index.js";
 import { ICONS } from "./homeIcons.js";
 
 /**
@@ -119,6 +119,7 @@ export function homeHtml(v: HomeView): string {
     <div class="hm-rules">
       <button id="lb-rules">${ICONS.book}${t("lobby.home.rules")}</button>
       <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? t("lobby.home.fullVersionOwned") : t("lobby.home.fullVersion")}</button>
+      <button id="lb-lang" title="${t("lobby.home.language")}">${ICONS.globe}${LOCALE_NAMES[nextLocale()]}</button>
     </div>`;
 }
 

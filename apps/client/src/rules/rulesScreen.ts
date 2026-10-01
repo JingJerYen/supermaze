@@ -71,7 +71,7 @@ export class RulesScreen {
       <h2></h2>
       <div class="rs-rules-text"></div>
       <div class="rs-rules-nav"><button id="rs-prev"></button><button id="rs-next" class="primary"></button></div>
-      <div class="rs-rules-nav"><button id="rs-close"></button></div>`;
+      <div class="rs-rules-nav"><button id="rs-close" data-back></button></div>`;
     this.panel.querySelector(".rs-rules-page")!.textContent = t("rules.screen.page", { page: index + 1, total: RULE_SCENES.length });
     this.panel.querySelector("h2")!.textContent = scene.title;
     const text = this.panel.querySelector(".rs-rules-text")!;

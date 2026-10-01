@@ -16,6 +16,7 @@ export const lobby = {
   "lobby.home.soon": "即將推出",
   "lobby.home.onlineSoon": "連線對戰即將推出，敬請期待！",
   "lobby.home.rules": "遊戲規則",
+  "lobby.home.language": "切換語言",
   "lobby.home.fullVersion": "完整版",
   "lobby.home.fullVersionOwned": "已擁有完整版",
 
@@ -89,6 +90,9 @@ export const lobby = {
   "lobby.store.startFloorDesc": "從打過的任一層開始，選最高層就接著往上打",
   "lobby.store.buy": "購買　{price}",
   "lobby.store.payNote": "付款由 Google Play / App Store 處理（測試版：按下購買直接解鎖）。",
+  "lobby.store.payNoteApp": "付款由 Google Play 處理，換手機用同一個 Google 帳號可以恢復購買。",
+  "lobby.store.buyNoPrice": "購買",
+  "lobby.store.unavailable": "暫時連不上商店，請確認網路後再試一次。",
   "lobby.store.bought": "購買完成，謝謝支持！",
   "lobby.store.notBought": "購買沒有完成。",
   "lobby.store.restored": "已恢復完整版。",

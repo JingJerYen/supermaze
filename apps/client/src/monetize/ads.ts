@@ -1,15 +1,30 @@
 import { t } from "../i18n/index.js";
+import { isNativeApp } from "../platform.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
 /**
  * Rewarded ads: the player chooses to watch one for a reward (a continue, a
- * picked skill). Placeholder until the app ships: a full-screen card counts
- * down `monetize.placeholderAdSec` and can be closed early, which forfeits the
- * reward. In the app this is where the ad network's rewarded ad goes (AdMob
- * through a Capacitor plugin); its length is the advertiser's, not ours.
- * Resolves true when the reward is earned.
+ * picked skill). In the app this is AdMob's rewarded ad (admob.ts); its
+ * length is the advertiser's, not ours. When no ad can be had (offline, no
+ * fill) the reward is granted anyway if `monetize.grantWhenNoAd` says so. In a
+ * browser it is a placeholder: a full-screen card counts down
+ * `monetize.placeholderAdSec` and can be closed early, which forfeits the
+ * reward. Resolves true when the reward is earned.
  */
-export function showRewardedAd(reward: string): Promise<boolean> {
+export async function showRewardedAd(reward: string): Promise<boolean> {
+  if (!isNativeApp()) return showPlaceholderAd(reward);
+  const outcome = await (await import("./admob.js")).showAdMobRewarded();
+  return outcome === "earned" || (outcome === "unavailable" && CLIENT_TUNING.monetize.grantWhenNoAd);
+}
+
+/** App only, at startup: the ad consent message and the store check, so neither waits for the first button press. */
+export function warmUpMonetization(): void {
+  if (!isNativeApp()) return;
+  void import("./admob.js").then((m) => m.prepareAds());
+  void import("./premium.js").then((m) => m.syncPremium());
+}
+
+function showPlaceholderAd(reward: string): Promise<boolean> {
   installCss();
   return new Promise((resolve) => {
     const root = document.createElement("div");
@@ -19,7 +34,7 @@ export function showRewardedAd(reward: string): Promise<boolean> {
         <div class="ad-tag">${t("modes.ad.tag")}</div>
         <div class="ad-body">${t("modes.ad.body")}<br><small>${t("modes.ad.placeholder")}</small></div>
         <div class="ad-reward">${t("modes.ad.reward", { reward })}</div>
-        <div class="ad-foot"><span class="ad-count"></span><button class="ad-close" data-nosound>${t("modes.ad.close")}</button></div>
+        <div class="ad-foot"><span class="ad-count"></span><button class="ad-close" data-nosound data-back>${t("modes.ad.close")}</button></div>
       </div>`;
     document.body.appendChild(root);
     const count = root.querySelector<HTMLElement>(".ad-count")!;

@@ -47,6 +47,8 @@ export class SystemButtons {
 
     if (onExit) {
       const exit = document.createElement("button");
+      // The Android back button presses this too, so it keeps the two-step confirm.
+      exit.dataset["back"] = "";
       exit.addEventListener("pointerdown", (e) => e.stopPropagation());
       exit.addEventListener("click", () => {
         if (this.confirmTimer !== null) {
