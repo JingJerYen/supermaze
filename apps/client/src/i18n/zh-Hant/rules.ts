@@ -51,9 +51,9 @@ export const rules = {
   "rules.lights.line3": "每個開關只能用一次。要再切換，得去找下一個還亮著的開關。",
 
   "rules.ghost.title": "鬼抓人",
-  "rules.ghost.line1": "每隔一段時間，其中一方會變成鬼 {ghostDurationSec} 秒，畫面上方會先倒數 {ghostWarningSec} 秒預告。",
-  "rules.ghost.line2": "鬼跑得比較快，碰到你就算抓到：道具全部消失、定身 {caughtFreezeSec} 秒。沒有鑰匙的鬼還會偷走你的鑰匙。",
-  "rules.ghost.line3": "當鬼的時候不能撿東西、不能用道具、也不能登塔。已經在塔頂的人不受影響，所以有鑰匙就早點登塔。",
+  "rules.ghost.line1": "每隔一段時間會有一方變成鬼 {ghostDurationSec} 秒，開始前畫面上方會先倒數。",
+  "rules.ghost.line2": "鬼跑得比較快，被碰到會掉光道具、定身 {caughtFreezeSec} 秒；沒有鑰匙的鬼還會偷走你的鑰匙。",
+  "rules.ghost.line3": "已經登塔的人不受影響，所以有鑰匙就早點登塔。",
 
   "rules.scoring.title": "計分與勝負",
   "rules.scoring.line1": "兩隊對戰：先讓全隊都登上塔頂的隊伍獲勝，該隊每個人的分數加倍。",
@@ -61,10 +61,9 @@ export const rules = {
   "rules.scoring.line3": "只剩最後一個人還沒登塔，或時間到，回合就結束。沒登塔的人拿不到名次分數。",
 
   "rules.towerRun.title": "爬塔挑戰（單機）",
-  "rules.towerRun.line1": "單機是 {floors} 層的爬塔挑戰：每層是一局對 CPU 的個人對戰，越往上地圖越難、CPU 越強。",
-  "rules.towerRun.line2": "你一登上塔頂這層就立刻結算，分數排在前一半就晉級，同分時先登塔的排前面。每層分數累加成總分。",
-  "rules.towerRun.line3":
-    "每層開打前可以從九個技能選一個（例如衝刺、穿透、隨機傳送），這一層按 R 或技能鍵施放一次。沒晉級挑戰就結算總分，也可以按「繼續」直接進入下一層（每次挑戰最多 2 次）。",
+  "rules.towerRun.line1": "單機是 {floors} 層的爬塔挑戰，每層和 CPU 比分數，越往上越難。",
+  "rules.towerRun.line2": "你一登塔這層就結算，分數排前一半就晉級，各層分數加成總分。",
+  "rules.towerRun.line3": "每層開打前選一個技能，按 R 或技能鍵用一次。沒晉級可以按「繼續」，每次挑戰最多 2 次。",
 
   // Names of the demo players, shown over their heads and in the HUD's notices.
   "rules.name.you": "你",

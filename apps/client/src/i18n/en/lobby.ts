@@ -9,7 +9,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.notice.noMap": "No map takes {n} players",
 
   "lobby.home.profile": "Character",
-  "lobby.home.towerRun": "Tower Run",
+  "lobby.home.towerRun": "Super Maze",
   "lobby.home.towerSubBest": "Solo · Best: floor {floor}, {score} pts",
   "lobby.home.towerSubNew": "Solo · {floors} floors to the top",
   "lobby.home.online": "Online",
@@ -70,7 +70,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.room.leave": "Leave",
 
   "lobby.profile.title": "Character",
-  "lobby.profile.sub": "Used in Online and the Tower Run",
+  "lobby.profile.sub": "Used in Online and Super Maze",
   "lobby.profile.name": "Name (max {n} chars)",
   "lobby.profile.character": "Look",
   "lobby.profile.done": "Done",

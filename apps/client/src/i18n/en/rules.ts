@@ -52,18 +52,18 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.lights.line3": "Each switch works once. To switch again, find another switch that is still lit.",
 
   "rules.ghost.title": "Ghost Tag",
-  "rules.ghost.line1": "Every so often one side becomes ghosts for {ghostDurationSec} seconds, after a {ghostWarningSec}-second countdown at the top of the screen.",
-  "rules.ghost.line2": "Ghosts are faster. If one touches you, you lose all your items and are frozen for {caughtFreezeSec} seconds. A ghost with no key steals yours.",
-  "rules.ghost.line3": "Ghosts can't pick things up, use items or climb. Players on the tower top are safe, so climb early once you have a key.",
+  "rules.ghost.line1": "Every so often one side becomes ghosts for {ghostDurationSec} seconds, with a countdown at the top first.",
+  "rules.ghost.line2": "Ghosts are faster. If one touches you, you lose your items and freeze for {caughtFreezeSec} seconds; a ghost with no key steals yours.",
+  "rules.ghost.line3": "Players on the tower top are safe, so climb early once you have a key.",
 
   "rules.scoring.title": "Scoring and winning",
   "rules.scoring.line1": "Team Battle: the first team to get everyone onto the tower top wins, and each member's score is doubled.",
   "rules.scoring.line2": "Free-for-All: the highest score when the round ends wins.",
   "rules.scoring.line3": "The round ends when only one person hasn't climbed, or when time runs out. No climb, no placement points.",
 
-  "rules.towerRun.title": "Tower Run (solo)",
-  "rules.towerRun.line1": "Solo play is a {floors}-floor Tower Run against CPUs. Each floor up has harder maps and stronger CPUs.",
-  "rules.towerRun.line2": "Climbing ends the floor. Score in the top half to advance (ties go to who climbed first); floor scores add up.",
+  "rules.towerRun.title": "Super Maze (solo)",
+  "rules.towerRun.line1": "Super Maze is the solo mode: {floors} floors, each a race against CPUs on score. It gets harder as you go up.",
+  "rules.towerRun.line2": "The floor ends when you climb. Score in the top half to advance; floor scores add up to your total.",
   "rules.towerRun.line3": "Pick a skill before each floor and use it once with R or the skill button. Miss the cut and you can Continue, up to 2 times.",
 
   // Names of the demo players, shown over their heads and in the HUD's notices.
