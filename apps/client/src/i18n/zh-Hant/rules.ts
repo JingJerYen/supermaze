@@ -41,7 +41,7 @@ export const rules = {
   "rules.teleport.line3": "站在自己隊的傳送點上按動作鍵可以收回背包，換地方再放。",
 
   "rules.fixtures.title": "地圖上原本就有的機關",
-  "rules.fixtures.line1": "有些障礙物、陷阱和單向門一開局就在地圖上，顏色偏鏽、比較暗。",
+  "rules.fixtures.line1": "有些障礙物、陷阱和單向門一開局就在地圖上，一律是紫色。",
   "rules.fixtures.line2": "它們不會自己消失，只有鐵鎚能敲掉。陷阱抓到一個人後也會消失。",
   "rules.fixtures.line3": "被擋住去路時，去開道具箱找鐵鎚。",
 

@@ -332,7 +332,7 @@ export const RULE_SCENES: DemoScene[] = [
       me: [
         { do: "wait", sec: 0.5 },
         { do: "goto", x: 1, y: 3 },
-        { do: "push", ...N, sec: 0.9 }, // the rusty obstacle does not budge
+        { do: "push", ...N, sec: 0.9 }, // the fixed obstacle does not budge
         { do: "goto", x: 7, y: 5 }, // a box: a hammer
         { do: "goto", x: 1, y: 3 },
         { do: "face", ...N },

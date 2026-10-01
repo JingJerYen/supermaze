@@ -144,10 +144,13 @@ export const CLIENT_TUNING = {
     bounce: 0.05,
   },
   fixtureLook: {
-    /** Map fixtures (permanent doors, obstacles, traps): colours lerp toward this by `mix`, then darken. */
-    tint: 0x8a5a3c,
-    mix: 0.45,
-    darken: 0.8,
+    /**
+     * Map fixtures (permanent doors, obstacles, traps): every colour is turned
+     * to this hue (0..1, 0.75 = violet), keeping its lightness, then darkened.
+     * No placed item is violet, so fixtures stand apart from what players put down.
+     */
+    hue: 0.76,
+    darken: 0.9,
   },
   minimap: {
     /** The map's longer side is drawn this long on screen, whatever the map size; also capped at maxVh of the window height. */

@@ -42,7 +42,7 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.teleport.line3": "Stand on your team's Teleporter and press the action button to put it back in your bag, then place it elsewhere.",
 
   "rules.fixtures.title": "Built-in traps",
-  "rules.fixtures.line1": "Some Barriers, Traps and One-way Doors are on the map from the start. They look rusty and darker.",
+  "rules.fixtures.line1": "Some Barriers, Traps and One-way Doors are on the map from the start. They are purple.",
   "rules.fixtures.line2": "They never vanish on their own; only a Hammer removes them. A Trap still vanishes once it catches someone.",
   "rules.fixtures.line3": "When one blocks your way, open item boxes to find a Hammer.",
 
