@@ -78,7 +78,7 @@
 "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
 ```
 
-產出在 `apps/client/android/app/build/outputs/apk/debug/app-debug.apk`。根目錄 `package.json` 可再加一個轉呼叫的 `android:apk`，與 `build:client` 同樣寫法。確認 `BASE_PATH` 沒被設定（要是 `/`）。
+產出在 `apps/client/android/app/build/outputs/apk/debug/app-debug.apk`。根目錄 `package.json` 可再加一個轉呼叫的 `android:apk`，與 `build:client` 同樣寫法。確認 `BASE_PATH` 沒被設定（要是 `/`）。正式上架的建置要加 `VITE_ONLINE=off`（例如 `VITE_ONLINE=off vite build`），首頁的「連線對戰」會顯示「即將推出」（CLAUDE.md 第 2.1 節）；試玩用的 debug APK 可以不加，保留連線。
 
 ### T3 判斷是否在 App 內
 
