@@ -124,6 +124,13 @@
   - 選擇起始樓層：按「征服高塔」後先到選樓層畫面（`modes/floorSelect.ts`），可以選第 1 層到打過的最高層之間任一層，標「最高」的就是接著往上打；從第 1 層以外開始的挑戰不計入最佳總分。還沒打過第 2 層時直接開始第 1 層。
 - 頁面：首頁右上「遊戲規則」下方有「⭐ 完整版」按鈕（已購買時顯示「已擁有完整版」），進入完整版頁面（`lobby/storeScreen.ts`）列出三項好處、購買按鈕與「恢復購買」（iOS 規定必須有）。
 - 佔位實作：`apps/client/src/monetize/premium.ts` 的完整版旗標存在 localStorage（`supermaze.premium`），購買直接成功；網址加 `?premium=1` 或 `?premium=0` 可切換測試。`monetize/ads.ts` 的 `showRewardedAd` 是全螢幕的佔位卡片，倒數 `tuning.ts` 的 `monetize.placeholderAdSec`（5 秒）後才給獎勵，提前關閉就沒有獎勵。上架時把這兩個檔案換成 Capacitor 外掛：廣告用 AdMob 的獎勵廣告（廣告長度由廣告主決定，不能指定 15 或 30 秒），付款用 Google Play／App Store 的應用程式內購（可用 RevenueCat 兩邊共用）；網頁版維持佔位或直接放行。
+- 上架後如何判定付費玩家（2026-10-01 決定方向，尚未實作，要等 Android APK 能跑之後）：購買紀錄由商店保存並綁在玩家的 Google（或 Apple）帳號上，遊戲本身不記錄誰付過費。
+  - Play Console 建一個一次性、不可消耗的應用程式內商品（例如 `full_version`），價格在 Play Console 設定。
+  - 用 RevenueCat 的 Capacitor 外掛（`@revenuecat/purchases-capacitor`）串接 Google Play Billing，之後 iOS 共用同一套。只替換 `premium.ts` 的三個函式：`isPremium()` 在啟動時向商店查詢並把結果存一份在本機，`buyFullVersion()` 打開商店的購買畫面，`restorePurchases()` 重新查詢。購買後 3 天內必須向 Google 確認（acknowledge），否則自動退款；RevenueCat 會自動處理。
+  - 以 Capacitor 的 `isNativePlatform()` 判斷：在 App 內走商店，網頁版維持 localStorage 與 `?premium=` 的佔位。
+  - 移除後重裝或換手機：同一個帳號啟動時就查得到，自動恢復；換成別的帳號視為沒買。沒有網路時沿用上次存在本機的結果，爬塔挑戰照常離線遊玩。退款後下次連網查詢時發現已撤銷，改回免費版。
+  - 防作弊：只在手機上檢查時，改過的 APK 可以破解。RevenueCat 已在它的後端向 Google 驗證購買，不需自架伺服器；以 NT$ 90、離線、沒有排行榜的遊戲而言這樣就夠。之後接排行榜時，再考慮上傳分數時也檢查購買狀態。
+  - 測試：在 Play Console 把測試帳號加為授權測試人員，透過內部測試軌道安裝，可以走完整個購買流程而不會真的扣款。
 - 待確認：排行榜（Google Play 遊戲服務與 Game Center 都有內建排行榜，上架時再接）、是否推出付費地圖包、正式價格。
 
 ## 5. 鑰匙與中心塔
