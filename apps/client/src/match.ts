@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { DEFAULT_TUNING, NO_INPUT, isGhost, skillActive, type SimulationState } from "@supermaze/sim";
 import { DebugOverlay } from "./debug.js";
+import { t } from "./i18n/index.js";
 import { Hud } from "./hud/hud.js";
 import { Minimap } from "./hud/minimap.js";
 import { ResultsPanel } from "./hud/results.js";
@@ -63,7 +64,7 @@ export class Match {
   private readonly onDebugKey = (e: KeyboardEvent) => {
     if (e.code === "F4") {
       e.preventDefault();
-      this.hud.toast(this.mode.debug ? "除錯：強制鬼抓人" : "除錯：此模式不支援");
+      this.hud.toast(t(this.mode.debug ? "hud.debug.forceGhost" : "hud.debug.unsupported"));
       this.mode.debug?.("ghost");
     }
   };
@@ -160,7 +161,7 @@ export class Match {
       this.input?.skillButton.setSkill(this.hud.skillButton(model));
       this.input?.skillButton2.setSkill(this.hud.skillButton(model, 2));
       if (this.lastToastState !== s.to) {
-        for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t.text, t.big);
+        for (const n of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(n.text, n.big);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);
         if (!this.demo) for (const c of diffSounds(this.lastToastState, s.to, meId)) sfx.play(c.name, c.volume);
         this.lastToastState = s.to;

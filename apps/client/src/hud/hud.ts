@@ -1,7 +1,13 @@
+import { locale, t } from "../i18n/index.js";
 import { TEAM_COLORS } from "../render/teamColors.js";
 import { itemIconSvg } from "./itemIcons.js";
 import { ACTION_LABEL, ITEM_GLYPH, ITEM_LABEL, SKILL_INFO } from "./labels.js";
 import type { HudModel, TeamRow } from "./model.js";
+
+/** The word shown when the 3-2-1 countdown ends. */
+const GO = t("hud.go");
+/** Action labels longer than this many characters get the smaller font (Chinese glyphs are about twice as wide as Latin letters). */
+const LONG_ACTION = locale === "zh-Hant" ? 3 : 6;
 
 const CSS = `
 .hud{position:fixed;inset:0;pointer-events:none;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#fff;
@@ -132,14 +138,14 @@ export class Hud {
     this.time.textContent = m.status === "lobby" ? "--:--" : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);
     this.updateGo(m);
-    const sub = m.status === "finished" ? "回合結束" : "";
+    const sub = m.status === "finished" ? t("hud.roundOver") : "";
     if (this.sub.textContent !== sub) this.sub.textContent = sub;
 
     const g = m.ghost;
     const gs = Math.ceil(g.secondsLeft);
     this.ghost.className = `hud-ghost ${g.phase !== "idle" ? g.phase : ""} ${g.iAmGhost ? "me" : ""}`.trim();
-    if (g.phase === "warning") this.ghost.textContent = warningText(gs, g.warningSubject ?? "");
-    else if (g.phase === "active") this.ghost.textContent = g.iAmGhost ? `你是鬼，去抓人 ${gs} 秒` : g.myTeamIsGhost ? `我方是鬼 ${gs} 秒` : `鬼抓人！躲開 ${g.teamLabel} ${gs} 秒`;
+    if (g.phase === "warning") this.ghost.textContent = warningText(gs, m);
+    else if (g.phase === "active") this.ghost.textContent = g.iAmGhost ? t("hud.ghost.active.you", { sec: gs }) : g.myTeamIsGhost ? t("hud.ghost.active.ours", { sec: gs }) : t("hud.ghost.active.other", { who: g.teamLabel ?? "", sec: gs });
 
 
     // Rosters change rarely; rebuild only when content changes.
@@ -155,12 +161,12 @@ export class Hud {
     // Your own freeze counts down under you; others see a "定身" badge in the roster.
     const f = m.myFreeze;
     this.frozen.classList.toggle("on", f !== null);
-    const frozenHtml = f ? `${f.by === "ghost" ? "被抓到了" : "被鐵籠關住"}<b>${Math.ceil(f.sec)}</b>` : "";
+    const frozenHtml = f ? `${t(f.by === "ghost" ? "hud.freeze.ghost" : "hud.freeze.trap")}<b>${Math.ceil(f.sec)}</b>` : "";
     if (this.frozen.innerHTML !== frozenHtml) this.frozen.innerHTML = frozenHtml;
 
     const st = m.skillStatus;
     const info = st ? SKILL_INFO[st.kind] : undefined;
-    const skillText = st && info ? `${info.icon} ${info.label}${st.sec === null ? " 生效中" : ` ${Math.ceil(st.sec)}`}` : "";
+    const skillText = st && info ? st.sec === null ? t("hud.skill.active", { icon: info.icon, label: info.label }) : `${info.icon} ${info.label} ${Math.ceil(st.sec)}` : "";
     this.skill.classList.toggle("on", skillText !== "");
     if (this.skill.textContent !== skillText) this.skill.textContent = skillText;
   }
@@ -172,11 +178,11 @@ export class Hud {
     return skill && info ? { icon: info.icon, label: info.label, ready: skill.ready } : null;
   }
 
-  /** 3, 2, 1 during the start freeze, then "開始" for a moment; each number pops once. */
+  /** 3, 2, 1 during the start freeze, then "開始" (GO) for a moment; each number pops once. */
   private updateGo(m: HudModel): void {
     let text = "";
     if (m.status === "running" && m.freezeSec > 0) text = String(Math.ceil(m.freezeSec));
-    else if (m.status === "running" && this.lastGoText !== "" && this.lastGoText !== "開始") text = "開始";
+    else if (m.status === "running" && this.lastGoText !== "" && this.lastGoText !== GO) text = GO;
     if (text === this.lastGoText) return;
     this.lastGoText = text;
     this.go.classList.remove("show", "start");
@@ -184,10 +190,10 @@ export class Hud {
     this.go.textContent = text;
     void this.go.offsetWidth; // restart the pop animation
     this.go.classList.add("show");
-    if (text === "開始") {
+    if (text === GO) {
       this.go.classList.add("start");
       setTimeout(() => {
-        if (this.lastGoText === "開始") {
+        if (this.lastGoText === GO) {
           this.go.classList.remove("show");
           this.lastGoText = "";
         }
@@ -229,7 +235,7 @@ export class Hud {
     if (m.action && m.action !== "useItem") {
       const label = ACTION_LABEL[m.action] ?? m.action;
       const badge = next ? `<div class="hud-badge-item">${icon(next)}</div>` : "";
-      big = `<div class="hud-big action${label.length > 3 ? " long" : ""}">${label}${badge}</div>`;
+      big = `<div class="hud-big action${label.length > LONG_ACTION ? " long" : ""}">${label}${badge}</div>`;
     } else if (next) {
       big = `<div class="hud-big ${m.action === "useItem" ? "ready" : "dim"}" title="${ITEM_LABEL[next] ?? next}">${icon(next)}</div>`;
     } else big = `<div class="hud-big empty"></div>`;
@@ -241,10 +247,10 @@ export class Hud {
   }
 
   toast(text: string, big = false): void {
-    const t = el("div", big ? "hud-toast big" : "hud-toast");
-    t.textContent = text;
-    this.toasts.appendChild(t);
-    setTimeout(() => t.remove(), big ? 3500 : 2300);
+    const n = el("div", big ? "hud-toast big" : "hud-toast");
+    n.textContent = text;
+    this.toasts.appendChild(n);
+    setTimeout(() => n.remove(), big ? 3500 : 2300);
     while (this.toasts.children.length > 3) this.toasts.firstChild?.remove();
   }
 
@@ -267,7 +273,7 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean): vo
     // Solo rounds have no team names: the rows alone are the roster.
     if (team.label) {
       const name = el("div", "hud-team-name");
-      name.textContent = mine ? `我方 ${team.label}` : team.label;
+      name.textContent = mine ? t("hud.roster.myTeam", { team: team.label }) : team.label;
       container.appendChild(name);
     }
     const color = `#${(TEAM_COLORS[team.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
@@ -276,19 +282,19 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean): vo
       const dot = el("span", "hud-dot");
       dot.style.background = color;
       const label = el("span", "");
-      label.textContent = `${p.isMe ? `${p.name}（你）` : p.name}${p.ghost ? " 👻" : ""}`;
+      label.textContent = `${p.isMe ? t("hud.nameYou", { name: p.name }) : p.name}${p.ghost ? " 👻" : ""}`;
       const badges: HTMLElement[] = [];
       // Everyone in the maze shows a key slot: bright once they hold their key, faint until then.
       // On the tower the row turns green and the slot becomes the arrival rank.
-      if (p.onTower) badges.push(badge("tower", p.arrival === null ? "🏰" : `🏰 第${p.arrival + 1}名`));
+      if (p.onTower) badges.push(badge("tower", p.arrival === null ? "🏰" : t("hud.roster.tower", { n: p.arrival + 1 })));
       else {
         const key = el("span", `hud-key${p.hasKey ? "" : " off"}`);
         key.textContent = "🔑";
-        key.title = p.hasKey ? "已拿到鑰匙" : "還沒有鑰匙";
+        key.title = t(p.hasKey ? "hud.roster.hasKey" : "hud.roster.noKey");
         badges.push(key);
       }
       if (p.cpu) badges.push(badge("cpu", "CPU"));
-      if (p.frozen) badges.push(badge("frozen", "定身"));
+      if (p.frozen) badges.push(badge("frozen", t("hud.roster.frozen")));
       const score = el("span", "hud-score");
       score.textContent = String(p.score);
       if (mine) row.append(dot, label, ...badges, score);
@@ -310,8 +316,9 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string): H
   return e;
 }
 
-/** "10 秒後你變成鬼", "10 秒後 A 隊 變成鬼", "10 秒後 A 隊（我方）變成鬼": no stray space next to CJK. */
-function warningText(sec: number, subject: string): string {
-  if (subject === "你") return `${sec} 秒後你變成鬼`;
-  return `${sec} 秒後 ${subject}${subject.endsWith("）") ? "" : " "}變成鬼`;
+/** "10 秒後你變成鬼", "10 秒後 A 隊（我方）變成鬼", "10 秒後 A 隊 變成鬼". */
+function warningText(sec: number, m: HudModel): string {
+  const who = m.ghost.teamLabel ?? "";
+  if (!m.ghost.myTeamIsGhost) return t("hud.ghost.warning.other", { sec, who });
+  return m.solo ? t("hud.ghost.warning.you", { sec }) : t("hud.ghost.warning.ours", { sec, team: who });
 }

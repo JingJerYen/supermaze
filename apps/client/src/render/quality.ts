@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.js";
 import { CLIENT_TUNING } from "../tuning.js";
 
 /**
@@ -79,7 +80,7 @@ export class QualityGovernor {
       // Fewer pixels did not help: pixels are not the limit. Undo and stop.
       this.index -= 1;
       this.phase = "stopped";
-      this.reason = `降解析度沒有變快（${this.fpsBeforeStep.toFixed(0)}→${fps.toFixed(0)} fps），已還原`;
+      this.reason = t("hud.debug.quality.noGain", { before: this.fpsBeforeStep.toFixed(0), after: fps.toFixed(0) });
       return this.ratio;
     }
     if (fps >= c.slowFps) {
@@ -88,7 +89,7 @@ export class QualityGovernor {
     }
     if (this.index >= this.steps.length - 1) {
       this.phase = "stopped";
-      this.reason = `已是最低解析度（${fps.toFixed(0)} fps）`;
+      this.reason = t("hud.debug.quality.lowest", { fps: fps.toFixed(0) });
       return null;
     }
     this.fpsBeforeStep = fps;

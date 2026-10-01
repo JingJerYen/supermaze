@@ -1,5 +1,6 @@
 import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
+import { t } from "../i18n/index.js";
 import { formatSeconds } from "./roundHud.js";
 import { switchTileSet, type GameMode } from "./mode.js";
 import { cpuCast } from "../characterNames.js";
@@ -57,7 +58,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     teamMode: "solo",
     ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
     tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
-    participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你", skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null }, ...idle],
+    participants: [{ id, teamId: id, controller: "human", name: options.name ?? t("hud.you"), skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null }, ...idle],
   });
   sim.start();
   const cpu = new CpuController(sim, (options.seed ?? 1) + 1);
@@ -108,8 +109,8 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     results: options.results ?? (() => ({
       endsAt: null,
       buttons: [
-        { label: "再玩一次", primary: true, run: options.onAgain ?? (() => location.reload()) },
-        { label: "回首頁", run: options.onHome ?? (() => (location.href = location.pathname)) },
+        { label: t("hud.result.again"), primary: true, run: options.onAgain ?? (() => location.reload()) },
+        { label: t("hud.result.home"), run: options.onHome ?? (() => (location.href = location.pathname)) },
       ],
     })),
   };

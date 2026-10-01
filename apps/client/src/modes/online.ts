@@ -1,5 +1,6 @@
 import { applySnapshot, type InputMessage, type SnapshotMessage } from "@supermaze/protocol";
 import { DEFAULT_TUNING, MapGrid, availableAction, type MapData, type MoverState, type PlayerInput, type SimulationState } from "@supermaze/sim";
+import { t } from "../i18n/index.js";
 import { Predictor } from "../net/predictor.js";
 import { SnapshotBuffer } from "../net/snapshots.js";
 import { CLIENT_TUNING } from "../tuning.js";
@@ -140,7 +141,7 @@ export class OnlineMatchMode implements GameMode {
   results() {
     return {
       endsAt: this.resultsEndAt,
-      buttons: this.onLeaveRoom ? [{ label: "離開房間", run: this.onLeaveRoom }] : [],
+      buttons: this.onLeaveRoom ? [{ label: t("hud.result.leaveRoom"), run: this.onLeaveRoom }] : [],
     };
   }
 }
