@@ -1,7 +1,7 @@
 import { availableAction, canDiscard } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState, canDrawItem } from "./boxes.js";
 import type { SimEvent } from "./events.js";
-import { applyTimeStop, canUseSkill, castSkill, piercing, type SkillEffect, type SkillKind } from "./skills.js";
+import { applyTimeStop, canUseSkill, castSkill, piercing, type SkillEffect, type SkillKind, type SkillSlot } from "./skills.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { movePlayer } from "./playerMove.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
@@ -35,6 +35,8 @@ export interface PlayerInput extends MoveIntent {
   discard?: boolean;
   /** Cast the one-shot skill this tick, if the player holds one (tower run; `canUseSkill`). */
   skill?: boolean;
+  /** Cast the second skill this tick (tower run, full version). */
+  skill2?: boolean;
 }
 
 export const NO_INPUT: PlayerInput = { moveX: 0, moveY: 0 };
@@ -80,6 +82,8 @@ export interface PlayerState extends Participant {
   protectedUntilTick: Tick;
   /** Skill still to cast this round; null once cast or when none was given. */
   skill: SkillKind | null;
+  /** Second skill still to cast (tower run, full version); null once cast or when none was given. */
+  skill2: SkillKind | null;
   /** The timed skill cast this round (sprint, eagle eye, lantern), kept after it runs out. */
   skillEffect: SkillEffect | null;
   /** The amulet is up: the next trap or ghost catch is shrugged off. */
@@ -225,6 +229,7 @@ export class Simulation {
       protectedUntilTick: 0,
       keyScored: false,
       skill: p.skill ?? null,
+      skill2: p.skill2 ?? null,
       skillEffect: null,
       shielded: false,
     };
@@ -480,8 +485,11 @@ export class Simulation {
           ghost,
           capacity: this.tuning.inventory.capacity,
         };
-        if (input.skill && canUseSkill(skillCtx, p, this.grid)) {
-          const cast = castSkill(p, tick, this.tuning, { grid: this.grid, placeables: work.placeables, nodes: work.nodes, players: work.players, rng: this.rng });
+        // One cast a tick: the first slot when both are pressed together.
+        const slot: SkillSlot | null = input.skill ? 1 : input.skill2 ? 2 : null;
+        if (slot !== null && canUseSkill(skillCtx, p, this.grid, slot)) {
+          const world = { grid: this.grid, placeables: work.placeables, nodes: work.nodes, players: work.players, rng: this.rng };
+          const cast = castSkill(p, tick, this.tuning, world, slot);
           p = cast.caster;
           work.events.push(cast.event);
           if (cast.timeStopUntil !== null) timeStops.push({ casterId: id, until: cast.timeStopUntil });

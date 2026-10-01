@@ -20,6 +20,8 @@ export interface LocalOptions {
   tuning?: Tuning;
   /** One-shot skill for you this round (tower run; CPUs never get one). */
   skill?: SkillKind | null;
+  /** A second one (tower run, full version). */
+  skill2?: SkillKind | null;
   /** Your character model (file name in public/models/characters); by player id when omitted. */
   character?: string | null;
   /** End the round the moment you climb instead of waiting for the CPUs (tower run). */
@@ -55,7 +57,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     teamMode: "solo",
     ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
     tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
-    participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你", skill: options.skill ?? null, character: options.character ?? null }, ...idle],
+    participants: [{ id, teamId: id, controller: "human", name: options.name ?? "你", skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null }, ...idle],
   });
   sim.start();
   const cpu = new CpuController(sim, (options.seed ?? 1) + 1);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
-import { continueRun, judgeFloor, passRank, planFloor, recordFloor, startTowerRun, type FloorPlan } from "../src/run/towerRun.js";
+import { canContinue, continueRun, judgeFloor, passRank, planFloor, recordFloor, startTowerRun, type FloorPlan } from "../src/run/towerRun.js";
 import type { SimulationState } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import { TINY_MAP } from "./fixtures.js";
@@ -79,6 +79,25 @@ describe("recordFloor and continueRun", () => {
     run = recordFloor(run, plan(run), outcome(true, 70));
     expect(run).toMatchObject({ floor: 3, totalScore: 100, status: "playing", continues: 1 });
     expect(continueRun(run)).toBe(run); // only a stopped run continues
+  });
+
+  it("continues at most maxContinues times a run", () => {
+    let run = startTowerRun(1);
+    for (let i = 0; i < DEFAULT_TUNING.towerRun.maxContinues; i++) {
+      run = recordFloor(run, plan(run), outcome(false));
+      expect(canContinue(run)).toBe(true);
+      run = continueRun(run);
+    }
+    run = recordFloor(run, plan(run), outcome(false));
+    expect(canContinue(run)).toBe(false);
+    expect(continueRun(run)).toBe(run);
+  });
+
+  it("can start on a later floor, within the run", () => {
+    expect(startTowerRun(1, 7)).toMatchObject({ floor: 7, startFloor: 7 });
+    expect(startTowerRun(1, 99).floor).toBe(DEFAULT_TUNING.towerRun.floors.length);
+    expect(startTowerRun(1, 0).floor).toBe(1);
+    expect(plan(startTowerRun(1, 7)).floor).toBe(7);
   });
 
   it("clears after the last floor, passed or not", () => {

@@ -101,6 +101,7 @@ export const DEFAULT_TUNING: Tuning = {
 
   towerRun: {
     passShare: 0.5,
+    maxContinues: 2,
     // map difficulty, CPUs, CPU vision (tiles), CPU speed. CPU counts are odd so the
     // participants are even and "the first half" is exact. Medium maps take at most 4.
     floors: floors([

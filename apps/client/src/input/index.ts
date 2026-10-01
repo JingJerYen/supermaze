@@ -12,12 +12,14 @@ export class InputSource {
   readonly actionButton: ActionButton;
   readonly discardButton: DiscardButton;
   readonly skillButton: SkillButton;
+  readonly skillButton2: SkillButton;
 
   constructor(surface: HTMLElement) {
     this.dpad = new DpadInput(surface);
     this.actionButton = new ActionButton(surface);
     this.discardButton = new DiscardButton(surface);
     this.skillButton = new SkillButton(surface);
+    this.skillButton2 = new SkillButton(surface, 2);
   }
 
   dispose(): void {
@@ -25,6 +27,7 @@ export class InputSource {
     this.actionButton.dispose();
     this.discardButton.dispose();
     this.skillButton.dispose();
+    this.skillButton2.dispose();
   }
 
   read(): PlayerInput {
@@ -35,6 +38,7 @@ export class InputSource {
     if (k.action || this.actionButton.consume()) input.action = true;
     if (k.discard || this.discardButton.consume()) input.discard = true;
     if (k.skill || this.skillButton.consume()) input.skill = true;
+    if (k.skill2 || this.skillButton2.consume()) input.skill2 = true;
     return input;
   }
 }

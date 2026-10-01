@@ -155,7 +155,7 @@ function separate(views: Map<string, PlayerView>, to: Record<string, PlayerState
 /** Play short animations for things that happened between two consecutive states. */
 function triggerOneShots(view: PlayerView, prev: PlayerState | undefined, curr: PlayerState): void {
   if (!prev) return;
-  if (prev.skill === "jump" && curr.skill === null) view.jump();
+  if ((prev.skill === "jump" && curr.skill === null) || (prev.skill2 === "jump" && curr.skill2 === null)) view.jump();
   const usedOldest = curr.items.length === prev.items.length - 1 && curr.items.every((k, i) => k === prev.items[i + 1]);
   if (usedOldest && prev.items[0] === "hammer") view.swingHammer();
   else if ((prev.keyId === null && curr.keyId !== null) || curr.items.length > prev.items.length) view.pickUp();

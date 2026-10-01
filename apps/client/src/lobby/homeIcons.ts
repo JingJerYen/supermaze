@@ -15,4 +15,5 @@ export const ICONS = {
   tower: svg(`<path d="M6 21V9h12v12"/><path d="M5 9V4h3v2h2V4h4v2h2V4h3v5z" fill="currentColor"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/><path d="M4 21h16"/>`),
   book: svg(`<path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/>`),
   chevron: svg(`<path d="M9 5l7 7-7 7"/>`),
+  star: svg(`<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor"/>`),
 } as const;

@@ -7,7 +7,9 @@ import { loadProfile, portraits } from "./profile.js";
 import { loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { OnlineMatchMode } from "./modes/online.js";
-import { loadTowerBest, TowerRun } from "./modes/towerRun.js";
+import { TowerRun } from "./modes/towerRun.js";
+import { loadTowerBest } from "./modes/towerProgress.js";
+import { StoreScreen } from "./lobby/storeScreen.js";
 import { Connection, ConnectTimeout, type JoinRequest } from "./net/connection.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 
@@ -23,6 +25,7 @@ export class Session {
   private rules: RulesScreen | null = null;
   private towerRun: TowerRun | null = null;
   private profileScreen: CharacterSetup | null = null;
+  private store: StoreScreen | null = null;
   private matchMode: OnlineMatchMode | null = null;
   private pendingStart: MatchStartedMessage | null = null;
   private lastLobby: LobbyMessage | null = null;
@@ -38,6 +41,7 @@ export class Session {
       onTowerRun: () => this.playTowerRun(),
       onProfile: () => this.showProfile(),
       onRules: () => this.showRules(),
+      onStore: () => this.showStore(),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
       onSetTeamMode: (mode) => this.conn.setTeamMode(mode),
@@ -93,6 +97,17 @@ export class Session {
     this.profileScreen = new CharacterSetup(this.root, this.renderer, () => {
       this.profileScreen?.dispose();
       this.profileScreen = null;
+      this.showHome();
+    });
+  }
+
+  /** The full version's page; back returns to the home screen. */
+  private showStore(): void {
+    this.teardownMatch();
+    this.ui.hide();
+    this.store = new StoreScreen(this.root, this.renderer, loadProfile(), () => {
+      this.store?.dispose();
+      this.store = null;
       this.showHome();
     });
   }

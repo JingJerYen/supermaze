@@ -32,6 +32,17 @@ export type SkillKind = "sprint" | "eagleEye" | "amulet" | "lantern" | "timeStop
 
 export const SKILL_KINDS: readonly SkillKind[] = ["sprint", "eagleEye", "amulet", "lantern", "timeStop", "jump", "pierce", "warp", "supply"];
 
+/** Which of a player's skills: the first, or the second a full-version tower run allows. */
+export type SkillSlot = 1 | 2;
+
+/** Skills that run for a while; only one of them runs at a time. */
+const TIMED: readonly SkillKind[] = ["sprint", "eagleEye", "lantern", "pierce"];
+
+/** The skill `p` holds in `slot`. */
+export function skillIn(p: PlayerState, slot: SkillSlot): SkillKind | null {
+  return slot === 1 ? p.skill : p.skill2;
+}
+
 /** What casting a skill touches besides the caster: the world it lands in and the draws it makes. */
 export interface SkillWorld {
   grid: MapGrid;
@@ -61,14 +72,18 @@ export function canUseSkill(
   },
   p: PlayerState,
   grid: MapGrid,
+  slot: SkillSlot = 1,
 ): boolean {
-  if (!p.skill || !ctx.running || p.phase !== "maze") return false;
+  const kind = skillIn(p, slot);
+  if (!kind || !ctx.running || p.phase !== "maze") return false;
   if (ctx.tick < ctx.freezeUntilTick || ctx.tick < p.frozenUntilTick) return false;
   // A lantern in the light, a jump with nowhere to land, or a supply into a full bag would be wasted;
   // a ghost's bag is locked (section 13), so nothing goes in it either.
-  if (p.skill === "lantern" && ctx.lightsOn) return false;
-  if (p.skill === "jump" && !jumpTarget(grid, ctx.placeables, p)) return false;
-  if (p.skill === "supply" && (p.items.length >= ctx.capacity || isGhost(ctx.ghost, p))) return false;
+  if (kind === "lantern" && ctx.lightsOn) return false;
+  if (kind === "jump" && !jumpTarget(grid, ctx.placeables, p)) return false;
+  if (kind === "supply" && (p.items.length >= ctx.capacity || isGhost(ctx.ghost, p))) return false;
+  // With two skills, a timed one waits until the other timed one has run out (one effect at a time).
+  if (TIMED.includes(kind) && p.skillEffect && ctx.tick < p.skillEffect.untilTick) return false;
   return true;
 }
 
@@ -112,12 +127,18 @@ export function skillSpeedFactor(p: PlayerState, tick: Tick, tuning: Tuning): nu
  * tick everyone else stays frozen until (applied with `applyTimeStop` once
  * every player has moved this tick). The caller checks `canUseSkill` first.
  */
-export function castSkill(p: PlayerState, tick: Tick, tuning: Tuning, world: SkillWorld): { caster: PlayerState; event: SimEvent; timeStopUntil: Tick | null } {
-  const kind = p.skill as SkillKind;
+export function castSkill(
+  p: PlayerState,
+  tick: Tick,
+  tuning: Tuning,
+  world: SkillWorld,
+  slot: SkillSlot = 1,
+): { caster: PlayerState; event: SimEvent; timeStopUntil: Tick | null } {
+  const kind = skillIn(p, slot) as SkillKind;
   const s = tuning.skills;
   const ticks = (sec: number) => Math.round(sec * tuning.tickRate);
   const event: SimEvent = { type: "skillUsed", tick, playerId: p.id, skill: kind };
-  const caster: PlayerState = { ...p, skill: null };
+  const caster: PlayerState = slot === 1 ? { ...p, skill: null } : { ...p, skill2: null };
   switch (kind) {
     case "sprint":
       return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.sprint.durationSec) } }, event, timeStopUntil: null };
