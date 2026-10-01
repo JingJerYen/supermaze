@@ -35,21 +35,21 @@ describe("team assignment", () => {
 describe("start conditions", () => {
   it("teams mode needs equal teams; solo mode does not care", () => {
     const three = [p("1", "A"), p("2", "B"), p("3", "A")];
-    expect(startBlocker(three, teams, true)).toMatch(/人數必須相同/);
+    expect(startBlocker(three, teams, true)).toEqual({ kind: "teamsUneven" });
     expect(startBlocker(three, solo, true)).toBeNull();
-    expect(startBlocker([p("1", "A"), p("2", "A")], teams, true)).toMatch(/人數必須相同/);
+    expect(startBlocker([p("1", "A"), p("2", "A")], teams, true)).toEqual({ kind: "teamsUneven" });
     expect(startBlocker([p("1", "A"), p("2", "B"), p("3", "A"), p("4", "B")], teams, true)).toBeNull();
   });
 
   it("needs the minimum and (when required) everyone ready", () => {
-    expect(startBlocker([p("1", "A")], teams, true)).toMatch(/至少/);
-    expect(startBlocker([p("1", "A")], solo, true)).toMatch(/至少/);
-    expect(startBlocker([p("1", "A"), p("2", "B", false)], teams, true)).toMatch(/沒準備/);
+    expect(startBlocker([p("1", "A")], teams, true)).toMatchObject({ kind: "needPlayers" });
+    expect(startBlocker([p("1", "A")], solo, true)).toMatchObject({ kind: "needPlayers" });
+    expect(startBlocker([p("1", "A"), p("2", "B", false)], teams, true)).toEqual({ kind: "notReady" });
     expect(startBlocker([p("1", "A"), p("2", "B", false)], teams, false)).toBeNull();
   });
 
   it("ignores disconnected players when counting", () => {
-    expect(startBlocker([p("1", "A"), p("2", "B", true, false)], teams, true)).toMatch(/至少/);
+    expect(startBlocker([p("1", "A"), p("2", "B", true, false)], teams, true)).toMatchObject({ kind: "needPlayers" });
   });
 
   it("quick rooms count down as soon as both players are in, ready or not", () => {

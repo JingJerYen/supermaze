@@ -11,6 +11,7 @@ import {
   type FullStateMessage,
   type InputMessage,
   type LobbyMessage,
+  type LobbyNotice,
   type LobbyPhase,
   type LobbyPlayer,
   type MatchStartedMessage,
@@ -55,7 +56,7 @@ export class MazeRoom extends Room {
   private code: string | null = null;
   private phase: LobbyPhase = "lobby";
   private hostId = "";
-  private notice: string | null = null;
+  private notice: LobbyNotice | null = null;
   private countdownEndsAt: number | null = null;
   private resultsEndAt: number | null = null;
   private readonly lobby = new Map<string, LobbyPlayer>();
@@ -233,7 +234,7 @@ export class MazeRoom extends Room {
     if (this.mode !== "quick") return;
     this.quickWaitTimer = this.clock.setTimeout(() => {
       if (this.phase === "lobby" && [...this.lobby.values()].filter((p) => p.connected).length < this.rules.minPlayers) {
-        this.notice = "等了一分鐘還沒有其他玩家，建議先退出稍後再試";
+        this.notice = { kind: "quickTimeout" };
         this.broadcastLobby();
       }
     }, QUICK_WAIT_MS);
@@ -280,7 +281,7 @@ export class MazeRoom extends Room {
     const drawn = pickMap(this.pool, participants.length, seed);
     if (!drawn) {
       this.phase = "lobby";
-      this.notice = `沒有支援 ${participants.length} 人的地圖`;
+      this.notice = { kind: "noMap", n: participants.length };
       this.afterLobbyChange();
       return;
     }

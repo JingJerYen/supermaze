@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.js";
 import { ICONS } from "./homeIcons.js";
 
 /**
@@ -83,7 +84,15 @@ export const HOME_CSS = `
 `;
 
 /** App icon, the SUPER MAZE word mark and the Chinese name at the same size, top left of the home and online pages. */
-export const LOGO = `<div class="hm-logo"><img src="${ICON}" alt="" /><div class="hm-name"><div class="hm-title"><span>SUPER</span> <span>MAZE</span></div><div class="hm-title hm-zh"><span>迷宮</span><span>高塔</span></div></div></div>`;
+export const LOGO = `<div class="hm-logo"><img src="${ICON}" alt="" /><div class="hm-name"><div class="hm-title"><span>SUPER</span> <span>MAZE</span></div>${zhLine()}</div></div>`;
+
+/** The name under the word mark in two tones, like SUPER MAZE; nothing in a language without one. */
+function zhLine(): string {
+  const name = t("app.nameZh");
+  if (!name) return "";
+  const half = Math.ceil(name.length / 2);
+  return `<div class="hm-title hm-zh"><span>${name.slice(0, half)}</span><span>${name.slice(half)}</span></div>`;
+}
 
 export interface HomeView {
   /** The player's name and portrait (character setup). */

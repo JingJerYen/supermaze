@@ -1,4 +1,5 @@
-import { capName, type LobbyMessage, type TeamMode } from "@supermaze/protocol";
+import { capName, type LobbyMessage, type LobbyNotice, type TeamMode } from "@supermaze/protocol";
+import { t } from "../i18n/index.js";
 import { isPremium } from "../monetize/premium.js";
 import type { JoinRequest } from "../net/connection.js";
 import { HOME_CSS, homeHtml } from "./homeScreen.js";
@@ -222,7 +223,7 @@ export class LobbyUi {
         ${isHost && msg.mode === "private" ? `<button id="lb-start" ${msg.phase === "lobby" ? "" : "disabled"}>開始</button>` : ""}
         <button id="lb-leave" style="margin-left:auto">離開</button>
       </div>
-      <div class="lb-notice">${msg.notice ? escapeHtml(msg.notice) : ""}</div>`;
+      <div class="lb-notice">${msg.notice ? escapeHtml(noticeText(msg.notice)) : ""}</div>`;
     this.card.querySelector("#lb-ready")!.addEventListener("click", () => this.handlers.onReady(!me?.ready));
     this.card.querySelector("#lb-switch")?.addEventListener("click", () => this.handlers.onSwitchTeam());
     for (const b of this.card.querySelectorAll<HTMLButtonElement>(".lb-mode")) {
@@ -249,6 +250,11 @@ export class LobbyUi {
       this.tickTimer = null;
     }
   }
+}
+
+/** A server notice in this page's language. */
+function noticeText(notice: LobbyNotice): string {
+  return t(`lobby.notice.${notice.kind}`, "n" in notice ? { n: notice.n } : undefined);
 }
 
 function escapeHtml(s: string): string {
