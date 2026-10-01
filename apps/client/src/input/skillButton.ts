@@ -2,14 +2,17 @@
  * Small on-screen button that casts the floor's one-shot skill (tower run).
  * Same size as the discard button, to its left (the second skill, with the
  * full version, one further left); shown while a skill is held, dimmed while
- * it cannot be cast yet (a lantern in the light).
+ * it cannot be cast yet (a lantern in the light). Icon only, like the item
+ * buttons; the name and key are in the hover tooltip.
  */
 export class SkillButton {
   private readonly el: HTMLButtonElement;
   private pending = false;
   private shown = "";
+  private readonly key: string;
 
   constructor(parent: HTMLElement, slot: 1 | 2 = 1) {
+    this.key = slot === 1 ? "R" : "T";
     this.el = document.createElement("button");
     this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
     Object.assign(this.el.style, {
@@ -23,7 +26,7 @@ export class SkillButton {
       border: "2px solid rgba(255,255,255,0.7)",
       background: "rgba(110,70,200,0.85)",
       color: "#fff",
-      font: "bold 11px/1.1 system-ui, sans-serif",
+      font: "28px/1 system-ui, sans-serif",
       padding: "0",
       display: "none",
       zIndex: "6",
@@ -40,7 +43,7 @@ export class SkillButton {
     this.el.remove();
   }
 
-  /** Show `icon` and `label`, or hide with null; `ready` false dims it. */
+  /** Show `icon` (`label` goes in the tooltip), or hide with null; `ready` false dims it. */
   setSkill(skill: { icon: string; label: string; ready: boolean } | null): void {
     const key = skill ? `${skill.icon}|${skill.label}|${skill.ready}` : "";
     if (key === this.shown) return;
@@ -49,7 +52,9 @@ export class SkillButton {
       this.el.style.display = "none";
       return;
     }
-    this.el.innerHTML = `<span style="font-size:20px;display:block">${skill.icon}</span>${skill.label}`;
+    this.el.textContent = skill.icon;
+    this.el.title = `${skill.label}（${this.key}）`;
+    this.el.setAttribute("aria-label", skill.label);
     this.el.style.opacity = skill.ready ? "1" : "0.45";
     this.el.style.display = "block";
   }
