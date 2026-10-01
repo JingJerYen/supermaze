@@ -5,7 +5,7 @@
 
 ## 一、帳號與決定（你）
 
-- [ ] 決定 appId（例如 `com.<名字>.supermaze`）。第一次上傳到 Play Console 之後就不能再改。
+- [x] 決定 appId：`com.jjy.supermaze`（2026-10-01）。第一次上傳到 Play Console 之後就不能再改。
 - [ ] 註冊 Google Play 開發者帳號（一次 US$25），完成身分驗證。
 - [ ] **找 12 位以上的封閉測試者**：新的個人開發者帳號必須先做封閉測試，至少 12 人、連續 14 天，才能申請正式上架（以 Play Console 當時規定為準）。這一項最花時間，越早開始越好。
 - [ ] 註冊 AdMob，建立 App 與一個「獎勵廣告」單元，記下 App ID（`ca-app-pub-…~…`）與廣告單元 ID（`ca-app-pub-…/…`）。
@@ -23,16 +23,16 @@
 - [x] 上架版建置 `npm run build:release`：關閉連線對戰（顯示「即將推出」）、關閉 F3／F4 除錯工具。
 - [x] 隱私權政策頁 `apps/client/public/privacy.html`（中英文，GitHub Pages 部署後就有網址）。
 - [x] 商店頁文字與表單答案草稿 `docs/store-listing.md`。
-- [ ] `npx cap init` 與 `npx cap add android`（需要 appId，見第一節）。
-- [ ] 原生專案設定：AdMob App ID 寫進 `AndroidManifest.xml`、橫向與全螢幕、依語言的 App 名稱（`docs/android-apk-handoff.md` T1、T4 與第 7 節）。
-- [ ] App 圖示與啟動畫面（`@capacitor/assets`）。
+- [x] `capacitor.config.ts` 與原生專案 `apps/client/android/`（2026-10-01）。
+- [x] 原生專案設定：AdMob App ID（預設測試 ID，正式的寫在 `android/keystore.properties`）、release 簽名讀 `keystore.properties`、橫向、全螢幕、依語言的 App 名稱（2026-10-01，待實機確認）。
+- [x] App 圖示與啟動畫面（`scripts/make_app_assets.sh`，2026-10-01）。
+- [x] GitHub Actions 編譯 debug APK（`.github/workflows/android.yml`，2026-10-01）：從 Actions 頁下載 `super-maze-debug-apk`。
 
-## 三、在你的 WSL2 電腦上（你，或 Agent 在那台電腦上做）
+## 三、編譯與實機測試（你，或 Agent 在你的電腦上做）
 
-- [ ] 依 `docs/android-apk-handoff.md` 第 3 節裝好 JDK 與 Android SDK。
-- [ ] 建立上架用的簽名金鑰（keystore）。**備份到安全的地方，絕不放進 git**；弄丟就再也不能更新這個 App。
+- [ ] 從 GitHub Actions 的 android 工作下載 debug APK（或在 WSL2 依 `docs/android-apk-handoff.md` 第 3 節裝好 JDK 與 Android SDK 後 `npm run android:apk`），裝到手機跑一遍該文件第 5 節的驗收清單。debug 版一律是 Google 的測試廣告。
+- [ ] 建立上架用的簽名金鑰（keystore）。**備份到安全的地方，絕不放進 git**；弄丟就再也不能更新這個 App。在 `apps/client/android/keystore.properties`（不進 git）寫上 `storeFile`、`storePassword`、`keyAlias`、`keyPassword` 與 `admobAppId`。
 - [ ] 在 `apps/client/.env.production.local`（不進 git）填入 `VITE_ADMOB_REWARDED_ID` 與 `VITE_REVENUECAT_KEY`。
-- [ ] `npm run android:apk` 出 debug APK，裝到手機跑一遍 `docs/android-apk-handoff.md` 第 5 節的驗收清單。debug 版一律是 Google 的測試廣告。
 - [ ] 用授權測試人員的帳號實際買一次完整版（不會扣款），確認購買、恢復購買、重裝後自動恢復。
 - [ ] `npm run android:release` 出 AAB，上傳到 Play Console 的封閉測試軌道。
 
