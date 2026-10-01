@@ -1,5 +1,5 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
-import { availableAction, canDiscard, canUseSkill, isGhost, type SkillKind } from "@supermaze/sim";
+import { availableAction, canDiscard, canUseSkill, isGhost, skillIn, type SkillKind, type SkillSlot } from "@supermaze/sim";
 import { openingOf } from "../opening.js";
 import { teamColorIndex } from "../render/teamColors.js";
 
@@ -26,6 +26,8 @@ export interface HudModel {
   onTower: boolean;
   /** Skill the local player can still cast this floor; `ready` false while it cannot be cast yet. */
   mySkill: { kind: SkillKind; ready: boolean } | null;
+  /** The second skill (tower run, full version). */
+  mySkill2: { kind: SkillKind; ready: boolean } | null;
   /** A skill of the local player's at work: seconds left, or null for the amulet (up until it blocks). */
   skillStatus: { kind: SkillKind; sec: number | null } | null;
   /** The local player is frozen: seconds left and why; null otherwise. */
@@ -115,16 +117,8 @@ export function buildHudModel(
     action: me ? availableAction(grid, state, me, capacity) : null,
     canDiscard: !!me && canDiscard(state, me),
     onTower: me?.phase === "tower",
-    mySkill: me?.skill
-      ? {
-          kind: me.skill,
-          ready: canUseSkill(
-            { tick: state.tick, freezeUntilTick: state.freezeUntilTick, lightsOn: state.lightsOn, running, placeables: state.placeables, ghost: state.ghost, capacity },
-            me,
-            grid,
-          ),
-        }
-      : null,
+    mySkill: skillSlot(state, me, grid, running, capacity, 1),
+    mySkill2: skillSlot(state, me, grid, running, capacity, 2),
     skillStatus: running && me ? skillStatusOf(state, me, tickRate) : null,
     myFreeze: running && me && me.phase === "maze" && me.frozenUntilTick > state.tick ? { sec: (me.frozenUntilTick - state.tick) / tickRate, by: me.frozenBy } : null,
     // A round that ends mid-warning or mid-chase leaves the schedule where it
@@ -162,6 +156,14 @@ function warningSubject(state: SimulationState, me: PlayerState | undefined, nam
   if (!teamId) return null;
   if (!me || me.teamId !== teamId) return nameOfTeam(teamId);
   return state.teamMode === "solo" ? "你" : `${nameOfTeam(teamId)}（我方）`;
+}
+
+/** The skill `me` holds in `slot` and whether it can be cast now. */
+function skillSlot(state: SimulationState, me: PlayerState | undefined, grid: MapGrid, running: boolean, capacity: number, slot: SkillSlot): { kind: SkillKind; ready: boolean } | null {
+  const kind = me ? skillIn(me, slot) : null;
+  if (!me || !kind) return null;
+  const ctx = { tick: state.tick, freezeUntilTick: state.freezeUntilTick, lightsOn: state.lightsOn, running, placeables: state.placeables, ghost: state.ghost, capacity };
+  return { kind, ready: canUseSkill(ctx, me, grid, slot) };
 }
 
 function skillStatusOf(state: SimulationState, me: PlayerState, tickRate: number): { kind: SkillKind; sec: number | null } | null {

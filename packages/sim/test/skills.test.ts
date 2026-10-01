@@ -265,4 +265,23 @@ describe("skills", () => {
     expect(canUseSkill(ctx, full, MapGrid.fromMapData(MAP))).toBe(false);
     expect(canUseSkill(ctx, { ...full, items: [] }, MapGrid.fromMapData(MAP))).toBe(true);
   });
+
+  it("two skills (full version): each cast on its own input; one timed effect at a time", () => {
+    const s = new Simulation({
+      seed: 1,
+      map: MAP,
+      teamMode: "solo",
+      tuning: NO_FREEZE,
+      participants: [{ id: "a", teamId: "a", controller: "human", skill: "sprint", skill2: "pierce" }],
+    });
+    s.start();
+    const cast2: PlayerInput = { moveX: 0, moveY: 0, skill2: true };
+    expect(stepAll(s, 1, new Map([["a", cast]]))).toContainEqual(expect.objectContaining({ type: "skillUsed", skill: "sprint" }));
+    // Pierce waits while the sprint runs.
+    expect(stepAll(s, 1, new Map([["a", cast2]])).some((e) => e.type === "skillUsed")).toBe(false);
+    expect(s.getState().players["a"]).toMatchObject({ skill: null, skill2: "pierce" });
+    stepAll(s, DEFAULT_TUNING.skills.sprint.durationSec * T);
+    expect(stepAll(s, 1, new Map([["a", cast2]]))).toContainEqual(expect.objectContaining({ type: "skillUsed", skill: "pierce" }));
+    expect(s.getState().players["a"]).toMatchObject({ skill: null, skill2: null, skillEffect: { kind: "pierce" } });
+  });
 });

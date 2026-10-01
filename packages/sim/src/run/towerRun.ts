@@ -9,8 +9,10 @@ import type { PlayerId } from "../types.js";
  * Single-player tower run (CLAUDE.md section 4.1): floor after floor against
  * CPUs, each floor a normal solo round. You pass a floor when your score ranks
  * in the first half. A failed floor stops the run and shows the total; from
- * there you may continue to the next floor (the future price of a continue is
- * an ad or a payment) with the score carried on. Pure functions over a small
+ * there you may continue to the next floor (`towerRun.maxContinues` times a
+ * run; a continue costs an ad, or nothing with the full version) with the
+ * score carried on. A run starts on floor 1, or with the full version on any
+ * floor already reached (`startFloor`). Pure functions over a small
  * state, so the client only orchestrates and everything here is testable.
  */
 export interface TowerRunState {
@@ -26,6 +28,8 @@ export interface TowerRunState {
   status: "playing" | "stopped" | "cleared";
   /** Times the run was continued after a failed floor. */
   continues: number;
+  /** Floor the run started on: 1, or a later one picked with the full version. */
+  startFloor: number;
   history: FloorRecord[];
 }
 
@@ -63,8 +67,9 @@ export interface FloorOutcome {
   score: number;
 }
 
-export function startTowerRun(seed: number): TowerRunState {
-  return { seed: seed >>> 0, floor: 1, totalScore: 0, status: "playing", continues: 0, history: [] };
+export function startTowerRun(seed: number, startFloor = 1, tuning: Tuning = DEFAULT_TUNING): TowerRunState {
+  const floor = Math.min(Math.max(1, Math.floor(startFloor)), tuning.towerRun.floors.length);
+  return { seed: seed >>> 0, floor, totalScore: 0, status: "playing", continues: 0, startFloor: floor, history: [] };
 }
 
 /** Worst score rank that still passes: the first half, at least first. */
@@ -136,9 +141,14 @@ export function recordFloor(run: TowerRunState, plan: FloorPlan, outcome: FloorO
   return { ...run, history, totalScore, floor: run.floor + 1, status: outcome.passed ? "playing" : "stopped" };
 }
 
+/** Whether a failed run may still carry on: `towerRun.maxContinues` continues a run. */
+export function canContinue(run: TowerRunState, tuning: Tuning = DEFAULT_TUNING): boolean {
+  return run.status === "stopped" && run.continues < tuning.towerRun.maxContinues;
+}
+
 /** Carry on after a failed floor: the next floor, score kept. */
-export function continueRun(run: TowerRunState): TowerRunState {
-  if (run.status !== "stopped") return run;
+export function continueRun(run: TowerRunState, tuning: Tuning = DEFAULT_TUNING): TowerRunState {
+  if (!canContinue(run, tuning)) return run;
   return { ...run, status: "playing", continues: run.continues + 1 };
 }
 

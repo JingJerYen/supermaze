@@ -158,6 +158,7 @@ export class Match {
       this.input?.actionButton.setActive(model.status === "running" && !model.onTower);
       this.input?.discardButton.setVisible(model.canDiscard);
       this.input?.skillButton.setSkill(this.hud.skillButton(model));
+      this.input?.skillButton2.setSkill(this.hud.skillButton(model, 2));
       if (this.lastToastState !== s.to) {
         for (const t of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(t.text, t.big);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);

@@ -1,4 +1,5 @@
 import { capName, type LobbyMessage, type TeamMode } from "@supermaze/protocol";
+import { isPremium } from "../monetize/premium.js";
 import type { JoinRequest } from "../net/connection.js";
 import { HOME_CSS, homeHtml } from "./homeScreen.js";
 
@@ -38,6 +39,8 @@ export interface LobbyUiHandlers {
   onProfile(): void;
   /** Open the rules cards. */
   onRules(): void;
+  /** Open the full version's page. */
+  onStore(): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   /** Private-room host: two teams or everyone for themselves. */
@@ -99,7 +102,7 @@ export class LobbyUi {
     this.show();
     this.root.classList.add("home");
     this.card.className = "hm";
-    this.card.innerHTML = homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best });
+    this.card.innerHTML = homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium() });
     const name = () => capName(profile.name);
     const character = profile.character;
     const serverEl = this.card.querySelector<HTMLInputElement>("#lb-server")!;
@@ -108,6 +111,7 @@ export class LobbyUi {
     this.card.querySelector("#lb-quick")!.addEventListener("click", () => this.handlers.onJoin({ kind: "quick", name: name(), character, server: server() }));
     this.card.querySelector("#lb-create")!.addEventListener("click", () => this.handlers.onJoin({ kind: "create", name: name(), character, server: server() }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
+    this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
     this.card.querySelector("#lb-join")!.addEventListener("click", () => {

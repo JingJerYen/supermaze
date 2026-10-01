@@ -163,10 +163,11 @@ export class Hud {
     if (this.skill.textContent !== skillText) this.skill.textContent = skillText;
   }
 
-  /** The skill button's face, or null to hide it. */
-  skillButton(m: HudModel): { icon: string; label: string; ready: boolean } | null {
-    const info = m.mySkill ? SKILL_INFO[m.mySkill.kind] : undefined;
-    return m.mySkill && info ? { icon: info.icon, label: info.label, ready: m.mySkill.ready } : null;
+  /** A skill button's face (the first skill, or the second), or null to hide it. */
+  skillButton(m: HudModel, slot: 1 | 2 = 1): { icon: string; label: string; ready: boolean } | null {
+    const skill = slot === 1 ? m.mySkill : m.mySkill2;
+    const info = skill ? SKILL_INFO[skill.kind] : undefined;
+    return skill && info ? { icon: info.icon, label: info.label, ready: skill.ready } : null;
   }
 
   /** 3, 2, 1 during the start freeze, then "開始" for a moment; each number pops once. */

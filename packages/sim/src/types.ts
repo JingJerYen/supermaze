@@ -20,6 +20,8 @@ export interface Participant {
   name?: string;
   /** One-shot skill for this round (tower run only; section 4.1). CPUs never get one. */
   skill?: SkillKind | null;
+  /** A second one-shot skill (tower run, full version), cast on its own button. */
+  skill2?: SkillKind | null;
   /** Character model chosen by the player (client-side file name); purely cosmetic. */
   character?: string | null;
 }

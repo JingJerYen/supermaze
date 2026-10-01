@@ -42,7 +42,9 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
       if (b.items.length > a.items.length) out.push(`取得 ${ITEM_LABEL[b.items[b.items.length - 1] ?? ""] ?? "道具"}`);
       // A ghost catch has its own notice below; this one is for traps.
       if (b.frozenUntilTick > a.frozenUntilTick && b.frozenBy === "trap") out.push("踩到陷阱，被鐵籠罩住");
-      if (a.skill && !b.skill) out.push({ text: `${SKILL_INFO[a.skill]?.icon ?? ""} ${SKILL_INFO[a.skill]?.label ?? "技能"}！`, big: true });
+      for (const used of [a.skill && !b.skill ? a.skill : null, a.skill2 && !b.skill2 ? a.skill2 : null]) {
+        if (used) out.push({ text: `${SKILL_INFO[used]?.icon ?? ""} ${SKILL_INFO[used]?.label ?? "技能"}！`, big: true });
+      }
       if (a.shielded && !b.shielded) out.push({ text: b.protectedUntilTick > a.protectedUntilTick ? "🛡️ 護身符擋下了鬼" : "🛡️ 護身符擋下了陷阱", big: true });
       if (a.teleportImmunity === null && b.teleportImmunity !== null) out.push("傳送");
     }

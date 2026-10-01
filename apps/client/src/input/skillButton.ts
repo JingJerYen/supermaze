@@ -1,20 +1,21 @@
 /**
  * Small on-screen button that casts the floor's one-shot skill (tower run).
- * Same size as the discard button, to its left; shown while a skill is held,
- * dimmed while it cannot be cast yet (a lantern in the light).
+ * Same size as the discard button, to its left (the second skill, with the
+ * full version, one further left); shown while a skill is held, dimmed while
+ * it cannot be cast yet (a lantern in the light).
  */
 export class SkillButton {
   private readonly el: HTMLButtonElement;
   private pending = false;
   private shown = "";
 
-  constructor(parent: HTMLElement) {
+  constructor(parent: HTMLElement, slot: 1 | 2 = 1) {
     this.el = document.createElement("button");
     this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
     Object.assign(this.el.style, {
       position: "fixed",
-      // Left of the discard button, at its height.
-      right: "calc(max(24px, env(safe-area-inset-right)) + 104px)",
+      // Left of the discard button, at its height; the second skill one more step left.
+      right: `calc(max(24px, env(safe-area-inset-right)) + ${slot === 1 ? 104 : 168}px)`,
       bottom: "calc(max(24px, env(safe-area-inset-bottom)) + 96px)",
       width: "56px",
       height: "56px",

@@ -22,6 +22,8 @@ const CSS = `
 .sp-skills button b{display:block;font-size:14px}
 .sp-skills button small{color:#d8d0f0;font-size:11px}
 .sp-skills button.on{border-color:#c9a6ff;background:rgba(110,70,200,.6)}
+.sp-skills button{position:relative}
+.sp-skills button i{position:absolute;top:3px;right:5px;font-style:normal;font-size:10px;font-weight:700;background:#c9a6ff;color:#2a1460;border-radius:4px;padding:0 4px}
 .sp-skills button:disabled{cursor:default;opacity:.45}
 .sp-skills button.on:disabled{opacity:1}
 .sp-row{display:flex;gap:8px;align-items:center}
@@ -31,10 +33,20 @@ const CSS = `
 .sp-row button:disabled{opacity:.45;cursor:default}
 .sp-row button.owned,.sp-row button.owned:disabled{opacity:1;background:#2f7a45;border-color:#7fd08e;color:#fff}
 .sp-note{font-size:12px;color:#c9d2e3}
+.sp-floors{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.sp-floors button{height:38px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:rgba(70,110,200,.3);color:#fff;font-size:15px;font-weight:600;cursor:pointer;position:relative}
+.sp-floors button.on{border-color:#ffd23f;background:rgba(255,210,63,.3)}
+.sp-floors button.top::after{content:"最高";position:absolute;top:-7px;right:-4px;font-size:9px;font-weight:600;background:#ffd23f;color:#412402;border-radius:4px;padding:0 3px}
+.sp-floors button:disabled{opacity:.35;cursor:default;font-size:12px}
+.sp-perks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sp-perks li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.3)}
+.sp-perks b{font-size:15px;font-weight:600}
+.sp-perks span{font-size:12px;color:#d8dbe6}
 .sp-spacer{flex:1}
 /* Phones in landscape: a narrower panel so the character on the right stays clear; portraits keep two rows of six, skills two rows of three. */
 @media (max-height:520px){.sp{width:min(320px,44vw);padding:10px 12px;gap:6px}.sp h2{font-size:17px}.sp-chars{gap:4px}
-  .sp-skills button{padding:4px 5px}.sp-skills button small{display:none}.sp-row button{height:36px}}
+  .sp-skills button{padding:4px 5px}.sp-skills button small{display:none}.sp-row button{height:36px}
+  .sp-floors{gap:4px}.sp-floors button{height:30px;font-size:13px}.sp-perks{gap:5px}.sp-perks li{padding:5px 8px}.sp-perks b{font-size:13px}.sp-perks span{font-size:11px}}
 `;
 
 /** A fresh panel on `root`, with the shared styles installed once. */

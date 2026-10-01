@@ -161,7 +161,12 @@ export const CLIENT_TUNING = {
     soloSelfColor: 0xffd23f,
     soloOtherColor: 0xff6b6b,
   },
-  /** The tower run's pierce skill: the character turns see-through while it lasts. */
+  /** Ads and the full version (CLAUDE.md section 4.1). */
+  monetize: {
+    /** Seconds the placeholder rewarded ad runs before the reward is earned; the real ad's length is the network's. */
+    placeholderAdSec: 5,
+  },
+    /** The tower run's pierce skill: the character turns see-through while it lasts. */
   pierce: {
     opacity: 0.45,
   },

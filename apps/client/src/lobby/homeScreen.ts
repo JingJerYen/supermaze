@@ -59,9 +59,11 @@ export const HOME_CSS = `
 .hm-blue .t b{font-size:1.8em;font-weight:900;letter-spacing:.1em}
 .hm-blue .t small{font-size:.95em;font-weight:700;opacity:.85}
 .hm-blue>svg:last-child{margin-left:auto;font-size:1.8em;margin-right:.1em}
-.hm-rules{position:fixed;z-index:1;top:max(1em,env(safe-area-inset-top));right:max(1.2em,env(safe-area-inset-right));font-size:clamp(11px,1.9vh,17px)}
+.hm-rules{position:fixed;z-index:1;top:max(1em,env(safe-area-inset-top));right:max(1.2em,env(safe-area-inset-right));font-size:clamp(11px,1.9vh,17px);display:flex;flex-direction:column;align-items:stretch;gap:.5em}
 .lb .hm-rules button{--bh:2.8em;${plate("stone")};color:#fff;font-size:1.05em;font-weight:700;padding:0 .3em;display:flex;align-items:center;gap:.4em;cursor:pointer}
 .hm-rules svg{font-size:1.3em;color:#cfe0ff}
+.hm-rules #lb-store svg{color:#ffd23f}
+.hm-rules #lb-store.owned{color:#ffe08a}
 @media (max-height:520px){
   .hm{font-size:clamp(10px,3.1vh,14px);gap:.5em;padding-top:.8em;padding-bottom:.8em;width:min(40em,58vw)}
   .hm-logo img{width:2.8em;height:2.8em;border-radius:.6em}
@@ -83,6 +85,8 @@ export interface HomeView {
   portrait?: string | undefined;
   error?: string | undefined;
   best?: { score: number; floor: number } | null | undefined;
+  /** Owns the full version: the store button says so. */
+  premium?: boolean;
 }
 
 export function homeHtml(v: HomeView): string {
@@ -106,7 +110,10 @@ export function homeHtml(v: HomeView): string {
       <div class="hm-or">或</div>
       <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>征服高塔</b><small>單人挑戰・${best}</small></span>${ICONS.chevron}</button>
     </div>
-    <div class="hm-rules"><button id="lb-rules">${ICONS.book}遊戲規則</button></div>`;
+    <div class="hm-rules">
+      <button id="lb-rules">${ICONS.book}遊戲規則</button>
+      <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? "已擁有完整版" : "完整版"}</button>
+    </div>`;
 }
 
 function escapeHtml(s: string): string {

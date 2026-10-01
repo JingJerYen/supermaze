@@ -158,6 +158,8 @@ export interface Tuning {
      * you rank within the first max(1, floor(participants x passShare)).
      */
     passShare: number;
+    /** Continues after a failed floor, per run. */
+    maxContinues: number;
     /** Bottom floor first; the run is cleared after the last one. */
     floors: TowerFloor[];
   };
