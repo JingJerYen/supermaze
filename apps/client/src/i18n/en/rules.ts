@@ -61,8 +61,8 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.scoring.line2": "Free-for-All: the highest score when the round ends wins.",
   "rules.scoring.line3": "The round ends when only one person hasn't climbed, or when time runs out. No climb, no placement points.",
 
-  "rules.towerRun.title": "Super Maze (solo)",
-  "rules.towerRun.line1": "Super Maze is the solo mode: {floors} floors, each a race against CPUs on score. It gets harder as you go up.",
+  "rules.towerRun.title": "Solo Mode",
+  "rules.towerRun.line1": "Solo mode is a {floors}-floor climb: each floor is a race against CPUs on score. It gets harder as you go up.",
   "rules.towerRun.line2": "The floor ends when you climb. Score in the top half to advance; floor scores add up to your total.",
   "rules.towerRun.line3": "Pick a skill before each floor and use it once with R or the skill button. Miss the cut and you can Continue, up to 2 times.",
 
