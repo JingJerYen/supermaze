@@ -7,3 +7,9 @@ coverage/
 .claude/worktrees/
 tools/map-drafter/out/
 __pycache__/
+
+# Local build settings with account keys (AdMob, RevenueCat); never commit
+*.local
+# Android signing keys
+*.keystore
+*.jks

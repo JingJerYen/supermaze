@@ -1,6 +1,6 @@
 # 交接：用 Capacitor 包成 Android APK（第一階段）
 
-> 建立於 2026-09-29。接手者（人或 AI Agent）請先讀完根目錄的 `CLAUDE.md`，特別是第 15 節（工作規則）、
+> 建立於 2026-09-29。2026-10-01 更新：已在雲端先做好不需要 Android SDK 的部分（Capacitor 與外掛的 JS 端、T3、T5、T10、廣告與付款的程式、上架版建置指令），各步驟標註「已完成」；上架的整體清單在 `docs/release-checklist.md`。接手者（人或 AI Agent）請先讀完根目錄的 `CLAUDE.md`，特別是第 15 節（工作規則）、
 > 第 17 節（技術決策）與第 4.1 節（爬塔挑戰）。本文件只描述這一階段要做的事；做完後把結果與新決策寫回 `CLAUDE.md`。
 
 ## 1. 目標與範圍
@@ -16,7 +16,7 @@
 - 記錄實機型號與遊戲中的 fps（量法見 T8），寫進 `CLAUDE.md` 第 17.5 節。
 - 網頁版與 GitHub Pages 部署不受影響；`npm run typecheck`、`npm test` 通過。
 
-**不在這一階段**：正式簽章與上架、iOS、廣告與付費（`continueGate()` 維持直接放行）、正式的線上主機。
+**不在這一階段**：正式簽章與上架、iOS、正式的線上主機。廣告與付款的程式已寫好（`apps/client/src/monetize/`），debug APK 一律顯示 Google 的測試廣告；沒填 RevenueCat 金鑰時購買會顯示「暫時連不上商店」。
 
 ## 2. 已經定案的背景（不要重新討論）
 
@@ -64,25 +64,35 @@
 
 ### T1 加入 Capacitor
 
-- 在 `apps/client` 安裝：`@capacitor/core`（dependency），`@capacitor/cli`、`@capacitor/android`（devDependency），用 workspace 的方式裝（`npm i -w @supermaze/client ...`）。
+- **已完成（2026-10-01）**：`apps/client` 已裝好 `@capacitor/core`、`@capacitor/app`、`@capacitor-community/admob`、`@revenuecat/purchases-capacitor`（dependency）與 `@capacitor/cli`、`@capacitor/android`（devDependency），都是 Capacitor 8 系列；`npm ci` 就會裝好。
 - 在 `apps/client` 執行 `npx cap init`，`webDir` 設 `dist`。**appId（例如 `com.xxx.supermaze`）上架後不能改，先問使用者**（見第 7 節）。設定檔用 `capacitor.config.ts`。
 - `npx cap add android` 產生 `apps/client/android/`，**原生專案要進 git**（Capacitor 的建議做法；它自己產生的 `.gitignore` 已排除 build 產物與 `local.properties`）。
-- 用到的外掛（見後續步驟）：`@capacitor/app`（返回鍵）、`@capacitor/status-bar` 或自己寫幾行 Java（全螢幕）。不要引入第 17 節以外的遊戲引擎或框架。
+- 外掛的原生部分由 `npx cap sync android` 自動加進原生專案。全螢幕另用 `@capacitor/status-bar` 或自己寫幾行 Java。不要引入第 17 節以外的遊戲引擎或框架。
+- **AdMob 的 App ID 一定要寫進 `android/app/src/main/AndroidManifest.xml`**，否則 App 一啟動就閃退：在 `<application>` 裡加
+  ```xml
+  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"/>
+  ```
+  還沒有 AdMob 帳號時，可先填 Google 公布的測試 App ID `ca-app-pub-3940256099942544~3347511713`，上架前換成自己的。
+- 廣告單元與 RevenueCat 金鑰是建置變數，寫在 `apps/client/.env.production.local`（已被 `.gitignore` 排除）：`VITE_ADMOB_REWARDED_ID=ca-app-pub-…/…`、`VITE_REVENUECAT_KEY=goog_…`。說明在 `apps/client/src/monetize/config.ts`。
 
 ### T2 打包指令
 
-在 `apps/client/package.json` 加：
+**已完成（2026-10-01）**：`apps/client/package.json` 已有
 
 ```json
+"build:release": "VITE_RELEASE=1 VITE_ONLINE=off vite build",
 "android:sync": "vite build && cap sync android",
-"android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
+"android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+"android:release": "npm run build:release && cap sync android && cd android && ./gradlew bundleRelease"
 ```
+
+根目錄也有轉呼叫的 `npm run android:apk`、`npm run android:release`、`npm run build:release`。`android:release` 需要先設定好簽名（第 6 節）。
 
 產出在 `apps/client/android/app/build/outputs/apk/debug/app-debug.apk`。根目錄 `package.json` 可再加一個轉呼叫的 `android:apk`，與 `build:client` 同樣寫法。確認 `BASE_PATH` 沒被設定（要是 `/`）。正式上架的建置要加 `VITE_ONLINE=off`（例如 `VITE_ONLINE=off vite build`），首頁的「連線對戰」會顯示「即將推出」（CLAUDE.md 第 2.1 節）；試玩用的 debug APK 可以不加，保留連線。
 
 ### T3 判斷是否在 App 內
 
-用 `Capacitor.isNativePlatform()`（`@capacitor/core`）集中在一個小模組，例如 `apps/client/src/platform.ts`，其他地方只 import 它。網頁版行為一律不變。
+**已完成（2026-10-01）**：`apps/client/src/platform.ts` 的 `isNativeApp()`；`main.ts` 在 App 內已不呼叫 `fullscreenOnFirstTouch()`（T4 的第一點）。
 
 ### T4 橫向與全螢幕
 
@@ -93,7 +103,7 @@
 
 ### T5 Android 返回鍵
 
-用 `@capacitor/app` 的 `backButton` 事件，預設行為（直接離開 App）要改掉：
+**已完成（2026-10-01，待實機驗證）**：`apps/client/src/native/backButton.ts`。做法是每個畫面把代表「返回」的按鈕標上 `data-back`，返回鍵按下最上層、看得到的那一個；首頁沒有，就離開 App。已在瀏覽器確認各畫面挑到的按鈕正確。原本的需求如下：
 
 - 對局中：等同畫面右側 ✕ 的兩段式退出（`apps/client/src/hud/systemButtons.ts`，三秒內再按一次才確認），不要一按就丟掉整個挑戰。
 - 規則畫面：回首頁。
@@ -121,7 +131,7 @@
 
 ### T10 除錯入口
 
-F3、F4 只有鍵盤觸發，手機上碰不到，第一階段可保留；`?local`、`?rules`、`?map=` 這類網址參數在 App 內無法輸入，也不影響。正式上架前再統一移除（`CLAUDE.md` 第 17.1 節已註明 F4 上線前移除）。
+**已完成（2026-10-01）**：上架版建置（`npm run build:release`）關閉 F3、F4，網頁版與 debug APK 照常可用（`platform.ts` 的 `DEV_TOOLS`）。原本的說明：F3、F4 只有鍵盤觸發，手機上碰不到，第一階段可保留；`?local`、`?rules`、`?map=` 這類網址參數在 App 內無法輸入，也不影響。正式上架前再統一移除（`CLAUDE.md` 第 17.1 節已註明 F4 上線前移除）。
 
 ## 5. 手機驗收清單
 
