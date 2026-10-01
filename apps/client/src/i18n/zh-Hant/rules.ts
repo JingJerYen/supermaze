@@ -47,7 +47,7 @@ export const rules = {
 
   "rules.lights.title": "電燈開關與黑暗",
   "rules.lights.line1": "站在發光的開關格上按動作鍵，整張地圖所有人一起關燈或開燈。",
-  "rules.lights.line2": "黑暗中只看得到自己周圍一小圈，鑰匙的光柱仍然看得見。",
+  "rules.lights.line2": "黑暗中只看得到周圍一小圈，小地圖也看不到別人，適合躲鬼、甩開對手；CPU 的視野也會變小。鑰匙的光柱仍然看得見。",
   "rules.lights.line3": "每個開關只能用一次。要再切換，得去找下一個還亮著的開關。",
 
   "rules.ghost.title": "鬼抓人",

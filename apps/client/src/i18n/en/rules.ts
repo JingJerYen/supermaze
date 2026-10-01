@@ -48,7 +48,7 @@ export const rules: Record<keyof typeof zh, string> = {
 
   "rules.lights.title": "Light switches and darkness",
   "rules.lights.line1": "Stand on a glowing switch tile and press the action button to turn the lights off or on for everyone.",
-  "rules.lights.line2": "In darkness you only see a small circle around you, but the light beams over keys still show.",
+  "rules.lights.line2": "Darkness shrinks everyone's view and hides others on the minimap: dodge ghosts, lose rivals. CPUs see less too. Key beams still show.",
   "rules.lights.line3": "Each switch works once. To switch again, find another switch that is still lit.",
 
   "rules.ghost.title": "Ghost Tag",
