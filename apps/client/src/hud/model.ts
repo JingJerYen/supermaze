@@ -13,8 +13,6 @@ export interface HudModel {
   status: SimulationState["status"];
   /** Everyone for themselves: rosters carry no team headers and labels are player names. */
   solo: boolean;
-  climbed: number;
-  total: number;
   lightsOn: boolean;
   myTeam: TeamRow | null;
   otherTeams: TeamRow[];
@@ -107,8 +105,6 @@ export function buildHudModel(
     introSec: opening.introLeftSec,
     status: state.status,
     solo,
-    climbed: state.towerArrivals.length,
-    total: Object.keys(state.players).length,
     lightsOn: state.lightsOn,
     myTeam: teams.find((t) => t.teamId === me?.teamId) ?? null,
     otherTeams: teams.filter((t) => t.teamId !== me?.teamId),

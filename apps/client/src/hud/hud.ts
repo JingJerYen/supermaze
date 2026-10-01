@@ -27,6 +27,7 @@ const CSS = `
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
 @keyframes hud-pulse{50%{transform:scale(1.08)}}
 .hud-sub{font-size:12px;color:#c9d2e3;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.hud-sub:empty{display:none}
 .hud-caption{font-size:12px;color:#ffe08a;margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
 .hud-caption:empty{display:none}
 .hud-ghost{margin-top:6px;font-size:14px;font-weight:500;padding:4px 12px;border-radius:14px;display:none;text-shadow:none}
@@ -131,7 +132,8 @@ export class Hud {
     this.time.textContent = m.status === "lobby" ? "--:--" : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     this.time.classList.toggle("urgent", m.status === "running" && s <= 30);
     this.updateGo(m);
-    this.sub.textContent = m.status === "finished" ? "回合結束" : `已登塔 ${m.climbed} / ${m.total}`;
+    const sub = m.status === "finished" ? "回合結束" : "";
+    if (this.sub.textContent !== sub) this.sub.textContent = sub;
 
     const g = m.ghost;
     const gs = Math.ceil(g.secondsLeft);
