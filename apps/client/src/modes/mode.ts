@@ -31,6 +31,8 @@ export interface GameMode {
   hud(): Record<string, string | number>;
   /** Small line under the clock, e.g. the tower run's floor and total; null for none. */
   caption?(): string | null;
+  /** Big toasts the mode wants shown now (the tower run's achievements); each is returned once. */
+  notices?(): string[];
   /** Large centre-screen message (connection problems etc.), or null when there is nothing to say. */
   banner?(): string | null;
   /** What the results screen offers once the round is finished. */

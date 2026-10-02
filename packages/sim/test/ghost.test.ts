@@ -252,7 +252,7 @@ describe("stealing keys", () => {
 describe("who goes next", () => {
   const player = (id: string, teamId: string, keyId: string | null) => ({ id, teamId, keyId, phase: "maze" }) as unknown as PlayerState;
   const players = { a: player("a", "A", "k0"), b: player("b", "B", null) };
-  const state = (counts: Record<string, number>, lastTeamId: string | null): GhostState => ({ phase: "idle", teamId: null, phaseEndsAtTick: 0, counts, lastTeamId, intervalTicks: 1 });
+  const state = (counts: Record<string, number>, lastTeamId: string | null): GhostState => ({ phase: "idle", teamId: null, huntedTeamId: null, phaseEndsAtTick: 0, counts, lastTeamId, intervalTicks: 1 });
 
   it("fewest turns first; then the side with fewer keys, even twice in a row; then not the last; then id order", () => {
     expect(chooseGhostTeam(state({ A: 1, B: 0 }, "A"), players)).toBe("B");
@@ -263,3 +263,54 @@ describe("who goes next", () => {
     expect(chooseGhostTeam(state({}, null), even)).toBe("A"); // nothing to tell them apart: id order
   });
 });
+
+describe("ghost pack (tower run special floor)", () => {
+  const three = [
+    { id: "me", teamId: "me", controller: "human" as const },
+    { id: "c1", teamId: "c1", controller: "cpu" as const },
+    { id: "c2", teamId: "c2", controller: "cpu" as const },
+  ];
+  // Enough keys for six, away from the tower.
+  const keys = [[7, 6], [1, 1], [1, 2], [1, 5], [7, 5], [7, 4]].map(([x, y]) => ({ x: x!, y: y!, layer: "road" as const }));
+  const PACK_MAP: MapData = { ...MAP, spawns: { ...MAP.spawns, keys } };
+  const packSim = () => {
+    const sim = new Simulation({ seed: 3, map: PACK_MAP, participants: three, tuning: FAST, teamMode: "solo", ghostPack: "me" });
+    sim.start();
+    return sim;
+  };
+
+  it("every event turns everyone but the hunted player into ghosts at once", () => {
+    const sim = packSim();
+    let ev = run(sim, T);
+    expect(ev).toContainEqual(expect.objectContaining({ type: "ghostWarning", teamId: null }));
+    ev = run(sim, T);
+    expect(ev).toContainEqual(expect.objectContaining({ type: "ghostStarted", teamId: null }));
+    const st = sim.getState();
+    expect(sim.isGhost(st.players["me"]!)).toBe(false);
+    expect(sim.isGhost(st.players["c1"]!)).toBe(true);
+    expect(sim.isGhost(st.players["c2"]!)).toBe(true);
+    // Again on the next event: no rotation.
+    run(sim, 2 * T + T + T);
+    expect(sim.getState().ghost.phase).toBe("active");
+    expect(sim.isGhost(sim.getState().players["me"]!)).toBe(false);
+  });
+
+  it("ghosts on the same tile never catch each other; they catch the hunted player", () => {
+    // Six players on the tiny map's four entries: the fifth lands on me, the sixth on the first CPU.
+    const six = ["me", "c1", "c2", "c3", "c4", "c5"].map((id) => ({ id, teamId: id, controller: (id === "me" ? "human" : "cpu") as "human" | "cpu" }));
+    const sim = new Simulation({ seed: 3, map: PACK_MAP, participants: six, tuning: FAST, teamMode: "solo", ghostPack: "me" });
+    sim.start();
+    const at = (id: string) => sim.getState().players[id]!.mover.from;
+    expect(at("c4")).toEqual(at("me"));
+    expect(at("c5")).toEqual(at("c1"));
+    const caught = run(sim, 2 * T + 1).flatMap((e) => (e.type === "playerCaught" ? [e.runnerId] : []));
+    expect(caught).toEqual(["me"]);
+  });
+
+  it("is ignored outside solo rounds", () => {
+    const sim = new Simulation({ seed: 3, map: MAP, participants: two, tuning: FAST, ghostPack: "a" });
+    sim.start();
+    expect(sim.getState().ghost.huntedTeamId).toBeNull();
+  });
+});
+

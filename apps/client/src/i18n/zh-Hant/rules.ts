@@ -88,6 +88,8 @@ export const rules = {
   "rules.table.map.easy": "簡單地圖",
   "rules.table.map.medium": "中等地圖",
   "rules.table.map.hard": "困難地圖",
+  "rules.table.specialFloors": "第 {floors} 層",
+  "rules.table.floorSep": "、",
 
   // The rules screen around the cards.
   "rules.screen.page": "遊戲規則 {page} / {total}",

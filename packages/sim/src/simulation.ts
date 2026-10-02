@@ -58,6 +58,17 @@ export interface SimulationOptions {
    * for the others (the tower run ends a floor when you climb; section 4.1).
    */
   endWhenClimbed?: PlayerId;
+  /**
+   * Start the round with the lights off (tower run special floor; section 4.1).
+   * The switches are the map's usual ones, so with an even count the last one
+   * puts the lights out for good: such a floor may end dark.
+   */
+  startDark?: boolean;
+  /**
+   * Solo only: every ghost event turns everyone else in the maze into ghosts
+   * at once, all hunting this player (tower run special floor; section 4.1).
+   */
+  ghostPack?: PlayerId;
 }
 
 export interface PlayerState extends Participant {
@@ -111,7 +122,7 @@ export interface SimulationState {
   keys: Record<string, KeyState>;
   /** Player ids in the order they reached the tower top. */
   towerArrivals: PlayerId[];
-  /** Map-wide lighting (CLAUDE.md section 8). Starts lit. */
+  /** Map-wide lighting (CLAUDE.md section 8). Starts lit, or dark on a tower run special floor. */
   lightsOn: boolean;
   switches: Record<string, LightSwitchState>;
   /** Unopened boxes; always participants x perParticipant while running (section 9). */
@@ -149,6 +160,8 @@ export class Simulation {
   private readonly timeLimitOverrideSec: number | undefined;
   private readonly teamMode: TeamMode;
   private readonly endWhenClimbed: PlayerId | undefined;
+  private readonly startDark: boolean;
+  private readonly ghostPack: PlayerId | undefined;
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
   private nextNodeIndex = 0;
@@ -172,6 +185,8 @@ export class Simulation {
 
     this.teamMode = options.teamMode ?? "teams";
     this.endWhenClimbed = this.teamMode === "solo" ? options.endWhenClimbed : undefined;
+    this.startDark = options.startDark ?? false;
+    this.ghostPack = this.teamMode === "solo" ? options.ghostPack : undefined;
     this.state = {
       tick: 0,
       status: "lobby",
@@ -187,7 +202,7 @@ export class Simulation {
       boxes: {},
       placeables: {},
       nodes: {},
-      ghost: { phase: "idle", teamId: null, phaseEndsAtTick: 0, counts: {}, lastTeamId: null, intervalTicks: 0 },
+      ghost: { phase: "idle", teamId: null, huntedTeamId: null, phaseEndsAtTick: 0, counts: {}, lastTeamId: null, intervalTicks: 0 },
       teamClimbTicks: {},
       winnerTeamId: null,
       result: null,
@@ -280,7 +295,9 @@ export class Simulation {
       endsAtTick: clockStart + this.timeLimitTicks(),
       freezeUntilTick: clockStart + Math.round(this.tuning.round.startFreezeSec * this.tuning.tickRate),
       switches,
-      ghost: initialGhostState(clockStart, this.tuning, this.timeLimitTicks()),
+      lightsOn: !this.startDark,
+      // Solo: the hunted player's team is their own id.
+      ghost: initialGhostState(clockStart, this.tuning, this.timeLimitTicks(), this.ghostPack ?? null),
     };
     this.spawnKeys(count);
     // The map's own box count when it has one, otherwise so many per participant (section 9).
@@ -515,7 +532,8 @@ export class Simulation {
       for (const g of ghosts) {
         const gp = moverPosition(g.mover);
         for (const r of Object.values(players).sort((a, b) => a.id.localeCompare(b.id))) {
-          if (r.teamId === g.teamId || r.phase !== "maze" || tick < r.protectedUntilTick) continue;
+          // Ghosts never catch ghosts (in a pack round they are all on different teams).
+          if (r.phase !== "maze" || isGhost(ghost, r) || tick < r.protectedUntilTick) continue;
           if (r.mover.from.layer !== g.mover.from.layer) continue;
           const rp = moverPosition(r.mover);
           if (Math.hypot(rp.x - gp.x, rp.y - gp.y) > radius) continue;

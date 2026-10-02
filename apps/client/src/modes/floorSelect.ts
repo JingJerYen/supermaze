@@ -4,6 +4,7 @@ import { t } from "../i18n/index.js";
 import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
+import { floorModLines } from "./floorMods.js";
 
 /**
  * Full version only: pick the floor a tower run starts on, any floor up to
@@ -53,7 +54,7 @@ export class FloorSelect {
       <h2>${t("modes.select.title")}</h2>
       <div class="sp-sub">${t("modes.select.sub")}</div>
       <div class="sp-floors">${buttons}</div>
-      <div class="sp-note">${t("modes.select.floorInfo", { n: this.picked, difficulty: t(`modes.select.${f.map}`), cpus: f.cpus, pass: passRank(players) })}${
+      <div class="sp-note">${t("modes.select.floorInfo", { n: this.picked, difficulty: t(`modes.select.${f.map}`), cpus: f.cpus, pass: passRank(players) })}${floorModLines(f.mods).map((l) => `<br>${l}`).join("")}${
         this.picked > 1 ? `<br>${t("modes.select.noBest")}` : ""
       }</div>
       <div class="sp-spacer"></div>

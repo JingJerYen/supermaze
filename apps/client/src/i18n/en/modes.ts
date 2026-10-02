@@ -45,6 +45,11 @@ export const modes: Record<keyof typeof zh, string> = {
 
   "modes.tower.noMap": "No map available, so the game can't start",
   "modes.tower.caption": "Floor {floor}/{floors} · Advance: top {pass} · Total {score}",
+  "modes.tower.captionMods": "{caption} · {mods}",
+  "modes.floor.dark.tag": "🌑 Dark",
+  "modes.floor.dark.line": "🌑 Dark floor: the lights start off",
+  "modes.floor.ghostPack.tag": "👻 Pack",
+  "modes.floor.ghostPack.line": "👻 Ghost pack: every rival turns ghost at once",
   "modes.tower.total": "Total {score} (reached Floor {floor})",
   "modes.tower.newRecord": "New record!",
   "modes.tower.best": "Best: total {score} (reached Floor {floor})",

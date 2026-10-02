@@ -12,6 +12,7 @@ import { OnlineMatchMode } from "./modes/online.js";
 import { TowerRun } from "./modes/towerRun.js";
 import { loadTowerBest } from "./modes/towerProgress.js";
 import { StoreScreen } from "./lobby/storeScreen.js";
+import { AchievementsScreen } from "./lobby/achievementsScreen.js";
 import { Connection, ConnectTimeout, type JoinRequest } from "./net/connection.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 
@@ -28,6 +29,7 @@ export class Session {
   private towerRun: TowerRun | null = null;
   private profileScreen: CharacterSetup | null = null;
   private store: StoreScreen | null = null;
+  private achievements: AchievementsScreen | null = null;
   private matchMode: OnlineMatchMode | null = null;
   private pendingStart: MatchStartedMessage | null = null;
   private lastLobby: LobbyMessage | null = null;
@@ -46,6 +48,7 @@ export class Session {
       onProfile: () => this.showProfile(),
       onRules: () => this.showRules(),
       onStore: () => this.showStore(),
+      onAchievements: () => this.showAchievements(),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
       onSetTeamMode: (mode) => this.conn.setTeamMode(mode),
@@ -116,6 +119,17 @@ export class Session {
     this.store = new StoreScreen(this.root, this.renderer, loadProfile(), () => {
       this.store?.dispose();
       this.store = null;
+      this.showHome();
+    });
+  }
+
+  /** Every achievement, lit or not; back returns to the home screen. */
+  private showAchievements(): void {
+    this.teardownMatch();
+    this.ui.hide();
+    this.achievements = new AchievementsScreen(this.root, this.renderer, loadProfile(), () => {
+      this.achievements?.dispose();
+      this.achievements = null;
       this.showHome();
     });
   }

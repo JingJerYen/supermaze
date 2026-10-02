@@ -1,4 +1,4 @@
-import type { CpuDifficulty, TowerFloor, Tuning } from "./types.js";
+import type { CpuDifficulty, FloorMod, TowerFloor, Tuning } from "./types.js";
 
 /**
  * Initial playtest values. Nothing here is final; see CLAUDE.md sections 3, 8-13.
@@ -102,28 +102,29 @@ export const DEFAULT_TUNING: Tuning = {
   towerRun: {
     passShare: 0.5,
     maxContinues: 2,
-    // map difficulty, CPUs, CPU vision (tiles), CPU speed. CPU counts are odd so the
+    // map difficulty, CPUs, CPU vision (tiles), CPU speed, special rules. CPU counts are odd so the
     // participants are even and "the first half" is exact. Medium maps take at most 4.
+    // Special floors: every third from 4, lights off and the ghost pack in turn.
     floors: floors([
       ["easy", 1, 2, 0.45],
       ["easy", 1, 2, 0.5],
       ["easy", 3, 2, 0.45],
-      ["easy", 3, 3, 0.5],
+      ["easy", 3, 3, 0.5, ["dark"]],
       ["medium", 1, 3, 0.5],
       ["medium", 3, 3, 0.5],
-      ["medium", 3, 3, 0.55],
+      ["medium", 3, 3, 0.55, ["ghostPack"]],
       ["hard", 1, 3, 0.5],
       ["hard", 1, 3, 0.55],
-      ["hard", 3, 3, 0.55],
+      ["hard", 3, 3, 0.55, ["dark"]],
       ["hard", 3, 4, 0.55],
       ["hard", 3, 4, 0.6],
-      ["hard", 5, 4, 0.55],
+      ["hard", 5, 4, 0.55, ["ghostPack"]],
       ["hard", 5, 4, 0.6],
       ["hard", 3, 4, 0.65],
-      ["hard", 5, 4, 0.65],
+      ["hard", 5, 4, 0.65, ["dark"]],
       ["hard", 3, 5, 0.7],
       ["hard", 5, 5, 0.7],
-      ["hard", 5, 5, 0.75],
+      ["hard", 5, 5, 0.75, ["ghostPack"]],
       ["hard", 5, 6, 0.8],
     ]),
   },
@@ -139,8 +140,8 @@ export const DEFAULT_TUNING: Tuning = {
   },
 };
 
-function floors(rows: [TowerFloor["map"], number, number, number][]): TowerFloor[] {
-  return rows.map(([map, cpus, cpuVisionTiles, cpuSpeed]) => ({ map, cpus, cpuVisionTiles, cpuSpeed }));
+function floors(rows: [TowerFloor["map"], number, number, number, FloorMod[]?][]): TowerFloor[] {
+  return rows.map(([map, cpus, cpuVisionTiles, cpuSpeed, mods]) => ({ map, cpus, cpuVisionTiles, cpuSpeed, mods: mods ?? [] }));
 }
 
 /** `base` with the CPU strength preset for `level` applied (single-player difficulty). */

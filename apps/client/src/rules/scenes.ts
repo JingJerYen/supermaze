@@ -1,4 +1,4 @@
-import { passRank, type FixtureSpec, type ItemKind, type MapData, type SimEvent, type Tuning } from "@supermaze/sim";
+import { passRank, type FixtureSpec, type ItemKind, type MapData, type SimEvent, type TowerFloor, type Tuning } from "@supermaze/sim";
 import { fill, t } from "../i18n/index.js";
 import type { Cmd } from "./puppet.js";
 
@@ -447,7 +447,17 @@ export const RULE_SCENES: DemoScene[] = [
         [t("rules.table.passRank"), sizes.map((n) => t("rules.table.passRankItem", { n, rank: passRank(n, tuning) })).join(t("rules.table.listSep"))],
         [t("rules.table.cpu"), t("rules.table.cpuValue", { min: Math.min(...cpus), max: Math.max(...cpus) })],
         ...bands,
+        ...specialRows(floors),
       ];
     },
   },
 ];
+
+/** One row per special floor rule: which floors have it (tower run, section 4.1). */
+function specialRows(floors: readonly TowerFloor[]): [string, string][] {
+  const kinds = [...new Set(floors.flatMap((f) => f.mods))];
+  return kinds.map((m) => {
+    const at = floors.flatMap((f, i) => (f.mods.includes(m) ? [i + 1] : []));
+    return [t(`modes.floor.${m}.tag`), t("rules.table.specialFloors", { floors: at.join(t("rules.table.floorSep")) })];
+  });
+}

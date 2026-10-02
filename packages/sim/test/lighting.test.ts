@@ -66,6 +66,18 @@ describe("lights in the simulation", () => {
     { moveX: -1, moveY: 0 }, // (1,5)
   ];
 
+  /** From the first switch to the second at (7,3): up the west column, then east along row 3. */
+  const toSecondSwitch: PlayerInput[] = [
+    { moveX: 0, moveY: -1 }, // (1,4)
+    { moveX: 0, moveY: -1 }, // (1,3) stairs, stays on the road layer
+    { moveX: 1, moveY: 0 }, // (2,3)
+    { moveX: 1, moveY: 0 }, // (3,3)
+    { moveX: 1, moveY: 0 }, // (4,3)
+    { moveX: 1, moveY: 0 }, // (5,3)
+    { moveX: 1, moveY: 0 }, // (6,3)
+    { moveX: 1, moveY: 0 }, // (7,3)
+  ];
+
   it("a switch flips the lights once and then is spent", () => {
     // Both LATTICE switch candidates are used (count 2 of 2).
     const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants, tuning: NO_FREEZE });
@@ -94,20 +106,25 @@ describe("lights in the simulation", () => {
     walk(sim, "a", toFirstSwitch);
     sim.step(new Map([["a", press]]));
     expect(sim.getState().lightsOn).toBe(false);
-    // Second switch at (7,3): up the west column, then east along row 3.
-    walk(sim, "a", [
-      { moveX: 0, moveY: -1 }, // (1,4)
-      { moveX: 0, moveY: -1 }, // (1,3) stairs, stays on the road layer
-      { moveX: 1, moveY: 0 }, // (2,3)
-      { moveX: 1, moveY: 0 }, // (3,3)
-      { moveX: 1, moveY: 0 }, // (4,3)
-      { moveX: 1, moveY: 0 }, // (5,3)
-      { moveX: 1, moveY: 0 }, // (6,3)
-      { moveX: 1, moveY: 0 }, // (7,3)
-    ]);
+    walk(sim, "a", toSecondSwitch);
     expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 7, y: 3, layer: "road" });
     sim.step(new Map([["a", press]]));
     expect(sim.getState().lightsOn).toBe(true);
+    expect(Object.values(sim.getState().switches).every((s) => s.used)).toBe(true);
+  });
+
+  it("a dark start keeps the map's switches, and its last switch puts the lights out for good", () => {
+    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants, tuning: NO_FREEZE, startDark: true });
+    sim.start();
+    expect(sim.getState().lightsOn).toBe(false);
+    expect(Object.values(sim.getState().switches)).toHaveLength(LATTICE_MAP.lightSwitchCount);
+    walk(sim, "a", toFirstSwitch);
+    sim.step(new Map([["a", press]]));
+    expect(sim.getState().lightsOn).toBe(true);
+    expect(Object.values(sim.getState().switches).filter((s) => !s.used)).toHaveLength(1);
+    walk(sim, "a", toSecondSwitch);
+    sim.step(new Map([["a", press]]));
+    expect(sim.getState().lightsOn).toBe(false);
     expect(Object.values(sim.getState().switches).every((s) => s.used)).toBe(true);
   });
 });

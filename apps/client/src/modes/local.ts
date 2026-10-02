@@ -1,4 +1,4 @@
-import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimEvent, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
 import { formatSeconds } from "./roundHud.js";
@@ -27,6 +27,14 @@ export interface LocalOptions {
   character?: string | null;
   /** End the round the moment you climb instead of waiting for the CPUs (tower run). */
   endWhenYouClimb?: boolean;
+  /** Start with the lights off (tower run special floor). */
+  startDark?: boolean;
+  /** Every ghost event turns all the CPUs into ghosts at once, hunting you (tower run special floor). */
+  ghostPack?: boolean;
+  /** Called after every tick with the states either side of it and its events (the tower run's achievements). */
+  onStep?: (prev: SimulationState, next: SimulationState, events: readonly SimEvent[]) => void;
+  /** Big toasts to show now; see GameMode.notices. */
+  notices?: () => string[];
   /** Called once, on the tick the round finishes. */
   onFinish?: (state: SimulationState) => void;
   /** Replaces the default result-screen buttons. */
@@ -57,6 +65,8 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     map,
     teamMode: "solo",
     ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
+    ...(options.startDark ? { startDark: true } : {}),
+    ...(options.ghostPack ? { ghostPack: id } : {}),
     tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
     participants: [{ id, teamId: id, controller: "human", name: options.name ?? t("hud.you"), skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null }, ...idle],
   });
@@ -77,13 +87,15 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
       prev = sim.getState();
       const inputs = cpu.inputs();
       inputs.set(id, input);
-      sim.step(inputs);
+      const events = sim.step(inputs);
+      options.onStep?.(prev, sim.getState(), events);
       if (!finished && sim.getState().status === "finished") {
         finished = true;
         options.onFinish?.(sim.getState());
       }
     },
     caption: () => options.caption?.() ?? null,
+    notices: () => options.notices?.() ?? [],
     sample(_now, alpha) {
       return { from: prev, to: sim.getState(), alpha };
     },

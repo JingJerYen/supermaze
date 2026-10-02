@@ -1,5 +1,5 @@
 import type { ItemKind, MapGrid, PlayerAction, PlayerState, SimulationState } from "@supermaze/sim";
-import { availableAction, canDiscard, canUseSkill, isGhost, skillIn, type SkillKind, type SkillSlot } from "@supermaze/sim";
+import { availableAction, canDiscard, canUseSkill, isGhost, isGhostTeam, skillIn, type SkillKind, type SkillSlot } from "@supermaze/sim";
 import { t } from "../i18n/index.js";
 import { openingOf } from "../opening.js";
 import { teamColorIndex } from "../render/teamColors.js";
@@ -123,10 +123,11 @@ export function buildHudModel(
     ghost: running
       ? {
           phase: state.ghost.phase,
-          teamLabel: state.ghost.teamId ? nameOfTeam(state.ghost.teamId) : null,
+          // A pack (tower run special floor) is everyone but the hunted player.
+          teamLabel: state.ghost.huntedTeamId !== null ? t("hud.ghost.pack") : state.ghost.teamId ? nameOfTeam(state.ghost.teamId) : null,
           secondsLeft: Math.max(0, state.ghost.phaseEndsAtTick - state.tick) / tickRate,
           iAmGhost: !!me && isGhost(state.ghost, me),
-          myTeamIsGhost: !!me && state.ghost.teamId === me.teamId && state.ghost.phase !== "idle",
+          myTeamIsGhost: !!me && isGhostTeam(state.ghost, me.teamId),
           warningSubject: warningSubject(state, me, nameOfTeam),
         }
       : { phase: "idle", teamLabel: null, secondsLeft: 0, iAmGhost: false, myTeamIsGhost: false, warningSubject: null },
@@ -149,6 +150,7 @@ function toRow(state: SimulationState, p: PlayerState, isMe: boolean): PlayerRow
 }
 
 function warningSubject(state: SimulationState, me: PlayerState | undefined, nameOfTeam: (teamId: string) => string): string | null {
+  if (state.ghost.huntedTeamId !== null) return state.ghost.phase === "idle" ? null : t("hud.ghost.pack");
   const teamId = state.ghost.teamId;
   if (!teamId) return null;
   if (!me || me.teamId !== teamId) return nameOfTeam(teamId);

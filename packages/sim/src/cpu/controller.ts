@@ -184,7 +184,7 @@ export class CpuController {
     const me = moverPosition(p.mover);
     if (isGhost(state.ghost, p)) {
       const runners = Object.values(state.players)
-        .filter((o) => o.teamId !== p.teamId && o.phase === "maze" && tick >= o.protectedUntilTick)
+        .filter((o) => o.phase === "maze" && !isGhost(state.ghost, o) && tick >= o.protectedUntilTick)
         .filter((o) => {
           const q = moverPosition(o.mover);
           return Math.hypot(q.x - me.x, q.y - me.y) <= r;

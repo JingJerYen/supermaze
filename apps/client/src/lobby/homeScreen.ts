@@ -68,6 +68,10 @@ export const HOME_CSS = `
 .lb .hm-rules button{--bh:2.8em;${plate("stone")};color:#fff;font-size:1.05em;font-weight:700;padding:0 .3em;display:flex;align-items:center;gap:.4em;cursor:pointer}
 .hm-rules svg{font-size:1.3em;color:#cfe0ff}
 .hm-rules #lb-store svg{color:#ffd23f}
+.hm-rules #lb-ach svg{color:#ffb84d}
+.hm-rules #lb-ach{position:relative}
+.hm-new{position:absolute;top:-.45em;right:-.35em;background:#ff4d5e;color:#fff;font-size:.62em;font-weight:800;line-height:1;padding:.25em .4em;border-radius:.8em;box-shadow:0 0 .6em rgba(255,77,94,.7);animation:hm-new-pulse 1.4s ease-in-out infinite}
+@keyframes hm-new-pulse{50%{transform:scale(1.12)}}
 .hm-rules #lb-store.owned{color:#ffe08a}
 @media (max-height:520px){
   .hm{font-size:clamp(10px,3.1vh,14px);gap:.5em;padding-top:.8em;padding-bottom:.8em;width:min(40em,58vw)}
@@ -104,6 +108,8 @@ export interface HomeView {
   premium?: boolean;
   /** Online play is in this build; otherwise its button says 即將推出. */
   online: boolean;
+  /** Achievements unlocked since the page was last opened: the button wears a NEW dot. */
+  achievementsNew?: boolean;
 }
 
 export function homeHtml(v: HomeView): string {
@@ -118,6 +124,7 @@ export function homeHtml(v: HomeView): string {
     </div>
     <div class="hm-rules">
       <button id="lb-rules">${ICONS.book}${t("lobby.home.rules")}</button>
+      <button id="lb-ach">${ICONS.trophy}${t("lobby.home.achievements")}${v.achievementsNew ? `<span class="hm-new">NEW</span>` : ""}</button>
       <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? t("lobby.home.fullVersionOwned") : t("lobby.home.fullVersion")}</button>
       <button id="lb-lang" title="${t("lobby.home.language")}">${ICONS.globe}${LOCALE_NAMES[nextLocale()]}</button>
     </div>`;

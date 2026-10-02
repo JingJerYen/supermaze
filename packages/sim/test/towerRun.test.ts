@@ -33,6 +33,18 @@ describe("default floor table", () => {
   });
 });
 
+describe("special floors", () => {
+  it("has both kinds, and a ghost pack only where there is more than one CPU to make one", () => {
+    const floors = DEFAULT_TUNING.towerRun.floors;
+    const mods = floors.flatMap((f) => f.mods);
+    expect(mods).toContain("dark");
+    expect(mods).toContain("ghostPack");
+    for (const f of floors) if (f.mods.includes("ghostPack")) expect(f.cpus).toBeGreaterThan(1);
+    // The first floors stay ordinary while you learn the game.
+    expect(floors.slice(0, 3).every((f) => f.mods.length === 0)).toBe(true);
+  });
+});
+
 describe("planFloor", () => {
   it("draws the floor's difficulty, sets its CPU strength and is reproducible", () => {
     const run = startTowerRun(42);
@@ -55,7 +67,7 @@ describe("planFloor", () => {
   it("falls back to the nearest difficulty, harder first, when a floor has no map", () => {
     const tuning: Tuning = {
       ...DEFAULT_TUNING,
-      towerRun: { ...DEFAULT_TUNING.towerRun, floors: [{ map: "medium", cpus: 5, cpuVisionTiles: 3, cpuSpeed: 0.5 }] },
+      towerRun: { ...DEFAULT_TUNING.towerRun, floors: [{ map: "medium", cpus: 5, cpuVisionTiles: 3, cpuSpeed: 0.5, mods: [] }] },
     };
     // m1 takes at most 4 players, so six falls back to hard before easy.
     expect(plan(startTowerRun(1), tuning).map.difficulty).toBe("hard");

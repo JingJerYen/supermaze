@@ -1,4 +1,5 @@
 import { capName, type LobbyMessage, type LobbyNotice, type TeamMode } from "@supermaze/protocol";
+import { unseenAchievements } from "../achievements/store.js";
 import { nextLocale, switchLocale, t } from "../i18n/index.js";
 import { isPremium } from "../monetize/premium.js";
 import type { JoinRequest } from "../net/connection.js";
@@ -47,6 +48,8 @@ export interface LobbyUiHandlers {
   onRules(): void;
   /** Open the full version's page. */
   onStore(): void;
+  /** Open the achievements page. */
+  onAchievements(): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   /** Private-room host: two teams or everyone for themselves. */
@@ -105,9 +108,10 @@ export class LobbyUi {
   /** `best` is the tower-run record shown next to its button. */
   showHome(profile: { name: string; character: string | null }, error?: string, best?: { score: number; floor: number } | null): void {
     const online = onlineAvailable();
-    this.showPage(homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium(), online }));
+    this.showPage(homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium(), online, achievementsNew: unseenAchievements().length > 0 }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
     this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
+    this.card.querySelector("#lb-ach")!.addEventListener("click", () => this.handlers.onAchievements());
     this.card.querySelector("#lb-lang")!.addEventListener("click", () => switchLocale(nextLocale()));
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());

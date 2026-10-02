@@ -6,6 +6,7 @@ import { showRewardedAd } from "../monetize/ads.js";
 import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
+import { floorModLines } from "./floorMods.js";
 
 /**
  * Before each tower run floor (CLAUDE.md 4.1): only the floor's skills. Who the
@@ -101,6 +102,7 @@ export class FloorPrep {
         }</div>`;
     this.panel.innerHTML = `
       <h2>${t("modes.prep.title", { n: this.floor, total: this.floorsTotal })}</h2>
+      ${floorModLines(DEFAULT_TUNING.towerRun.floors[this.floor - 1]?.mods ?? []).map((l) => `<div class="sp-sub">${l}</div>`).join("")}
       <div><label>${label}</label><div class="sp-skills">${skills}</div></div>
       ${adRow}
       <div class="sp-note">${note}</div>
