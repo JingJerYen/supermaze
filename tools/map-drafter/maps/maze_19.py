@@ -33,7 +33,7 @@ if "--explore" in sys.argv:
     sys.exit()
 
 finish("maze-19", rows,
-       stairs=[(7, 3), (15, 11)],  # onto a north-west and a south-east rooftop
+       stairs=[(7, 3), (15, 3), (7, 11), (15, 11)],  # one onto each quarter's rooftop
        bridges=[(11, 4)],  # over the north plaza gate, joining the two north rooftops
        doors=0, traps=0, obstacles=0, time=180,
        candidates=dict(n_keys=8, n_road_keys=6, n_boxes=10, n_box_top=1, n_switch=4, key_gap=4, wall_cap=1,

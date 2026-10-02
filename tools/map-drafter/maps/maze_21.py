@@ -1,5 +1,5 @@
 """maze-21 "Candy House" (easy, candy): a modest maze whose big rooftop is
-reached by two stairs on opposite sides; a few keys wait up there, so this is
+reached by two stairs, with two more onto the eastern rooftops; a few keys wait up there, so this is
 the easy floor that teaches climbing onto the walls. No fixtures."""
 import sys
 from pathlib import Path
@@ -23,7 +23,7 @@ if "--explore" in sys.argv:
     sys.exit()
 
 finish("maze-21", rows,
-       stairs=[(5, 7), (11, 11)],  # west and south onto the same big rooftop
+       stairs=[(5, 7), (11, 11), (17, 3), (17, 11)],  # west and south onto the big rooftop, two more in the east
        doors=0, traps=0, obstacles=0, time=180,
        candidates=dict(n_keys=8, n_road_keys=5, n_boxes=10, n_box_top=1, n_switch=4, key_gap=4, wall_cap=1,
                        road_cap=3, box_gap=4, switch_gap=8, keys_on_dead_ends=False,

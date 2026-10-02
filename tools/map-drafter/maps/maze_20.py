@@ -1,7 +1,7 @@
 """maze-20 "Dunes" (easy, desert): a small maze opened up with many loops, so
 there are few dead ends and a wrong turn always leads back round. No fixtures,
-and every key is on the ground; the one stair is just a shortcut along the
-outer wall."""
+and every key is on the ground; the stairs are shortcuts along the outer wall
+and onto two small rooftops."""
 import sys
 from pathlib import Path
 
@@ -24,7 +24,7 @@ if "--explore" in sys.argv:
     sys.exit()
 
 finish("maze-20", rows,
-       stairs=[(1, 7)],  # one stair onto the outer wall: a shortcut, no keys up there
+       stairs=[(1, 7), (19, 7), (7, 3), (7, 11)],  # outer-wall shortcuts east and west, two small rooftops; no keys up there
        doors=0, traps=0, obstacles=0, time=180,
        candidates=dict(n_keys=8, n_road_keys=8, n_boxes=10, n_box_top=0, n_switch=4, key_gap=4, wall_cap=1,
                        road_cap=3, box_gap=4, switch_gap=8, keys_on_dead_ends=False,

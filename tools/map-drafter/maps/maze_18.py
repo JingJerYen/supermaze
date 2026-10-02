@@ -26,7 +26,7 @@ if "--explore" in sys.argv:
     sys.exit()
 
 finish("maze-18", rows,
-       stairs=[(3, 7)],  # one stair, onto the biggest rooftop: one key up there
+       stairs=[(3, 7), (7, 3), (19, 3), (19, 11)],  # one in each quarter; one key on a rooftop
        doors=0, traps=0, obstacles=0, time=180,
        candidates=dict(n_keys=8, n_road_keys=7, n_boxes=10, n_box_top=0, n_switch=4, key_gap=4, wall_cap=1,
                        road_cap=3, box_gap=4, switch_gap=8, keys_on_dead_ends=False,
