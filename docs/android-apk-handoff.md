@@ -16,7 +16,7 @@
 - 記錄實機型號與遊戲中的 fps（量法見 T8），寫進 `CLAUDE.md` 第 17.5 節。
 - 網頁版與 GitHub Pages 部署不受影響；`npm run typecheck`、`npm test` 通過。
 
-**不在這一階段**：正式簽章與上架、iOS、正式的線上主機。廣告與付款的程式已寫好（`apps/client/src/monetize/`），debug APK 一律顯示 Google 的測試廣告；沒填 RevenueCat 金鑰時購買會顯示「暫時連不上商店」。
+**不在這一階段**：正式簽章與上架、iOS、正式的線上主機。廣告與付款的程式已寫好（`apps/client/src/monetize/`），debug APK 一律顯示 Google 的測試廣告；購買完整版在 debug APK 是佔位（2026-10-02）：按下購買直接成功，完整版頁面另有「改回免費版（測試用）」，不連商店。只有 `android:release` 建置的版本才走 Google Play。
 
 ## 2. 已經定案的背景（不要重新討論）
 

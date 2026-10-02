@@ -96,6 +96,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.store.nothingToRestore": "No purchase found for this account.",
   "lobby.store.home": "Home",
   "lobby.store.restore": "Restore Purchases",
+  "lobby.store.dropForTesting": "Back to Free (test)",
 
   "lobby.settings.controls": "Touch Controls",
   "lobby.settings.dpad": "D-pad",

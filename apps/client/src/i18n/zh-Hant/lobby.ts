@@ -101,6 +101,7 @@ export const lobby = {
   "lobby.store.nothingToRestore": "這個帳號沒有購買紀錄。",
   "lobby.store.home": "回首頁",
   "lobby.store.restore": "恢復購買",
+  "lobby.store.dropForTesting": "改回免費版（測試用）",
 
   // Settings page (settingsScreen.ts)
   "lobby.settings.controls": "觸控操作",
