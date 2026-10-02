@@ -58,7 +58,11 @@ export interface SimulationOptions {
    * for the others (the tower run ends a floor when you climb; section 4.1).
    */
   endWhenClimbed?: PlayerId;
-  /** Start the round with the lights off (tower run special floor; section 4.1). The switches are the map's usual ones. */
+  /**
+   * Start the round with the lights off (tower run special floor; section 4.1).
+   * The switches are the map's usual ones, so with an even count the last one
+   * puts the lights out for good: such a floor may end dark.
+   */
   startDark?: boolean;
   /**
    * Solo only: every ghost event turns everyone else in the maze into ghosts
@@ -477,7 +481,6 @@ export class Simulation {
             const sw = usableSwitchAt(work.switches, p.mover.from) as LightSwitchState;
             work.switches = { ...work.switches, [sw.id]: { ...sw, used: true } };
             work.lightsOn = !work.lightsOn;
-            work.switches = retireLastSwitch(work.switches, work.lightsOn);
             p = { ...p, score: p.score + this.tuning.scoring.lightSwitch };
             work.events.push({ type: "lightsToggled", tick, playerId: id, switchId: sw.id, lightsOn: work.lightsOn });
           } else if (action === "pickUpNode") {
@@ -726,18 +729,4 @@ export class Simulation {
   getState(): Readonly<SimulationState> {
     return this.state;
   }
-}
-
-/**
- * The map has to end lit once every switch is used (section 8). Starting lit
- * with an even count that holds by itself; a round that starts dark would end
- * dark, so when the lights come on with a single switch left, that switch goes
- * dead: it could only put them out for good.
- */
-function retireLastSwitch(switches: Record<string, LightSwitchState>, lightsOn: boolean): Record<string, LightSwitchState> {
-  if (!lightsOn) return switches;
-  const left = Object.values(switches).filter((s) => !s.used);
-  if (left.length !== 1) return switches;
-  const last = left[0] as LightSwitchState;
-  return { ...switches, [last.id]: { ...last, used: true } };
 }
