@@ -126,6 +126,7 @@ export function homeHtml(v: HomeView): string {
       <button id="lb-rules">${ICONS.book}${t("lobby.home.rules")}</button>
       <button id="lb-ach">${ICONS.trophy}${t("lobby.home.achievements")}${v.achievementsNew ? `<span class="hm-new">NEW</span>` : ""}</button>
       <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? t("lobby.home.fullVersionOwned") : t("lobby.home.fullVersion")}</button>
+      <button id="lb-settings">${ICONS.gear}${t("lobby.home.settings")}</button>
       <button id="lb-lang" title="${t("lobby.home.language")}">${ICONS.globe}${LOCALE_NAMES[nextLocale()]}</button>
     </div>`;
 }

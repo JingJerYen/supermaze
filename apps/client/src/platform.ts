@@ -17,10 +17,13 @@ export function platformName(): "android" | "ios" | "web" {
   return p === "android" || p === "ios" ? p : "web";
 }
 
+/** A store release build (`npm run build:release`); the debug APK and the web build are not. */
+export const RELEASE_BUILD: boolean = import.meta.env["VITE_RELEASE"] === "1";
+
 /**
  * Developer aids (F3 panel, F4 forced ghost event). On everywhere except a
  * store release build (`npm run build:release` sets VITE_RELEASE=1); `?debug`
  * turns them back on there for a quick check.
  */
 export const DEV_TOOLS: boolean =
-  import.meta.env["VITE_RELEASE"] !== "1" || (typeof location !== "undefined" && new URLSearchParams(location.search).has("debug"));
+  !RELEASE_BUILD || (typeof location !== "undefined" && new URLSearchParams(location.search).has("debug"));

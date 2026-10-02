@@ -18,6 +18,7 @@ export const lobby = {
   "lobby.home.rules": "遊戲規則",
   "lobby.home.achievements": "成就",
   "lobby.home.language": "切換語言",
+  "lobby.home.settings": "設定",
   "lobby.home.fullVersion": "完整版",
   "lobby.home.fullVersionOwned": "已擁有完整版",
 
@@ -100,6 +101,16 @@ export const lobby = {
   "lobby.store.nothingToRestore": "這個帳號沒有購買紀錄。",
   "lobby.store.home": "回首頁",
   "lobby.store.restore": "恢復購買",
+  "lobby.store.dropForTesting": "改回免費版（測試用）",
+
+  // Settings page (settingsScreen.ts)
+  "lobby.settings.controls": "觸控操作",
+  "lobby.settings.dpad": "十字鍵",
+  "lobby.settings.dpadDesc": "固定在左下角。按住方向就走，點一下只轉身。",
+  "lobby.settings.stick": "搖桿",
+  "lobby.settings.stickDesc": "手指放在畫面左半邊任何地方就出現。輕推（虛線圈內）只轉身，推出虛線圈才走。",
+  "lobby.settings.note": "鍵盤一律可用。設定存在這台裝置上，下一局開始生效。",
+  "lobby.settings.home": "回首頁",
 
   // Side panel (sidePanel.ts): the tag on the highest floor played
   "lobby.panel.top": "最高",

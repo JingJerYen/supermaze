@@ -26,7 +26,7 @@ export const hud = {
   "hud.skill.sprint.label": "衝刺",
   "hud.skill.sprint.blurb": "一段時間內跑得更快",
   "hud.skill.eagleEye.label": "鷹眼",
-  "hud.skill.eagleEye.blurb": "從高空看整張地圖",
+  "hud.skill.eagleEye.blurb": "從高空看你附近的迷宮",
   "hud.skill.amulet.label": "護身符",
   "hud.skill.amulet.blurb": "擋下一次陷阱或鬼抓",
   "hud.skill.lantern.label": "點燈",
@@ -68,7 +68,7 @@ export const hud = {
 
   // Rosters
   "hud.roster.myTeam": "我方 {team}",
-  "hud.roster.tower": "🏰 第{n}名",
+  "hud.roster.tower": "🏰 已登塔",
   "hud.roster.hasKey": "已拿到鑰匙",
   "hud.roster.noKey": "還沒有鑰匙",
   "hud.roster.frozen": "定身",
@@ -83,8 +83,8 @@ export const hud = {
   "hud.gain.other": "得分",
 
   // Event toasts
-  "hud.toast.youClimbed": "你登上塔頂，第 {n} 名",
-  "hud.toast.climbed": "{name} 登上塔頂，第 {n} 名",
+  "hud.toast.youClimbed": "你登上塔頂",
+  "hud.toast.climbed": "{name} 登上塔頂",
   "hud.toast.youGotKey": "🔑 你拿到鑰匙",
   "hud.toast.gotKey": "🔑 {name} 拿到鑰匙",
   "hud.toast.youStole": "👻 你偷走了 {victim} 的鑰匙",
@@ -106,6 +106,7 @@ export const hud = {
   "hud.result.wins": "{team} 獲勝",
   "hud.result.draw": "平手",
   "hud.result.noWinner": "沒有獲勝隊伍",
+  "hud.result.climbOrder": "第 {n} 個登塔",
   "hud.result.notClimbed": "未登塔",
   "hud.result.col.player": "玩家",
   "hud.result.col.climb": "登塔",

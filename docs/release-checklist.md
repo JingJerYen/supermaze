@@ -33,7 +33,7 @@
 - [ ] 從 GitHub Actions 的 android 工作下載 debug APK（或在 WSL2 依 `docs/android-apk-handoff.md` 第 3 節裝好 JDK 與 Android SDK 後 `npm run android:apk`），裝到手機跑一遍該文件第 5 節的驗收清單。debug 版一律是 Google 的測試廣告。
 - [ ] 建立上架用的簽名金鑰（keystore）。**備份到安全的地方，絕不放進 git**；弄丟就再也不能更新這個 App。在 `apps/client/android/keystore.properties`（不進 git）寫上 `storeFile`、`storePassword`、`keyAlias`、`keyPassword` 與 `admobAppId`。
 - [ ] 在 `apps/client/.env.production.local`（不進 git）填入 `VITE_ADMOB_REWARDED_ID` 與 `VITE_REVENUECAT_KEY`。
-- [ ] 用授權測試人員的帳號實際買一次完整版（不會扣款），確認購買、恢復購買、重裝後自動恢復。
+- [ ] 用授權測試人員的帳號實際買一次完整版（不會扣款），確認購買、恢復購買、重裝後自動恢復。要用 `android:release` 的版本經內部測試軌道安裝；debug APK 的購買是佔位，不連商店。
 - [ ] `npm run android:release` 出 AAB（同時也出一份可直接安裝的 release APK），上傳到 Play Console 的封閉測試軌道。
 
 ## 四、商店頁（你）

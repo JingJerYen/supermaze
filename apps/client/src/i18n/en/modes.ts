@@ -2,7 +2,7 @@ import type { modes as zh } from "../zh-Hant/modes.js";
 
 export const modes: Record<keyof typeof zh, string> = {
   "modes.prep.skill.sprint.short": "{mult}× speed for {sec}s",
-  "modes.prep.skill.eagleEye.short": "See the whole map for {sec}s",
+  "modes.prep.skill.eagleEye.short": "Top-down view for {sec}s",
   "modes.prep.skill.amulet.short": "Blocks one trap or ghost catch",
   "modes.prep.skill.lantern.short": "See farther in the dark for {sec}s",
   "modes.prep.skill.timeStop.short": "Freeze all rivals for {sec}s",
@@ -11,7 +11,7 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.prep.skill.warp.short": "Jump to a random spot",
   "modes.prep.skill.supply.short": "Fill your bag with items",
   "modes.prep.skill.sprint.desc": "Move {mult}× faster for {sec}s.",
-  "modes.prep.skill.eagleEye.desc": "See the whole map from above for {sec}s to spot keys and routes.",
+  "modes.prep.skill.eagleEye.desc": "For {sec}s the camera looks straight down from high above you, to spot the paths, keys and items nearby.",
   "modes.prep.skill.amulet.desc": "Blocks the next trap or ghost catch: you aren't frozen and keep your items and key.",
   "modes.prep.skill.lantern.desc": "Only with the lights out: see {tiles} tiles in the dark for {sec}s.",
   "modes.prep.skill.timeStop.desc": "Every rival in the maze freezes in place for {sec}s.",
@@ -61,6 +61,8 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.tower.continueAd": "📺 Watch Ad & Continue ({n} left)",
   "modes.tower.continuesUsed": "All {n} continues used for this run",
   "modes.tower.failed": "Run over: #{rank} by score, needed top {pass}",
+  "modes.tower.success": "Success!",
+  "modes.tower.failure": "Failed",
   "modes.tower.advanced": "Advanced! #{rank} by score",
   "modes.tower.next": "Total {score} · Next: Floor {floor}/{floors}",
   "modes.tower.goTo": "Go to Floor {n}",

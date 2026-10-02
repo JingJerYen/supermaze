@@ -28,7 +28,8 @@ const CSS = `
 
 /**
  * Fixed four-way pad in the bottom-left corner, Game Boy style, replacing the
- * floating stick (2026-09-26). The sim only ever wants one of four directions,
+ * floating stick (2026-09-26); the default touch control. The settings page
+ * can swap in the newer floating stick instead (`stick.ts`). The sim only ever wants one of four directions,
  * so the pad emits -1/0/1 per axis: a tap turns the player, a hold walks.
  *
  * The whole cross is one pointer-capture surface: the direction is whichever
@@ -42,7 +43,6 @@ export class DpadInput {
   private readonly keys = {} as Record<Dir, HTMLDivElement>;
   private pointerId: number | null = null;
   private dir: Dir | null = null;
-  private readonly onTouchStart: (e: TouchEvent) => void;
 
   constructor(parent: HTMLElement) {
     const t = CLIENT_TUNING.dpad;
@@ -68,12 +68,6 @@ export class DpadInput {
       this.keys[d] = k;
     }
     parent.appendChild(this.root);
-
-    // Mobile browsers: block pull-to-refresh and double-tap zoom on the play area.
-    this.onTouchStart = (e) => {
-      if (!onUiElement(e)) e.preventDefault();
-    };
-    window.addEventListener("touchstart", this.onTouchStart, { passive: false });
 
     this.root.addEventListener("pointerdown", (e) => {
       if (this.pointerId !== null) return;
@@ -125,13 +119,6 @@ export class DpadInput {
   }
 
   dispose(): void {
-    window.removeEventListener("touchstart", this.onTouchStart);
     this.root.remove();
   }
-}
-
-/** Presses on buttons, inputs or overlay panels belong to those elements, not to the play area. */
-function onUiElement(e: Event): boolean {
-  const target = e.target as HTMLElement | null;
-  return !!target?.closest?.("button, input, select, a, .rs, .lb");
 }

@@ -173,17 +173,20 @@ export class Match {
 
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
+    this.input?.setPlayer(meState ? { facing: meState.mover.facing, moving: meState.mover.target !== null } : null);
     const onTower = meState?.phase === "tower";
     const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
-    // Eagle eye (tower run skill): the tower top's view from above for a few seconds, from the maze.
+    // Eagle eye (tower run skill): straight down from high above the player for a few seconds, from the maze.
     const tickNow = s?.to.tick ?? 0;
     const eagle = !onTower && !!meState && skillActive(meState, "eagleEye", tickNow);
-    const shot = eagle ? { ...climbShot, camera: "overview" as const, towerOverview: true, watchTower: false } : climbShot;
+    const shot = eagle ? { ...climbShot, camera: "above" as const, towerOverview: true, watchTower: false } : climbShot;
     const lantern = !!meState && skillActive(meState, "lantern", tickNow);
     // The rank is already settled; the result screen waits until every climb has been shown.
     if (s && !shot.busy && this.players.activeClimbs().length === 0) this.results?.update(s.to, meId, this.mode.results());
     this.follow.setMode(shot.camera, shot.camera === "overview" ? CLIENT_TUNING.climb.overviewPerSec : undefined);
     this.mapMesh.tower.setOverview(shot.towerOverview);
+    this.mapMesh.tower.setForceFade(eagle);
+    if (eagle && mePos) this.follow.setAboveHeight(eagleHeight(mePos, this.mapMesh.towerCenter));
     this.lighting.setRadius(
       onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : lantern ? DEFAULT_TUNING.skills.lantern.darkRadiusTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles,
     );
@@ -250,4 +253,14 @@ function jsHeapMB(): string {
 function viewportSize(root: HTMLElement): { w: number; h: number } {
   const r = root.getBoundingClientRect();
   return { w: Math.max(1, Math.round(r.width || window.innerWidth)), h: Math.max(1, Math.round(r.height || window.innerHeight)) };
+}
+
+/**
+ * Eagle Eye's camera height over the player: `eagleEye.heightTiles`, raised near
+ * the tower so the camera never ends up inside it (the platform is far up).
+ */
+function eagleHeight(me: THREE.Vector3, tower: THREE.Vector3): number {
+  const t = CLIENT_TUNING.eagleEye;
+  const near = Math.hypot(me.x - tower.x, me.z - tower.z) < t.towerClearRadius;
+  return near ? Math.max(t.heightTiles, platformTopY() + t.towerClearance - me.y) : t.heightTiles;
 }

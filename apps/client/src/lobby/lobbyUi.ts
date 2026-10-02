@@ -50,6 +50,8 @@ export interface LobbyUiHandlers {
   onStore(): void;
   /** Open the achievements page. */
   onAchievements(): void;
+  /** Open the settings page (touch controls). */
+  onSettings(): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   /** Private-room host: two teams or everyone for themselves. */
@@ -112,6 +114,7 @@ export class LobbyUi {
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
     this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
     this.card.querySelector("#lb-ach")!.addEventListener("click", () => this.handlers.onAchievements());
+    this.card.querySelector("#lb-settings")!.addEventListener("click", () => this.handlers.onSettings());
     this.card.querySelector("#lb-lang")!.addEventListener("click", () => switchLocale(nextLocale()));
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());

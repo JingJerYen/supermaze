@@ -18,6 +18,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.home.rules": "How to Play",
   "lobby.home.achievements": "Achievements",
   "lobby.home.language": "Change language",
+  "lobby.home.settings": "Settings",
   "lobby.home.fullVersion": "Full Version",
   "lobby.home.fullVersionOwned": "Full Version Owned",
 
@@ -95,6 +96,15 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.store.nothingToRestore": "No purchase found for this account.",
   "lobby.store.home": "Home",
   "lobby.store.restore": "Restore Purchases",
+  "lobby.store.dropForTesting": "Back to Free (test)",
+
+  "lobby.settings.controls": "Touch Controls",
+  "lobby.settings.dpad": "D-pad",
+  "lobby.settings.dpadDesc": "Fixed in the bottom-left corner. Hold to walk, tap to turn.",
+  "lobby.settings.stick": "Joystick",
+  "lobby.settings.stickDesc": "Appears wherever your thumb lands on the left half. A light push (inside the dashed ring) only turns; push past it to walk.",
+  "lobby.settings.note": "The keyboard always works. Saved on this device; applies from the next game.",
+  "lobby.settings.home": "Home",
 
   "lobby.panel.top": "Top",
 };

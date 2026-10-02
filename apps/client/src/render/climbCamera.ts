@@ -1,10 +1,11 @@
 import { CLIENT_TUNING } from "../tuning.js";
+import type { CameraMode } from "./camera.js";
 import { climbPhase } from "./climbSequence.js";
 import { platformTopY } from "./elevation.js";
 
 /** What the local player's own climb asks of the camera and the screen this frame. */
 export interface ClimbShot {
-  camera: "follow" | "overview";
+  camera: CameraMode;
   /** How far to raise the follow focus above the character, world units. */
   lift: number;
   /** Fade the tower's canopy and the like for the top-down view. */

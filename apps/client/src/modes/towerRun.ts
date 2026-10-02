@@ -167,6 +167,7 @@ export class TowerRun {
     if (run.status === "cleared") {
       this.verdict = {
         endsAt: null,
+        title: verdictTitle(outcome.passed),
         note: {
           title: t(outcome.passed ? "modes.tower.clearedPassed" : "modes.tower.cleared", { n: this.floorsTotal }),
           tone: outcome.passed ? "pass" : "info",
@@ -182,12 +183,14 @@ export class TowerRun {
       const used = canContinue(run) ? "" : t("modes.tower.continuesUsed", { n: DEFAULT_TUNING.towerRun.maxContinues });
       this.verdict = {
         endsAt: null,
+        title: verdictTitle(false),
         note: { title: t("modes.tower.failed", { rank: outcome.rank, pass: plan.passRank }), tone: "fail", lines: [total, bestLine, used, achLine].filter(Boolean) },
         buttons: [home, carryOn],
       };
     } else {
       this.verdict = {
         endsAt: null,
+        title: verdictTitle(true),
         note: { title: t("modes.tower.advanced", { rank: outcome.rank }), tone: "pass", lines: [t("modes.tower.next", { score: run.totalScore, floor: run.floor, floors: this.floorsTotal }), achLine].filter(Boolean) },
         buttons: [{ label: t("modes.tower.goTo", { n: run.floor }), primary: true, run: () => this.prepare() }, home],
       };
@@ -227,4 +230,9 @@ export class TowerRun {
 /** The skill a floor offers a free player, drawn from the run seed so it is the same each time the floor is prepared. */
 function randomSkill(runSeed: number, floor: number): SkillKind {
   return new SeededRandom((runSeed ^ Math.imul(floor, 0x85ebca6b)) >>> 0).pick(SKILL_KINDS);
+}
+
+/** The results headline in a tower run: whether this floor was passed, not who scored most. */
+function verdictTitle(passed: boolean): { text: string; tone: "pass" | "fail" } {
+  return { text: t(passed ? "modes.tower.success" : "modes.tower.failure"), tone: passed ? "pass" : "fail" };
 }

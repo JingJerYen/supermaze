@@ -21,9 +21,10 @@ function diffToastTexts(prev: SimulationState | null, next: SimulationState, meI
   const out: (string | Toast)[] = [];
   const name = (id: string) => next.players[id]?.name ?? id.slice(0, 6);
 
+  // No arrival rank: players took it for the final placing, which goes by score.
   for (let i = prev.towerArrivals.length; i < next.towerArrivals.length; i++) {
     const id = next.towerArrivals[i] as string;
-    out.push({ text: id === meId ? t("hud.toast.youClimbed", { n: i + 1 }) : t("hud.toast.climbed", { name: name(id), n: i + 1 }), big: true });
+    out.push({ text: id === meId ? t("hud.toast.youClimbed") : t("hud.toast.climbed", { name: name(id) }), big: true });
   }
   for (const p of Object.values(next.players)) {
     const before = prev.players[p.id];
