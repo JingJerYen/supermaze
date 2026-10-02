@@ -23,6 +23,7 @@ import { showRewardedAd } from "../monetize/ads.js";
 import { isPremium } from "../monetize/premium.js";
 import { loadProfile } from "../profile.js";
 import { FloorPrep } from "./floorPrep.js";
+import { floorModTags } from "./floorMods.js";
 import { FloorSelect } from "./floorSelect.js";
 import { createLocalMode } from "./local.js";
 import { loadReachedFloor, loadTowerBest, noteReachedFloor, saveBest } from "./towerProgress.js";
@@ -116,9 +117,15 @@ export class TowerRun {
       skill2: skills[1] ?? null,
       tuning: plan.tuning,
       endWhenYouClimb: true,
+      startDark: plan.spec.mods.includes("dark"),
+      ghostPack: plan.spec.mods.includes("ghostPack"),
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
-      caption: () => t("modes.tower.caption", { floor: plan.floor, floors: this.floorsTotal, pass: plan.passRank, score: this.run.totalScore }),
+      caption: () => {
+        const caption = t("modes.tower.caption", { floor: plan.floor, floors: this.floorsTotal, pass: plan.passRank, score: this.run.totalScore });
+        const mods = floorModTags(plan.spec.mods);
+        return mods ? t("modes.tower.captionMods", { caption, mods }) : caption;
+      },
       onHome: () => this.quit(),
     });
     this.match = new Match(this.root, this.renderer, mode);

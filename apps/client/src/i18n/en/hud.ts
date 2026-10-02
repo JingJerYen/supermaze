@@ -59,6 +59,7 @@ export const hud: Record<keyof typeof zh, string> = {
   "hud.ghost.active.you": "You're the ghost! Catch them {sec}s",
   "hud.ghost.active.ours": "We're the ghosts {sec}s",
   "hud.ghost.active.other": "Ghost Tag! Run from {who} {sec}s",
+  "hud.ghost.pack": "Everyone else",
 
   "hud.roster.myTeam": "{team} (us)",
   "hud.roster.tower": "🏰 #{n}",

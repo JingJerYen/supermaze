@@ -194,7 +194,16 @@ export interface TowerFloor {
   cpuVisionTiles: number;
   /** Replaces `cpu.speedMultiplier` on this floor. */
   cpuSpeed: number;
+  /** Special rules for this floor (section 4.1); empty on an ordinary floor. */
+  mods: FloorMod[];
 }
+
+/**
+ * A tower run special floor rule. `dark`: the round starts with the lights off
+ * (same switches as usual). `ghostPack`: at every ghost event all the CPUs turn
+ * ghost together and hunt you.
+ */
+export type FloorMod = "dark" | "ghostPack";
 
 export type ItemKind = "oneWayDoor" | "obstacle" | "hammer" | "trap" | "teleportNode";
 

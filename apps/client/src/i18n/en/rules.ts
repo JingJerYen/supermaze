@@ -89,6 +89,8 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.table.map.easy": "Easy maps",
   "rules.table.map.medium": "Medium maps",
   "rules.table.map.hard": "Hard maps",
+  "rules.table.specialFloors": "Floors {floors}",
+  "rules.table.floorSep": ", ",
 
   // The rules screen around the cards.
   "rules.screen.page": "Rules {page} / {total}",

@@ -11,8 +11,14 @@ export type GhostPhase = "idle" | "warning" | "active";
 
 export interface GhostState {
   phase: GhostPhase;
-  /** Team that is (or is about to be) the ghosts; null while idle. */
+  /** Team that is (or is about to be) the ghosts; null while idle, and always null in a pack round. */
   teamId: TeamId | null;
+  /**
+   * Pack round (tower run special floor): every event turns everyone in the
+   * maze except this team into ghosts at once, all hunting it. Fixed for the
+   * round; null in an ordinary round.
+   */
+  huntedTeamId: TeamId | null;
   /** Tick at which the current phase ends. */
   phaseEndsAtTick: Tick;
   /** How many times each team has been the ghosts, for fair rotation. */
@@ -29,12 +35,13 @@ export interface GhostState {
  * `intervalShare` of it between events, so short and long maps both see a few
  * events. `intervalSec`, when set, fixes both waits in seconds instead.
  */
-export function initialGhostState(startTick: Tick, tuning: Tuning, roundTicks: number): GhostState {
+export function initialGhostState(startTick: Tick, tuning: Tuning, roundTicks: number, huntedTeamId: TeamId | null = null): GhostState {
   const g = tuning.ghostEvent;
   const fixed = g.intervalSec === null ? null : sec(g.intervalSec, tuning);
   return {
     phase: "idle",
     teamId: null,
+    huntedTeamId,
     phaseEndsAtTick: startTick + (fixed ?? Math.max(1, Math.round(roundTicks * g.firstWarningShare))),
     counts: {},
     lastTeamId: null,
@@ -43,7 +50,19 @@ export function initialGhostState(startTick: Tick, tuning: Tuning, roundTicks: n
 }
 
 export function isGhost(ghost: GhostState, p: PlayerState): boolean {
-  return ghost.phase === "active" && ghost.teamId === p.teamId && p.phase === "maze";
+  return ghost.phase === "active" && p.phase === "maze" && isGhostTeam(ghost, p.teamId);
+}
+
+/** Whether `teamId` is (or, during the warning, is about to be) on the ghost side. */
+export function isGhostTeam(ghost: GhostState, teamId: TeamId): boolean {
+  if (ghost.phase === "idle") return false;
+  return ghost.huntedTeamId !== null ? teamId !== ghost.huntedTeamId : ghost.teamId === teamId;
+}
+
+/** A pack event can run: the hunted team and someone to hunt it are both in the maze. */
+function packReady(ghost: GhostState, players: Record<PlayerId, PlayerState>): boolean {
+  const teams = eligibleTeams(players);
+  return teams.length >= 2 && teams.includes(ghost.huntedTeamId as TeamId);
 }
 
 /**
@@ -55,7 +74,8 @@ export function isGhost(ghost: GhostState, p: PlayerState): boolean {
  * id in sorted order. Turns never differ by more than one. Teams with nobody
  * left in the maze are skipped; with fewer than two eligible teams the event
  * waits another interval. An event that could not run its full warning and
- * chase before `roundEndsAtTick` is not announced at all.
+ * chase before `roundEndsAtTick` is not announced at all. A pack round skips
+ * the rotation: every event is everyone else against `huntedTeamId`.
  */
 export function stepGhost(
   ghost: GhostState,
@@ -77,6 +97,12 @@ export function stepGhost(
   }
 
   if (ghost.phase === "warning") {
+    if (ghost.huntedTeamId !== null) {
+      if (!packReady(ghost, players)) return { ghost: { ...ghost, phase: "idle", phaseEndsAtTick: tick + ghost.intervalTicks }, events };
+      const endsAtTick = tick + sec(tuning.ghostEvent.durationSec, tuning);
+      events.push({ type: "ghostStarted", tick, teamId: null, endsAtTick });
+      return { ghost: { ...ghost, phase: "active", phaseEndsAtTick: endsAtTick }, events };
+    }
     const teamId = ghost.teamId as TeamId;
     if (!eligibleTeams(players).includes(teamId) || eligibleTeams(players).length < 2) {
       // The announced team climbed out (or everyone else did): skip this round of tag.
@@ -97,7 +123,7 @@ export function stepGhost(
   }
 
   // active -> idle
-  events.push({ type: "ghostEnded", tick, teamId: ghost.teamId as TeamId });
+  events.push({ type: "ghostEnded", tick, teamId: ghost.teamId });
   return { ghost: { ...ghost, phase: "idle", teamId: null, phaseEndsAtTick: tick + ghost.intervalTicks }, events };
 }
 
@@ -133,6 +159,15 @@ export function beginWarning(
   tuning: Tuning,
   warningTicks: number,
 ): { ghost: GhostState; events: SimEvent[] } {
+  if (ghost.huntedTeamId !== null) {
+    // A pack has no rotation: everyone else, every time.
+    if (!packReady(ghost, players)) return { ghost: { ...ghost, phaseEndsAtTick: tick + ghost.intervalTicks }, events: [] };
+    const startsAtTick = tick + Math.max(1, warningTicks);
+    return {
+      ghost: { ...ghost, phase: "warning", teamId: null, phaseEndsAtTick: startsAtTick },
+      events: [{ type: "ghostWarning", tick, teamId: null, startsAtTick }],
+    };
+  }
   const teamId = chooseGhostTeam(ghost, players);
   if (!teamId) return { ghost: { ...ghost, phaseEndsAtTick: tick + ghost.intervalTicks }, events: [] };
   const startsAtTick = tick + Math.max(1, warningTicks);

@@ -110,4 +110,18 @@ describe("lights in the simulation", () => {
     expect(sim.getState().lightsOn).toBe(true);
     expect(Object.values(sim.getState().switches).every((s) => s.used)).toBe(true);
   });
+
+  it("a dark start keeps the map's switches; the lights coming on with one switch left retire it", () => {
+    const sim = new Simulation({ seed: 2, map: LATTICE_MAP, participants, tuning: NO_FREEZE, startDark: true });
+    sim.start();
+    expect(sim.getState().lightsOn).toBe(false);
+    expect(Object.values(sim.getState().switches)).toHaveLength(LATTICE_MAP.lightSwitchCount);
+    walk(sim, "a", toFirstSwitch);
+    const events = sim.step(new Map([["a", press]]));
+    expect(events).toContainEqual(expect.objectContaining({ type: "lightsToggled", lightsOn: true }));
+    expect(sim.getState().lightsOn).toBe(true);
+    // The other switch could only put the lights out for good, so it is spent too.
+    expect(Object.values(sim.getState().switches).every((s) => s.used)).toBe(true);
+    expect(sim.getState().players["a"]!.score).toBe(sim.tuning.scoring.lightSwitch);
+  });
 });

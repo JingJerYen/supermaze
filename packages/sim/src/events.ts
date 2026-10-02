@@ -23,9 +23,9 @@ export type SimEvent =
   | { type: "nodePlaced"; tick: Tick; playerId: PlayerId; nodeId: string; pairedWith: string | null }
   | { type: "nodePickedUp"; tick: Tick; playerId: PlayerId; nodeId: string }
   | { type: "teleported"; tick: Tick; playerId: PlayerId; fromNodeId: string; toNodeId: string }
-  | { type: "ghostWarning"; tick: Tick; teamId: TeamId; startsAtTick: Tick }
-  | { type: "ghostStarted"; tick: Tick; teamId: TeamId; endsAtTick: Tick }
-  | { type: "ghostEnded"; tick: Tick; teamId: TeamId }
+  | { type: "ghostWarning"; tick: Tick; teamId: TeamId | null; startsAtTick: Tick }
+  | { type: "ghostStarted"; tick: Tick; teamId: TeamId | null; endsAtTick: Tick }
+  | { type: "ghostEnded"; tick: Tick; teamId: TeamId | null }
   | { type: "playerCaught"; tick: Tick; ghostId: PlayerId; runnerId: PlayerId; frozenUntilTick: Tick; stolenKeyId: string | null }
   | { type: "teamCompleted"; tick: Tick; teamId: TeamId; isWinner: boolean }
   | { type: "skillUsed"; tick: Tick; playerId: PlayerId; skill: SkillKind }

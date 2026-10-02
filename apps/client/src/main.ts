@@ -69,6 +69,9 @@ if (params.has("rules")) {
     difficulty: params.get("cpu") === "hard" ? "hard" : "easy",
     // Developer aid: ?skill=sprint etc. hands you a skill in the sandbox (normally tower run only).
     skill: SKILL_KINDS.find((k) => k === params.get("skill")) ?? null,
+    // ?dark and ?pack try the tower run's special floors in the sandbox.
+    startDark: params.has("dark"),
+    ghostPack: params.has("pack"),
   });
   new Match(root, renderer, mode);
 } else {

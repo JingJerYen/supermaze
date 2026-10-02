@@ -46,6 +46,11 @@ export const modes = {
   // Tower run (towerRun.ts)
   "modes.tower.noMap": "沒有可用的地圖，無法開始爬塔挑戰",
   "modes.tower.caption": "第 {floor} / {floors} 層　分數前 {pass} 名晉級　總分 {score}",
+  "modes.tower.captionMods": "{caption}　{mods}",
+  "modes.floor.dark.tag": "🌑 黑暗層",
+  "modes.floor.dark.line": "🌑 黑暗層：一開始就是關燈",
+  "modes.floor.ghostPack.tag": "👻 群鬼層",
+  "modes.floor.ghostPack.line": "👻 群鬼層：鬼抓人時所有對手一起變鬼",
   "modes.tower.total": "總分 {score}（到達第 {floor} 層）",
   "modes.tower.newRecord": "新紀錄！",
   "modes.tower.best": "最佳紀錄：總分 {score}（到達第 {floor} 層）",

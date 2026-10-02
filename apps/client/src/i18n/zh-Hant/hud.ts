@@ -64,6 +64,7 @@ export const hud = {
   "hud.ghost.active.you": "你是鬼，去抓人 {sec} 秒",
   "hud.ghost.active.ours": "我方是鬼 {sec} 秒",
   "hud.ghost.active.other": "鬼抓人！躲開 {who} {sec} 秒",
+  "hud.ghost.pack": "所有對手",
 
   // Rosters
   "hud.roster.myTeam": "我方 {team}",

@@ -27,6 +27,10 @@ export interface LocalOptions {
   character?: string | null;
   /** End the round the moment you climb instead of waiting for the CPUs (tower run). */
   endWhenYouClimb?: boolean;
+  /** Start with the lights off (tower run special floor). */
+  startDark?: boolean;
+  /** Every ghost event turns all the CPUs into ghosts at once, hunting you (tower run special floor). */
+  ghostPack?: boolean;
   /** Called once, on the tick the round finishes. */
   onFinish?: (state: SimulationState) => void;
   /** Replaces the default result-screen buttons. */
@@ -57,6 +61,8 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     map,
     teamMode: "solo",
     ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
+    ...(options.startDark ? { startDark: true } : {}),
+    ...(options.ghostPack ? { ghostPack: id } : {}),
     tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
     participants: [{ id, teamId: id, controller: "human", name: options.name ?? t("hud.you"), skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null }, ...idle],
   });
