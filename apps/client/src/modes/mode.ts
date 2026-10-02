@@ -19,6 +19,8 @@ export interface GameMode {
   grid: MapGrid;
   /** Visual theme id from the map file; undefined means the default. */
   theme: string | undefined;
+  /** The map's difficulty, for the footprint trail's length; undefined for maps without one. */
+  difficulty?: string | undefined;
   plazaRadius: number;
   /** "x,y" of every light-switch candidate tile; decorations stay off them. */
   switchTiles: ReadonlySet<string>;

@@ -21,6 +21,7 @@ import { FollowCamera } from "./render/camera.js";
 import { ClimbCamera } from "./render/climbCamera.js";
 import { platformTopY } from "./render/elevation.js";
 import { openingOf, type Opening } from "./opening.js";
+import { FootprintView } from "./render/footprints.js";
 import { KeyViews } from "./render/keys.js";
 import { SceneLighting } from "./render/lighting.js";
 import { buildMapMesh } from "./render/mapMesh.js";
@@ -53,6 +54,8 @@ export class Match {
   private readonly debug: DebugOverlay;
   private readonly players: PlayerViews;
   private readonly keys: KeyViews;
+  /** The local player's recent steps; null on maps without them (easy) and in the rules demos. */
+  private readonly footprints: FootprintView | null;
   private readonly boxes: BoxViews;
   private readonly placeables: PlaceableViews;
   private readonly switches: SwitchViews;
@@ -91,6 +94,8 @@ export class Match {
     this.players = new PlayerViews(this.scene, mode.grid);
     this.players.configure({ x: this.mapMesh.towerCenter.x, z: this.mapMesh.towerCenter.z });
     this.keys = new KeyViews(this.scene, mode.grid);
+    const trail = this.demo ? 0 : (CLIENT_TUNING.footprints.steps[mode.difficulty ?? ""] ?? 0);
+    this.footprints = trail > 0 ? new FootprintView(this.scene, mode.grid, trail) : null;
     this.boxes = new BoxViews(this.scene, mode.grid);
     this.placeables = new PlaceableViews(this.scene, mode.grid);
     this.switches = new SwitchViews(this.scene, mode.grid);
@@ -174,6 +179,7 @@ export class Match {
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
     this.input?.setPlayer(meState ? { facing: meState.mover.facing, moving: meState.mover.target !== null } : null);
+    this.footprints?.update(meState && meState.phase !== "tower" ? meState.mover.from : null);
     const onTower = meState?.phase === "tower";
     const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
     // Eagle eye (tower run skill): straight down from high above the player for a few seconds, from the maze.
