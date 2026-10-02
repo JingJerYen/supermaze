@@ -1,13 +1,15 @@
 import * as THREE from "three";
 import { CLIENT_TUNING } from "../tuning.js";
 
-export type CameraMode = "follow" | "overview";
+export type CameraMode = "follow" | "overview" | "above";
 
 /**
  * Two fixed-orientation views, blended smoothly when switching:
  *  - follow: 2.5D, tilted, trailing the local player; never rotates.
  *  - overview: straight down from above the map centre so the whole maze fits,
  *    for players who reached the tower top (CLAUDE.md section 7).
+ *  - above: straight down from `eagleEye.heightTiles` over the local player,
+ *    following them, north up (the Eagle Eye skill; section 4.1).
  */
 export class FollowCamera {
   readonly camera: THREE.PerspectiveCamera;
@@ -19,6 +21,8 @@ export class FollowCamera {
   private mode: CameraMode = "follow";
   private swingPerSec: number = CLIENT_TUNING.overview.transitionPerSec;
   private snapped = false;
+  /** Height of the "above" view over the focus, world units. */
+  private aboveHeight: number = CLIENT_TUNING.eagleEye.heightTiles;
   private mapW = 1;
   private mapH = 1;
 
@@ -52,6 +56,11 @@ export class FollowCamera {
     this.camera.updateProjectionMatrix();
     const zoom = heightPx < t.shortScreenMaxPx ? t.shortScreenZoom : 1;
     this.offset.set(0, t.height * zoom, t.distance * zoom);
+  }
+
+  /** Height of the "above" view over the player (raised near the tower so the camera stays clear of it). */
+  setAboveHeight(height: number): void {
+    this.aboveHeight = height;
   }
 
   /** `swingPerSec` overrides the blend rate of the swing between the two views. */
@@ -112,6 +121,11 @@ export class FollowCamera {
     const swing = 1 - Math.exp(-this.swingPerSec * dtSec);
     if (this.mode === "overview") {
       this.camera.position.lerp(this.overviewPos, swing);
+      this.camera.quaternion.slerp(this.overviewQuat, swing);
+    } else if (this.mode === "above") {
+      // Looking straight down is the overview's orientation, whatever the position.
+      const above = this.focus.clone().setY(this.focus.y + this.aboveHeight);
+      this.camera.position.lerp(above, swing);
       this.camera.quaternion.slerp(this.overviewQuat, swing);
     } else {
       const followPos = this.focus.clone().add(this.offset);

@@ -26,6 +26,8 @@ export class TowerView {
   private boxes: Box3[] = [];
   private overview = false;
   private hiding = false;
+  /** Faded whatever the sightline (the Eagle Eye view looks down past it). */
+  private forceFade = false;
   /** 0 solid .. 1 fully faded, eased. */
   private fade = 0;
   private applied = -1;
@@ -65,6 +67,11 @@ export class TowerView {
     this.hiding = this.boxes.some((b) => sightBlocked(eye, low, b, margin) || sightBlocked(eye, high, b, margin));
   }
 
+  /** Keep the tower faded regardless of the sightline (the Eagle Eye view). */
+  setForceFade(on: boolean): void {
+    this.forceFade = on;
+  }
+
   /** Nobody to watch (no local player, or the player is on the tower). */
   unwatch(): void {
     this.hiding = false;
@@ -72,7 +79,7 @@ export class TowerView {
 
   update(dtSec: number): void {
     const t = CLIENT_TUNING.tower;
-    const want = this.hiding && !this.overview ? 1 : 0;
+    const want = (this.hiding && !this.overview) || this.forceFade ? 1 : 0;
     this.fade += (want - this.fade) * (1 - Math.exp(-t.occlusionFadePerSec * dtSec));
     if (Math.abs(want - this.fade) < 0.002) this.fade = want;
     const opacity = 1 - this.fade * (1 - t.occludedOpacity);

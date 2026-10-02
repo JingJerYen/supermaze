@@ -26,7 +26,7 @@ export const hud = {
   "hud.skill.sprint.label": "衝刺",
   "hud.skill.sprint.blurb": "一段時間內跑得更快",
   "hud.skill.eagleEye.label": "鷹眼",
-  "hud.skill.eagleEye.blurb": "從高空看整張地圖",
+  "hud.skill.eagleEye.blurb": "從高空看你附近的迷宮",
   "hud.skill.amulet.label": "護身符",
   "hud.skill.amulet.blurb": "擋下一次陷阱或鬼抓",
   "hud.skill.lantern.label": "點燈",

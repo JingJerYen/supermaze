@@ -242,6 +242,24 @@ describe("solo mode: everyone for themselves", () => {
     });
   });
 
+  it("with endWhenClimbed, everyone else up does not end it: that player can still climb", () => {
+    const sim = solo(["p1", "p2", "p3"], 10, "p1");
+    sim.step(climbers(["p2", "p3"]));
+    expect(sim.getState().status).toBe("running");
+    const events = sim.step(climbers(["p1"]));
+    expect(events).toContainEqual(expect.objectContaining({ type: "roundEnded", reason: "solo:climbed" }));
+    const { keyFound, towerPlacement } = sim.tuning.scoring;
+    expect(sim.getState().result!.finalScores["p1"]).toBe(keyFound + towerPlacement[2]!);
+  });
+
+  it("with endWhenClimbed and that player never climbing, it runs to the end of time", () => {
+    const sim = solo(["p1", "p2"], 1, "p1");
+    sim.step(climbers(["p2"]));
+    expect(sim.getState().status).toBe("running");
+    for (let i = 0; i < 40; i++) sim.step(new Map());
+    expect(sim.getState().result).toMatchObject({ reason: "solo:timeout" });
+  });
+
   it("on timeout the top score wins; nobody climbing is a draw between equal scores", () => {
     const climbedOne = solo(["p1", "p2", "p3"], 1);
     climbedOne.step(climbers(["p3"]));

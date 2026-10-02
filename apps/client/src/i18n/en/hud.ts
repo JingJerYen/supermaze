@@ -24,7 +24,7 @@ export const hud: Record<keyof typeof zh, string> = {
   "hud.skill.sprint.label": "Sprint",
   "hud.skill.sprint.blurb": "Run faster for a while",
   "hud.skill.eagleEye.label": "Eagle Eye",
-  "hud.skill.eagleEye.blurb": "See the whole map from above",
+  "hud.skill.eagleEye.blurb": "See the maze around you from above",
   "hud.skill.amulet.label": "Amulet",
   "hud.skill.amulet.blurb": "Blocks one trap or ghost catch",
   "hud.skill.lantern.label": "Lantern",

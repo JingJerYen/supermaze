@@ -28,6 +28,14 @@ export const CLIENT_TUNING = {
     /** Camera height in the wide shot as a share of the framed height. */
     eyeShare: 0.45,
   },
+  /** The Eagle Eye skill's view: straight down over the player (render/camera.ts "above"). */
+  eagleEye: {
+    /** Camera height above the player, world units (one tile is 1). */
+    heightTiles: 16,
+    /** Within this many tiles of the tower centre the camera rises to stay this far above its platform. */
+    towerClearRadius: 6,
+    towerClearance: 4,
+  },
   overview: {
     /** Extra room around the map when looking straight down from the tower, as a factor. */
     margin: 1.08,

@@ -56,6 +56,8 @@ export interface SimulationOptions {
   /**
    * Solo only: the round ends the moment this player climbs, without waiting
    * for the others (the tower run ends a floor when you climb; section 4.1).
+   * It also waits for them: the others all climbing does not end it, only this
+   * player climbing or the time running out.
    */
   endWhenClimbed?: PlayerId;
   /**
@@ -606,9 +608,11 @@ export class Simulation {
     if (next.status === "running") {
       // The round stops once all but one participant (CPUs included) are on the tower:
       // the last one never gets to climb (section 3). A lone participant must climb.
+      // Not when the round waits on one player (the tower run): that player may still
+      // climb and outscore the others, so it ends when they climb or time runs out.
       const everyone = Object.values(players);
       const climbed = everyone.filter((p) => p.phase === "tower").length;
-      const enoughClimbed = everyone.length > 0 && climbed >= Math.max(1, everyone.length - 1);
+      const enoughClimbed = this.endWhenClimbed === undefined && everyone.length > 0 && climbed >= Math.max(1, everyone.length - 1);
       const keyClimbed = this.endWhenClimbed !== undefined && players[this.endWhenClimbed]?.phase === "tower";
       const timeUp = tick >= next.endsAtTick;
       if (enoughClimbed || keyClimbed || timeUp) {

@@ -2,7 +2,7 @@
 export const modes = {
   // Floor prep (floorPrep.ts): the line under each skill button
   "modes.prep.skill.sprint.short": "{sec} 秒內速度 {mult} 倍",
-  "modes.prep.skill.eagleEye.short": "{sec} 秒俯瞰整張地圖",
+  "modes.prep.skill.eagleEye.short": "{sec} 秒從頭頂往下看",
   "modes.prep.skill.amulet.short": "擋下一次陷阱或鬼抓",
   "modes.prep.skill.lantern.short": "關燈時 {sec} 秒看得更遠",
   "modes.prep.skill.timeStop.short": "所有對手定身 {sec} 秒",
@@ -12,7 +12,7 @@ export const modes = {
   "modes.prep.skill.supply.short": "背包補滿隨機道具",
   // Floor prep: the longer explanation under the buttons
   "modes.prep.skill.sprint.desc": "{sec} 秒內移動速度變成 {mult} 倍。",
-  "modes.prep.skill.eagleEye.desc": "{sec} 秒內從高空俯瞰整張地圖，看清鑰匙和路線。",
+  "modes.prep.skill.eagleEye.desc": "{sec} 秒內鏡頭升到你的正上方往下看，看清附近的路線、鑰匙和道具。",
   "modes.prep.skill.amulet.desc": "擋下下一次陷阱或鬼抓：不會被定身，也不會失去道具和鑰匙。",
   "modes.prep.skill.lantern.desc": "只能在關燈時用：{sec} 秒內黑暗中看得到 {tiles} 格遠。",
   "modes.prep.skill.timeStop.desc": "迷宮裡所有對手原地定身 {sec} 秒。",
