@@ -184,6 +184,22 @@ export const CLIENT_TUNING = {
     /** Extra height at the middle of the hop, world units (a wall is 1 tall). */
     arcHeight: 0.6,
   },
+  /** The character's show on the achievements page (render/showRoutine.ts). */
+  show: {
+    /** Idle seconds between moves, drawn from this range. */
+    pauseMinSec: 1.2,
+    pauseMaxSec: 2.6,
+    /** How far it glances aside between moves, radians. */
+    lookYaw: 0.55,
+    /** Lift at the top of a hop and of a spinning flip, world units (the character is 1.6 tall). */
+    hop: 0.45,
+    flipHop: 0.8,
+    /** Seconds of running on the spot, and of playing dead before getting up. */
+    runSec: 1.6,
+    playDeadSec: 1.3,
+    /** Cross-fade between moves, seconds. */
+    fadeSec: 0.2,
+  },
   selfMarker: {
     /** Height of the arrow's tip above the feet, world units (the character is 0.9 tall). */
     height: 1.25,

@@ -194,12 +194,16 @@ export class TowerRun {
     }
   }
 
-  /** Keep newly earned achievements; the first time each is earned it pops up and joins the floor's list. */
+  /**
+   * Keep newly earned achievements; the first time each is earned it pops up
+   * and joins the floor's list. Several on the same tick share one line, so
+   * they never push the other notices off the screen.
+   */
   private earn(ids: readonly AchievementId[]): void {
-    for (const id of unlockAchievements(ids)) {
-      this.unlocked.push(id);
-      this.notices.push(t("ach.toast", { name: achievementName(id) }));
-    }
+    const fresh = unlockAchievements(ids);
+    if (fresh.length === 0) return;
+    this.unlocked.push(...fresh);
+    this.notices.push(t("ach.toast", { name: fresh.map(achievementName).join(t("ach.sep")) }));
   }
 
   /** After a failed floor: an ad (none with the full version), then on to the next floor with the score kept. */

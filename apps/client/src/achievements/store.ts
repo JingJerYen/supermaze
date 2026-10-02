@@ -34,3 +34,33 @@ export function unlockAchievements(ids: readonly AchievementId[]): AchievementId
   }
   return fresh;
 }
+
+/**
+ * When the achievements page was last opened. Anything unlocked after it is
+ * new: tagged NEW on the page, and the home button shows a dot.
+ */
+const SEEN_KEY = "supermaze.achievementsSeenAt";
+
+export function loadSeenAt(): number {
+  try {
+    return Number(localStorage.getItem(SEEN_KEY) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function markSeen(): void {
+  try {
+    localStorage.setItem(SEEN_KEY, String(Date.now()));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Unlocked since the page was last opened. */
+export function unseenAchievements(): AchievementId[] {
+  const have = loadAchievements();
+  const seen = loadSeenAt();
+  return (Object.keys(have) as AchievementId[]).filter((id) => (have[id] ?? 0) > seen);
+}
+

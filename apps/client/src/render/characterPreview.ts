@@ -3,15 +3,19 @@ import { characters, type CharacterRig } from "./characters.js";
 
 /**
  * The character select stage: the picked character stands on a small disc,
- * turning slowly, and waves (`emote-yes`) each time the pick changes. It draws
+ * turning slowly, and waves (`emote-yes`) each time the pick changes. A
+ * director (`setDirector`) may take over the moves instead. It draws
  * on the one shared renderer while the pre-floor screen is up. Also makes the
  * portrait thumbnails for the picker, once.
  */
 export class CharacterPreview {
-  private readonly scene = new THREE.Scene();
+  readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-  private readonly holder = new THREE.Group();
+  /** What the character stands in; turned (and lifted, for a hop) as a whole. */
+  readonly holder = new THREE.Group();
   private rig: CharacterRig | null = null;
+  /** Moves the character each frame instead of the slow turn (the achievements page's show). */
+  private director: ((dt: number) => void) | null = null;
   private frame = 0;
   private last = performance.now();
   private running = false;
@@ -42,8 +46,20 @@ export class CharacterPreview {
       this.rig.idle?.stop();
       wave.reset().play();
       const rig = this.rig;
-      rig.mixer.addEventListener("finished", () => rig.idle?.reset().play());
+      rig.mixer.addEventListener("finished", () => {
+        if (!this.director) rig.idle?.reset().play();
+      });
     }
+  }
+
+  /** The character on stage now, if any. */
+  get current(): CharacterRig | null {
+    return this.rig;
+  }
+
+  /** Hand the character to `fn`, called every frame with the step in seconds; null brings back the slow turn. */
+  setDirector(fn: ((dt: number) => void) | null): void {
+    this.director = fn;
   }
 
   /** Keep `el` (position: fixed) just above the character's head, or stop with null. */
@@ -60,7 +76,8 @@ export class CharacterPreview {
       const dt = Math.min((now - this.last) / 1000, 0.1);
       this.last = now;
       this.rig?.mixer.update(dt);
-      this.holder.rotation.y += dt * 0.5;
+      if (this.director) this.director(dt);
+      else this.holder.rotation.y += dt * 0.5;
       this.render();
       this.frame = requestAnimationFrame(loop);
     };
