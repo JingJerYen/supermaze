@@ -68,6 +68,7 @@ export const HOME_CSS = `
 .lb .hm-rules button{--bh:2.8em;${plate("stone")};color:#fff;font-size:1.05em;font-weight:700;padding:0 .3em;display:flex;align-items:center;gap:.4em;cursor:pointer}
 .hm-rules svg{font-size:1.3em;color:#cfe0ff}
 .hm-rules #lb-store svg{color:#ffd23f}
+.hm-rules #lb-ach svg{color:#ffb84d}
 .hm-rules #lb-store.owned{color:#ffe08a}
 @media (max-height:520px){
   .hm{font-size:clamp(10px,3.1vh,14px);gap:.5em;padding-top:.8em;padding-bottom:.8em;width:min(40em,58vw)}
@@ -118,6 +119,7 @@ export function homeHtml(v: HomeView): string {
     </div>
     <div class="hm-rules">
       <button id="lb-rules">${ICONS.book}${t("lobby.home.rules")}</button>
+      <button id="lb-ach">${ICONS.trophy}${t("lobby.home.achievements")}</button>
       <button id="lb-store" class="${v.premium ? "owned" : ""}">${ICONS.star}${v.premium ? t("lobby.home.fullVersionOwned") : t("lobby.home.fullVersion")}</button>
       <button id="lb-lang" title="${t("lobby.home.language")}">${ICONS.globe}${LOCALE_NAMES[nextLocale()]}</button>
     </div>`;

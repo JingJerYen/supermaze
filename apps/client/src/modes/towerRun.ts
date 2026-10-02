@@ -4,17 +4,23 @@ import {
   continueRun,
   DEFAULT_TUNING,
   judgeFloor,
+  newRoundTracker,
   planFloor,
   recordFloor,
   rotateMap,
+  runAchievements,
   SeededRandom,
   SKILL_KINDS,
   startTowerRun,
+  trackRound,
+  type AchievementId,
   type FloorPlan,
   type SimulationState,
   type SkillKind,
   type TowerRunState,
 } from "@supermaze/sim";
+import { achievementName } from "../achievements/info.js";
+import { unlockAchievements } from "../achievements/store.js";
 import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
 import { MAP_POOL } from "../maps.js";
@@ -37,7 +43,9 @@ const PLAYER_ID = "local"; // createLocalMode's id for you
  * buttons. The best run total (runs from floor 1 only) and the highest floor
  * played are kept in this browser. Free players watch a rewarded ad to
  * continue or to pick a skill; the full version skips the ads, takes two
- * skills a floor and may start on any floor already played.
+ * skills a floor and may start on any floor already played. Achievements
+ * (section 4.3) are judged by the sim as the floor plays and kept in this
+ * browser; new ones pop up in play and are listed on the result screen.
  */
 export class TowerRun {
   private run: TowerRunState;
@@ -47,6 +55,11 @@ export class TowerRun {
   private prep: FloorPrep | null = null;
   private select: FloorSelect | null = null;
   private readonly floorsTotal = DEFAULT_TUNING.towerRun.floors.length;
+  private tracker = newRoundTracker();
+  /** Achievement toasts waiting for the match to show them. */
+  private notices: string[] = [];
+  /** Achievements first unlocked on the floor being played. */
+  private unlocked: AchievementId[] = [];
 
   constructor(
     private readonly root: HTMLElement,
@@ -108,6 +121,8 @@ export class TowerRun {
       return;
     }
     const plan = this.plan;
+    this.tracker = newRoundTracker();
+    this.unlocked = [];
     const mode = createLocalMode(rotateMap(plan.map, plan.rotation), {
       players: plan.participants,
       seed: plan.seed,
@@ -119,6 +134,8 @@ export class TowerRun {
       endWhenYouClimb: true,
       startDark: plan.spec.mods.includes("dark"),
       ghostPack: plan.spec.mods.includes("ghostPack"),
+      onStep: (prev, next, events) => this.earn(trackRound(this.tracker, prev, next, events, PLAYER_ID, plan.tuning)),
+      notices: () => this.notices.splice(0),
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
       caption: () => {
@@ -137,6 +154,8 @@ export class TowerRun {
     const outcome = judgeFloor(state, PLAYER_ID, plan.passRank);
     this.run = recordFloor(this.run, plan, outcome);
     const run = this.run;
+    this.earn(runAchievements(run));
+    const achLine = this.unlocked.length ? t("ach.newLine", { names: this.unlocked.map(achievementName).join(t("ach.sep")) }) : "";
     const best = loadTowerBest();
     // Only a run from the bottom floor competes for the best total.
     const record = run.startFloor === 1 && (!best || run.totalScore > best.score);
@@ -151,7 +170,7 @@ export class TowerRun {
         note: {
           title: t(outcome.passed ? "modes.tower.clearedPassed" : "modes.tower.cleared", { n: this.floorsTotal }),
           tone: outcome.passed ? "pass" : "info",
-          lines: [total, bestLine].filter(Boolean),
+          lines: [total, bestLine, achLine].filter(Boolean),
         },
         buttons: [{ label: t("modes.tower.tryAgain"), primary: true, run: () => this.restart() }, home],
       };
@@ -163,15 +182,23 @@ export class TowerRun {
       const used = canContinue(run) ? "" : t("modes.tower.continuesUsed", { n: DEFAULT_TUNING.towerRun.maxContinues });
       this.verdict = {
         endsAt: null,
-        note: { title: t("modes.tower.failed", { rank: outcome.rank, pass: plan.passRank }), tone: "fail", lines: [total, bestLine, used].filter(Boolean) },
+        note: { title: t("modes.tower.failed", { rank: outcome.rank, pass: plan.passRank }), tone: "fail", lines: [total, bestLine, used, achLine].filter(Boolean) },
         buttons: [home, carryOn],
       };
     } else {
       this.verdict = {
         endsAt: null,
-        note: { title: t("modes.tower.advanced", { rank: outcome.rank }), tone: "pass", lines: [t("modes.tower.next", { score: run.totalScore, floor: run.floor, floors: this.floorsTotal })] },
+        note: { title: t("modes.tower.advanced", { rank: outcome.rank }), tone: "pass", lines: [t("modes.tower.next", { score: run.totalScore, floor: run.floor, floors: this.floorsTotal }), achLine].filter(Boolean) },
         buttons: [{ label: t("modes.tower.goTo", { n: run.floor }), primary: true, run: () => this.prepare() }, home],
       };
+    }
+  }
+
+  /** Keep newly earned achievements; the first time each is earned it pops up and joins the floor's list. */
+  private earn(ids: readonly AchievementId[]): void {
+    for (const id of unlockAchievements(ids)) {
+      this.unlocked.push(id);
+      this.notices.push(t("ach.toast", { name: achievementName(id) }));
     }
   }
 

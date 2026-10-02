@@ -16,6 +16,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.home.soon": "Coming Soon",
   "lobby.home.onlineSoon": "Online play is coming soon. Stay tuned!",
   "lobby.home.rules": "How to Play",
+  "lobby.home.achievements": "Achievements",
   "lobby.home.language": "Change language",
   "lobby.home.fullVersion": "Full Version",
   "lobby.home.fullVersionOwned": "Full Version Owned",

@@ -1,4 +1,4 @@
-import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimEvent, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
 import { formatSeconds } from "./roundHud.js";
@@ -31,6 +31,10 @@ export interface LocalOptions {
   startDark?: boolean;
   /** Every ghost event turns all the CPUs into ghosts at once, hunting you (tower run special floor). */
   ghostPack?: boolean;
+  /** Called after every tick with the states either side of it and its events (the tower run's achievements). */
+  onStep?: (prev: SimulationState, next: SimulationState, events: readonly SimEvent[]) => void;
+  /** Big toasts to show now; see GameMode.notices. */
+  notices?: () => string[];
   /** Called once, on the tick the round finishes. */
   onFinish?: (state: SimulationState) => void;
   /** Replaces the default result-screen buttons. */
@@ -83,13 +87,15 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
       prev = sim.getState();
       const inputs = cpu.inputs();
       inputs.set(id, input);
-      sim.step(inputs);
+      const events = sim.step(inputs);
+      options.onStep?.(prev, sim.getState(), events);
       if (!finished && sim.getState().status === "finished") {
         finished = true;
         options.onFinish?.(sim.getState());
       }
     },
     caption: () => options.caption?.() ?? null,
+    notices: () => options.notices?.() ?? [],
     sample(_now, alpha) {
       return { from: prev, to: sim.getState(), alpha };
     },

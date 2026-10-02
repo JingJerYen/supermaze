@@ -25,3 +25,5 @@ export * from "./simulation.js";
 export * from "./cpu/pathfind.js";
 export * from "./cpu/controller.js";
 export * from "./run/towerRun.js";
+export * from "./run/runAchievements.js";
+export * from "./achievements.js";

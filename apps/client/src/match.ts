@@ -163,6 +163,7 @@ export class Match {
       this.input?.skillButton2.setSkill(this.hud.skillButton(model, 2));
       if (this.lastToastState !== s.to) {
         for (const n of diffToasts(this.lastToastState, s.to, meId)) this.hud.toast(n.text, n.big);
+        for (const text of this.mode.notices?.() ?? []) this.hud.toast(text, true);
         for (const g of diffGains(this.lastToastState, s.to, meId, DEFAULT_TUNING.scoring)) this.hud.gain(g.points, g.label);
         if (!this.demo) for (const c of diffSounds(this.lastToastState, s.to, meId)) sfx.play(c.name, c.volume);
         this.lastToastState = s.to;

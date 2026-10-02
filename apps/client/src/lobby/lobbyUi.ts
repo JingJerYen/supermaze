@@ -47,6 +47,8 @@ export interface LobbyUiHandlers {
   onRules(): void;
   /** Open the full version's page. */
   onStore(): void;
+  /** Open the achievements page. */
+  onAchievements(): void;
   onReady(ready: boolean): void;
   onSwitchTeam(): void;
   /** Private-room host: two teams or everyone for themselves. */
@@ -108,6 +110,7 @@ export class LobbyUi {
     this.showPage(homeHtml({ name: profile.name, portrait: profile.character ? this.faces.get(profile.character) : undefined, error, best, premium: isPremium(), online }));
     this.card.querySelector("#lb-rules")!.addEventListener("click", () => this.handlers.onRules());
     this.card.querySelector("#lb-store")!.addEventListener("click", () => this.handlers.onStore());
+    this.card.querySelector("#lb-ach")!.addEventListener("click", () => this.handlers.onAchievements());
     this.card.querySelector("#lb-lang")!.addEventListener("click", () => switchLocale(nextLocale()));
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
