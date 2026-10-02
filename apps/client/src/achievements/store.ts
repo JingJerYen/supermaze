@@ -20,6 +20,8 @@ export function loadAchievements(): Partial<Record<AchievementId, number>> {
 
 /** Record `ids` as unlocked now; returns the ones that were not unlocked before. */
 export function unlockAchievements(ids: readonly AchievementId[]): AchievementId[] {
+  // Called every tick of a floor, nearly always with nothing: skip the storage read.
+  if (ids.length === 0) return [];
   const have = loadAchievements();
   const fresh = ids.filter((id) => have[id] === undefined);
   if (fresh.length === 0) return [];
