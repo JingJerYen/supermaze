@@ -57,7 +57,6 @@ export interface PlayerRow {
   isMe: boolean;
   hasKey: boolean;
   onTower: boolean;
-  arrival: number | null;
   cpu: boolean;
   score: number;
   ghost: boolean;
@@ -141,7 +140,6 @@ function toRow(state: SimulationState, p: PlayerState, isMe: boolean): PlayerRow
     isMe,
     hasKey: p.keyId !== null && p.phase === "maze",
     onTower: p.phase === "tower",
-    arrival: p.towerArrival,
     cpu: p.controller === "cpu",
     score: p.score,
     ghost: isGhost(state.ghost, p),

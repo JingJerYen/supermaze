@@ -62,7 +62,7 @@ export const hud: Record<keyof typeof zh, string> = {
   "hud.ghost.pack": "Everyone else",
 
   "hud.roster.myTeam": "{team} (us)",
-  "hud.roster.tower": "🏰 #{n}",
+  "hud.roster.tower": "🏰 Climbed",
   "hud.roster.hasKey": "Has a key",
   "hud.roster.noKey": "No key yet",
   "hud.roster.frozen": "Frozen",

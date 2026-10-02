@@ -285,8 +285,8 @@ function renderTeam(container: HTMLElement, teams: TeamRow[], mine: boolean): vo
       label.textContent = `${p.isMe ? t("hud.nameYou", { name: p.name }) : p.name}${p.ghost ? " 👻" : ""}`;
       const badges: HTMLElement[] = [];
       // Everyone in the maze shows a key slot: bright once they hold their key, faint until then.
-      // On the tower the row turns green and the slot becomes the arrival rank.
-      if (p.onTower) badges.push(badge("tower", p.arrival === null ? "🏰" : t("hud.roster.tower", { n: p.arrival + 1 })));
+      // On the tower the row turns green and the slot says so. No arrival rank: players took it for the final placing.
+      if (p.onTower) badges.push(badge("tower", t("hud.roster.tower")));
       else {
         const key = el("span", `hud-key${p.hasKey ? "" : " off"}`);
         key.textContent = "🔑";

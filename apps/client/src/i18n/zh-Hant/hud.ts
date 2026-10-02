@@ -68,7 +68,7 @@ export const hud = {
 
   // Rosters
   "hud.roster.myTeam": "我方 {team}",
-  "hud.roster.tower": "🏰 第{n}名",
+  "hud.roster.tower": "🏰 已登塔",
   "hud.roster.hasKey": "已拿到鑰匙",
   "hud.roster.noKey": "還沒有鑰匙",
   "hud.roster.frozen": "定身",
