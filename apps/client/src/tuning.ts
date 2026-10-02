@@ -130,6 +130,8 @@ export const CLIENT_TUNING = {
     turnShare: 0.5,
     /** The other axis must beat the current one by this factor to change direction, so a push near a diagonal does not flicker. */
     switchBias: 1.2,
+    /** A walking push within this many degrees of a diagonal sends both directions: the sim then turns at the first opening (CLAUDE.md section 6). */
+    diagonalHalfDeg: 20,
     /** Ticks before a turn that did not show up in the state (lag) is sent again. */
     turnRetryTicks: 10,
     /** Opacity on touch devices, and on desktop where the keyboard is primary. */

@@ -30,6 +30,8 @@ const CSS = `
 .hud-score{font-size:12px;color:#c9d2e3;min-width:2.5em;text-align:right}
 .hud-clock{text-align:center;flex:none;position:relative}
 .hud-time{font-size:clamp(34px,6vw,48px);font-weight:500;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+/* Short screens (phones in landscape): a smaller clock, so it hides less of the path ahead. */
+@media (max-height:520px){.hud-time{font-size:34px}}
 .hud-time.urgent{color:#ff6b6b;animation:hud-pulse 1s infinite}
 @keyframes hud-pulse{50%{transform:scale(1.08)}}
 .hud-sub{font-size:12px;color:#c9d2e3;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.6)}

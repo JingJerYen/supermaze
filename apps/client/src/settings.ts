@@ -4,9 +4,9 @@
  * applies from the next match on.
  */
 
-/** Touch movement: the fixed four-way pad in the corner, or a stick that appears under the thumb. */
+/** Touch movement: the joystick in the corner (the default), or the four-way pad in the same place. */
 export type ControlScheme = "dpad" | "stick";
-export const CONTROL_SCHEMES: readonly ControlScheme[] = ["dpad", "stick"];
+export const CONTROL_SCHEMES: readonly ControlScheme[] = ["stick", "dpad"];
 
 const CONTROLS_KEY = "supermaze.controls";
 let controls: ControlScheme | null = null;
@@ -14,9 +14,9 @@ let controls: ControlScheme | null = null;
 export function loadControls(): ControlScheme {
   if (controls) return controls;
   try {
-    controls = localStorage.getItem(CONTROLS_KEY) === "stick" ? "stick" : "dpad";
+    controls = localStorage.getItem(CONTROLS_KEY) === "dpad" ? "dpad" : "stick";
   } catch {
-    controls = "dpad";
+    controls = "stick";
   }
   return controls;
 }

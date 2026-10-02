@@ -102,7 +102,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.settings.dpad": "D-pad",
   "lobby.settings.dpadDesc": "Fixed in the bottom-left corner. Hold to walk, tap to turn.",
   "lobby.settings.stick": "Joystick",
-  "lobby.settings.stickDesc": "A round stick fixed in the bottom-left corner. A light push (inside the dashed ring) only turns; push past it to walk.",
+  "lobby.settings.stickDesc": "A round stick in the bottom-left corner. A light push (inside the dashed ring) only turns; push past it to walk. Push toward a diagonal to turn into the first opening on that side.",
   "lobby.settings.note": "The keyboard always works. Saved on this device; applies from the next game.",
   "lobby.settings.home": "Home",
 

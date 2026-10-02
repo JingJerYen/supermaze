@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { pickDir } from "../src/input/stick.js";
+import { diagonalSide, pickDir } from "../src/input/stick.js";
 
-describe("floating stick direction", () => {
+describe("joystick direction", () => {
   it("takes the dominant axis from a standstill", () => {
     expect(pickDir(10, 2, null, 1.2)).toBe("east");
     expect(pickDir(-3, -9, null, 1.2)).toBe("north");
@@ -17,5 +17,15 @@ describe("floating stick direction", () => {
 
   it("flips within an axis at once", () => {
     expect(pickDir(-10, 1, "east", 1.2)).toBe("west");
+  });
+});
+
+describe("joystick diagonals", () => {
+  it("a push near the axis is one direction, near a diagonal two", () => {
+    expect(diagonalSide(0, -10, "north", 20)).toBeNull();
+    expect(diagonalSide(3, -10, "north", 20)).toBeNull(); // about 17 degrees off the axis
+    expect(diagonalSide(7, -10, "north", 20)).toBe("east"); // about 35 degrees
+    expect(diagonalSide(10, 8, "east", 20)).toBe("south");
+    expect(diagonalSide(-10, -8, "west", 20)).toBe("north");
   });
 });
