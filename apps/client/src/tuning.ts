@@ -10,16 +10,15 @@ export const CLIENT_TUNING = {
    */
   footprints: {
     steps: { easy: 0, medium: 30, hard: 50 } as Record<string, number>,
-    /** Light cyan: stands out on every theme's floor, warm or cold, light or dark. */
-    color: "#8ff3ff",
+    color: "#111111",
     /** Opacity of the newest print, and the share of it the oldest keeps. */
-    opacity: 0.9,
+    opacity: 0.8,
     oldest: 0.25,
     /** Print size in tiles, the half-distance between left and right, how far one is ahead, and height above the ground. */
-    width: 0.15,
-    length: 0.27,
-    gap: 0.11,
-    stagger: 0.12,
+    width: 0.2,
+    length: 0.34,
+    gap: 0.13,
+    stagger: 0.13,
     lift: 0.02,
   },
   climb: {
