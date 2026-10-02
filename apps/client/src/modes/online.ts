@@ -18,6 +18,7 @@ export class OnlineMatchMode implements GameMode {
   readonly label = "online";
   readonly grid: MapGrid;
   readonly theme: string | undefined;
+  readonly difficulty: string | undefined;
   readonly plazaRadius: number;
   readonly switchTiles: ReadonlySet<string>;
   private buffer: SnapshotBuffer;
@@ -43,6 +44,7 @@ export class OnlineMatchMode implements GameMode {
   ) {
     this.grid = MapGrid.fromMapData(map);
     this.theme = map.theme;
+    this.difficulty = map.difficulty;
     this.plazaRadius = map.plazaRadius ?? 0;
     this.switchTiles = switchTileSet(map);
     this.buffer = new SnapshotBuffer(1000 / tickRate);

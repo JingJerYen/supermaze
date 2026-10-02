@@ -3,6 +3,27 @@
  * Game-rule numbers live in @supermaze/sim, not here.
  */
 export const CLIENT_TUNING = {
+  /**
+   * The local player's footprints (render/footprints.ts): prints on the last
+   * few tiles walked, by map difficulty; 0 turns them off. Unlit, so they show
+   * in the dark; only the player's own.
+   */
+  footprints: {
+    steps: { easy: 0, medium: 30, hard: 50 } as Record<string, number>,
+    /** Black on light floors, light on dark ones (luma under `lightBelowLuma`) and on everything while the lights are off. */
+    dark: "#111111",
+    light: "#f0f0f0",
+    lightBelowLuma: 0.45,
+    /** Opacity of the newest print, and the share of it the oldest keeps. */
+    opacity: 0.8,
+    oldest: 0.25,
+    /** Print size in tiles, the half-distance between left and right, how far one is ahead, and height above the ground. */
+    width: 0.2,
+    length: 0.34,
+    gap: 0.13,
+    stagger: 0.13,
+    lift: 0.02,
+  },
   climb: {
     /** Door slides open, then the character walks in, then the light climbs the shaft. Seconds. */
     doorOpenSec: 0.7,

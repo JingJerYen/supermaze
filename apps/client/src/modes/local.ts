@@ -79,6 +79,7 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     label: "local",
     grid: sim.grid,
     theme: map.theme,
+    difficulty: map.difficulty,
     plazaRadius: map.plazaRadius ?? 0,
     switchTiles: switchTileSet(map),
     tickRate: DEFAULT_TUNING.tickRate,
