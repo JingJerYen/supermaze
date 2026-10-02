@@ -13,7 +13,7 @@ const PICTURES: Record<ControlScheme, string> = {
 
 /**
  * Per-device settings, opened from the home screen: for now the touch
- * controls, the corner pad or the floating stick (`input/`). Saved at once;
+ * controls, the corner pad or the corner joystick (`input/`). Saved at once;
  * the next match builds its input with it.
  */
 export class SettingsScreen {

@@ -11,7 +11,7 @@ import { guardPageGestures } from "./touchGuard.js";
 /** Merges every input device into one intent. Gameplay code only ever sees the intent. */
 export class InputSource {
   private readonly keyboard = new KeyboardInput();
-  /** The corner pad or the floating stick, whichever the settings page picked. */
+  /** The corner pad or the corner joystick, whichever the settings page picked. */
   private readonly touch: DpadInput | StickInput;
   private readonly unguard: () => void;
   readonly actionButton: ActionButton;
