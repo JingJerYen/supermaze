@@ -75,8 +75,8 @@ export const hud: Record<keyof typeof zh, string> = {
   "hud.gain.trapped": "Trapped {name}",
   "hud.gain.other": "Points",
 
-  "hud.toast.youClimbed": "You reached the top, #{n}",
-  "hud.toast.climbed": "{name} reached the top, #{n}",
+  "hud.toast.youClimbed": "You reached the top",
+  "hud.toast.climbed": "{name} reached the top",
   "hud.toast.youGotKey": "🔑 You got a key",
   "hud.toast.gotKey": "🔑 {name} got a key",
   "hud.toast.youStole": "👻 You stole {victim}'s key",
@@ -97,6 +97,7 @@ export const hud: Record<keyof typeof zh, string> = {
   "hud.result.wins": "{team} wins",
   "hud.result.draw": "Draw",
   "hud.result.noWinner": "No winner",
+  "hud.result.climbOrder": "Climbed #{n}",
   "hud.result.notClimbed": "Didn't climb",
   "hud.result.col.player": "Player",
   "hud.result.col.climb": "Climb",

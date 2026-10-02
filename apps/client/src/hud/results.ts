@@ -22,6 +22,7 @@ const CSS = `
 .rs-count{font-size:14px;color:#c9d2e3}
 .rs-title+.rs-note{margin-top:14px}
 .rs-note{border-radius:10px;padding:10px 14px;margin:0 0 14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06)}
+.rs-verdict{font-weight:700}.rs-verdict.pass{color:#8bff7a}.rs-verdict.fail{color:#ff8a8a}
 .rs-note.pass{border-color:#8bff7a;background:rgba(40,110,50,.35)}
 .rs-note.fail{border-color:#ff8a8a;background:rgba(120,30,30,.35)}
 .rs-note-title{font-size:clamp(18px,3.4vw,22px);font-weight:500}
@@ -62,6 +63,8 @@ const REASON_TEXT: Record<string, MessageKey> = {
 export interface ResultsActions {
   /** Server clock (ms since epoch) when the room returns to the lobby, or null for the sandbox. */
   endsAt: number | null;
+  /** Headline in place of who won (tower run: success or failure). */
+  title?: { text: string; tone: "pass" | "fail" };
   /** Extra verdict above the table (tower run: passed or not, run total); it replaces the line saying why the round ended. */
   note?: { title: string; lines: string[]; tone: "pass" | "fail" | "info" };
   /** `back` marks the one the Android back button presses (see native/backButton.ts). */
@@ -128,7 +131,7 @@ export class ResultsPanel {
       .map(({ p, final }, i) => {
         const win = p.teamId === winner;
         const boosted = win && !solo; // the x2 exists in teams mode only
-        const placement = p.phase === "tower" && p.towerArrival !== null ? t("hud.climbedPlace", { n: p.towerArrival + 1 }) : t("hud.result.notClimbed");
+        const placement = p.phase === "tower" && p.towerArrival !== null ? t("hud.result.climbOrder", { n: p.towerArrival + 1 }) : t("hud.result.notClimbed");
         return `<tr class="${p.id === meId ? "me" : ""} ${win ? "win" : ""}">
           <td class="rs-rank">${i + 1}</td>
           <td><span class="rs-team" style="background:${teamColor(p.teamId)}"></span>${p.id === meId ? t("hud.nameYou", { name: escapeHtml(p.name ?? p.id.slice(0, 6)) }) : escapeHtml(p.name ?? p.id.slice(0, 6))}</td>
@@ -140,7 +143,7 @@ export class ResultsPanel {
       .join("");
 
     this.card.innerHTML = `
-      <div class="rs-title">${winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${t("hud.result.wins", { team: teamName(winner) })}` : solo ? t("hud.result.draw") : t("hud.result.noWinner")}</div>
+      <div class="rs-title">${actions.title ? `<span class="rs-verdict ${actions.title.tone}">${escapeHtml(actions.title.text)}</span>` : winner ? `<span class="rs-dot" style="background:${teamColor(winner)}"></span>${t("hud.result.wins", { team: teamName(winner) })}` : solo ? t("hud.result.draw") : t("hud.result.noWinner")}</div>
       ${actions.note ? "" : `<div class="rs-reason">${REASON_TEXT[r.reason] ? t(REASON_TEXT[r.reason] as MessageKey) : r.reason}</div>`}
       ${
         actions.note

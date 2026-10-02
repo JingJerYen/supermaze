@@ -61,6 +61,8 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.tower.continueAd": "📺 Watch Ad & Continue ({n} left)",
   "modes.tower.continuesUsed": "All {n} continues used for this run",
   "modes.tower.failed": "Run over: #{rank} by score, needed top {pass}",
+  "modes.tower.success": "Success!",
+  "modes.tower.failure": "Failed",
   "modes.tower.advanced": "Advanced! #{rank} by score",
   "modes.tower.next": "Total {score} · Next: Floor {floor}/{floors}",
   "modes.tower.goTo": "Go to Floor {n}",

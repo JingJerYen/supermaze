@@ -62,6 +62,8 @@ export const modes = {
   "modes.tower.continueAd": "📺 看廣告繼續（剩 {n} 次）",
   "modes.tower.continuesUsed": "這次挑戰的 {n} 次繼續已用完",
   "modes.tower.failed": "挑戰結束：分數第 {rank} 名，需要前 {pass} 名",
+  "modes.tower.success": "成功！",
+  "modes.tower.failure": "失敗",
   "modes.tower.advanced": "晉級！分數第 {rank} 名",
   "modes.tower.next": "總分 {score}　下一層：第 {floor} / {floors} 層",
   "modes.tower.goTo": "前往第 {n} 層",

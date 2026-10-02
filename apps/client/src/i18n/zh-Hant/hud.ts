@@ -83,8 +83,8 @@ export const hud = {
   "hud.gain.other": "得分",
 
   // Event toasts
-  "hud.toast.youClimbed": "你登上塔頂，第 {n} 名",
-  "hud.toast.climbed": "{name} 登上塔頂，第 {n} 名",
+  "hud.toast.youClimbed": "你登上塔頂",
+  "hud.toast.climbed": "{name} 登上塔頂",
   "hud.toast.youGotKey": "🔑 你拿到鑰匙",
   "hud.toast.gotKey": "🔑 {name} 拿到鑰匙",
   "hud.toast.youStole": "👻 你偷走了 {victim} 的鑰匙",
@@ -106,6 +106,7 @@ export const hud = {
   "hud.result.wins": "{team} 獲勝",
   "hud.result.draw": "平手",
   "hud.result.noWinner": "沒有獲勝隊伍",
+  "hud.result.climbOrder": "第 {n} 個登塔",
   "hud.result.notClimbed": "未登塔",
   "hud.result.col.player": "玩家",
   "hud.result.col.climb": "登塔",
