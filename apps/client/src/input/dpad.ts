@@ -29,7 +29,7 @@ const CSS = `
 /**
  * Fixed four-way pad in the bottom-left corner, Game Boy style, replacing the
  * floating stick (2026-09-26); the default touch control. The settings page
- * can swap in the newer floating stick instead (`stick.ts`). The sim only ever wants one of four directions,
+ * can swap in a joystick in the same corner instead (`stick.ts`). The sim only ever wants one of four directions,
  * so the pad emits -1/0/1 per axis: a tap turns the player, a hold walks.
  *
  * The whole cross is one pointer-capture surface: the direction is whichever

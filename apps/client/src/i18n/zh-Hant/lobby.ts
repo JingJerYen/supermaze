@@ -108,7 +108,7 @@ export const lobby = {
   "lobby.settings.dpad": "十字鍵",
   "lobby.settings.dpadDesc": "固定在左下角。按住方向就走，點一下只轉身。",
   "lobby.settings.stick": "搖桿",
-  "lobby.settings.stickDesc": "手指放在畫面左半邊任何地方就出現。輕推（虛線圈內）只轉身，推出虛線圈才走。",
+  "lobby.settings.stickDesc": "固定在左下角的圓形搖桿。輕推（虛線圈內）只轉身，推出虛線圈才走。",
   "lobby.settings.note": "鍵盤一律可用。設定存在這台裝置上，下一局開始生效。",
   "lobby.settings.home": "回首頁",
 

@@ -1,6 +1,5 @@
 import type { MoveIntent } from "@supermaze/sim";
 import { CLIENT_TUNING } from "../tuning.js";
-import { onUiElement } from "./touchGuard.js";
 
 type Dir = "north" | "east" | "south" | "west";
 const VECTORS: Record<Dir, MoveIntent> = {
@@ -18,23 +17,29 @@ export interface StickPlayer {
 }
 
 const CSS = `
-.stick-zone{position:fixed;z-index:4;left:0;top:0;bottom:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.stick{position:fixed;z-index:5;pointer-events:none;width:calc(var(--stick-r) * 2);height:calc(var(--stick-r) * 2);transform:translate(-50%,-50%);
-  border-radius:50%;border:3px solid rgba(255,255,255,.55);background:rgba(255,255,255,.08);box-sizing:border-box;opacity:var(--stick-opacity)}
-.stick.idle{left:calc(max(var(--dpad-pad),env(safe-area-inset-left)) + var(--stick-r));top:auto;
-  bottom:max(var(--dpad-pad),env(safe-area-inset-bottom));transform:translate(-50%,0);opacity:var(--stick-idle-opacity)}
+.stick{position:fixed;z-index:5;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  left:max(var(--dpad-pad),env(safe-area-inset-left));bottom:max(var(--dpad-pad),env(safe-area-inset-bottom));
+  width:calc(var(--stick-r) * 2);height:calc(var(--stick-r) * 2);border-radius:50%;box-sizing:border-box;
+  border:4px solid rgba(255,255,255,.8);background:radial-gradient(circle,rgba(255,255,255,.1) 0,rgba(255,255,255,.2) 100%);
+  box-shadow:0 0 0 2px rgba(0,0,0,.25),inset 0 0 0 2px rgba(0,0,0,.2);opacity:var(--stick-opacity)}
+@media (hover:hover) and (pointer:fine){.stick{opacity:var(--stick-opacity-desktop)}}
 .stick-turn{position:absolute;left:50%;top:50%;width:var(--stick-turn);height:var(--stick-turn);transform:translate(-50%,-50%);
-  border-radius:50%;border:2px dashed rgba(255,255,255,.35);box-sizing:border-box}
+  border-radius:50%;border:2px dashed rgba(255,255,255,.55);box-sizing:border-box;pointer-events:none}
+.stick-arrow{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;color:rgba(255,255,255,.75);font-size:calc(var(--stick-r) * .26);line-height:1}
+.stick-arrow::before{content:"▲";position:absolute;transform:translate(-50%,calc(var(--stick-r) * -0.86))}
+.stick-arrow.on{color:#ffd23f}
+.stick-arrow.east{transform:rotate(90deg)}.stick-arrow.south{transform:rotate(180deg)}.stick-arrow.west{transform:rotate(-90deg)}
 .stick-knob{position:absolute;left:50%;top:50%;width:var(--stick-knob);height:var(--stick-knob);margin:calc(var(--stick-knob) / -2) 0 0 calc(var(--stick-knob) / -2);
-  border-radius:50%;background:rgba(255,255,255,.55);border:2px solid #fff;box-sizing:border-box}
-.stick-knob.walk{background:rgba(255,255,255,.92)}
+  border-radius:50%;background:rgba(255,255,255,.6);border:2px solid #fff;box-sizing:border-box;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.stick-knob.walk{background:rgba(255,255,255,.95)}
 `;
 
 /**
- * Floating stick, the alternative to the corner pad (settings page): a touch
- * anywhere in the left part of the screen puts the ring under the thumb, and
- * the ring follows when the thumb drags past its edge. Like the pad it only
- * ever asks for one of four directions.
+ * Joystick, the alternative to the corner pad (settings page): a ring fixed
+ * in the same corner, drawn plainly so it is clear where to press. Only a
+ * press inside the ring starts it; the thumb may then wander outside and the
+ * knob stays on the rim. Like the pad it only ever asks for one of four
+ * directions.
  *
  * Inside the dashed inner ring the push only turns the player: a single tick
  * of input, which the sim's tap-to-turn rule (CLAUDE.md section 6) treats as
@@ -42,11 +47,10 @@ const CSS = `
  * so it never becomes a step. Past the inner ring it walks.
  */
 export class StickInput {
-  private readonly zone: HTMLDivElement;
   private readonly ring: HTMLDivElement;
   private readonly knob: HTMLDivElement;
+  private readonly arrows = {} as Record<Dir, HTMLDivElement>;
   private pointerId: number | null = null;
-  private centre = { x: 0, y: 0 };
   private dir: Dir | null = null;
   private walking = false;
   private player: StickPlayer | null = null;
@@ -61,53 +65,55 @@ export class StickInput {
     document.head.appendChild(style);
 
     const radius = `min(${t.radiusPx}px, ${t.maxRadiusVh}vh)`;
-    // The minimap sits above the pad's corner; the idle ring takes the same place.
+    // On the document root so the minimap stays clear of the ring, as it does of the pad.
     document.documentElement.style.setProperty("--dpad-size", `calc(${radius} * 2)`);
     document.documentElement.style.setProperty("--dpad-pad", `${CLIENT_TUNING.dpad.marginPx}px`);
 
-    this.zone = document.createElement("div");
-    this.zone.className = "stick-zone";
-    this.zone.style.width = `${t.zoneShare * 100}%`;
     this.ring = document.createElement("div");
-    this.ring.className = "stick idle";
+    this.ring.className = "stick";
     this.ring.style.setProperty("--stick-r", radius);
     this.ring.style.setProperty("--stick-turn", `calc(${radius} * ${2 * t.turnShare})`);
     this.ring.style.setProperty("--stick-knob", `calc(${radius} * ${t.knobShare})`);
     this.ring.style.setProperty("--stick-opacity", String(t.opacity));
-    this.ring.style.setProperty("--stick-idle-opacity", String(t.idleOpacity));
+    this.ring.style.setProperty("--stick-opacity-desktop", String(t.opacityDesktop));
     const turn = document.createElement("div");
     turn.className = "stick-turn";
+    this.ring.appendChild(turn);
+    for (const d of Object.keys(VECTORS) as Dir[]) {
+      const a = document.createElement("div");
+      a.className = `stick-arrow ${d}`;
+      this.ring.appendChild(a);
+      this.arrows[d] = a;
+    }
     this.knob = document.createElement("div");
     this.knob.className = "stick-knob";
-    this.ring.append(turn, this.knob);
-    parent.append(this.zone, this.ring);
+    this.ring.appendChild(this.knob);
+    parent.appendChild(this.ring);
 
-    this.zone.addEventListener("pointerdown", (e) => {
-      if (this.pointerId !== null || onUiElement(e)) return;
+    this.ring.addEventListener("pointerdown", (e) => {
+      if (this.pointerId !== null) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      const { x, y, radius: r } = this.centre();
+      // The element is square; its corners outside the circle do not count.
+      if (Math.hypot(e.clientX - x, e.clientY - y) > r * t.hitShare) return;
       e.preventDefault();
+      e.stopPropagation();
       this.pointerId = e.pointerId;
-      this.zone.setPointerCapture(e.pointerId);
-      this.centre = { x: e.clientX, y: e.clientY };
-      this.ring.classList.remove("idle");
+      this.ring.setPointerCapture(e.pointerId);
       this.track(e.clientX, e.clientY);
     });
-    this.zone.addEventListener("pointermove", (e) => {
+    this.ring.addEventListener("pointermove", (e) => {
       if (e.pointerId === this.pointerId) this.track(e.clientX, e.clientY);
     });
     const release = (e: PointerEvent) => {
       if (e.pointerId !== this.pointerId) return;
       this.pointerId = null;
-      this.dir = null;
-      this.walking = false;
-      this.ring.classList.add("idle");
-      this.ring.style.left = this.ring.style.top = "";
+      this.setDir(null, false);
       this.knob.style.transform = "";
-      this.knob.classList.remove("walk");
     };
-    this.zone.addEventListener("pointerup", release);
-    this.zone.addEventListener("pointercancel", release);
-    this.zone.addEventListener("lostpointercapture", release);
+    this.ring.addEventListener("pointerup", release);
+    this.ring.addEventListener("pointercancel", release);
+    this.ring.addEventListener("lostpointercapture", release);
   }
 
   /** True while a finger (or the mouse button) holds the stick. */
@@ -134,36 +140,37 @@ export class StickInput {
     return v;
   }
 
-  private track(x: number, y: number): void {
-    const t = CLIENT_TUNING.stick;
-    const radius = Math.min(t.radiusPx, (t.maxRadiusVh * window.innerHeight) / 100);
-    let dx = x - this.centre.x;
-    let dy = y - this.centre.y;
-    let dist = Math.hypot(dx, dy);
-    if (dist > radius) {
-      // Drag the ring along so the thumb never has to come back to it.
-      const pull = (dist - radius) / dist;
-      this.centre = { x: this.centre.x + dx * pull, y: this.centre.y + dy * pull };
-      dx = x - this.centre.x;
-      dy = y - this.centre.y;
-      dist = radius;
-    }
-    this.ring.style.left = `${this.centre.x}px`;
-    this.ring.style.top = `${this.centre.y}px`;
-    this.knob.style.transform = `translate(${dx}px,${dy}px)`;
+  /** The ring's centre and radius on screen. */
+  private centre(): { x: number; y: number; radius: number } {
+    const r = this.ring.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, radius: r.width / 2 };
+  }
 
-    if (dist < t.deadZonePx) {
-      this.dir = null;
-      this.walking = false;
-    } else {
-      this.dir = pickDir(dx, dy, this.dir, t.switchBias);
-      this.walking = dist > radius * t.turnShare;
+  private track(px: number, py: number): void {
+    const t = CLIENT_TUNING.stick;
+    const { x, y, radius } = this.centre();
+    const dx = px - x;
+    const dy = py - y;
+    const dist = Math.hypot(dx, dy);
+    // The knob stays on the rim when the thumb strays outside.
+    const travel = radius - this.knob.offsetWidth / 2;
+    const shown = dist > travel ? travel / dist : 1;
+    this.knob.style.transform = `translate(${dx * shown}px,${dy * shown}px)`;
+    if (dist < t.deadZonePx) this.setDir(null, false);
+    else this.setDir(pickDir(dx, dy, this.dir, t.switchBias), dist > radius * t.turnShare);
+  }
+
+  private setDir(dir: Dir | null, walking: boolean): void {
+    if (dir !== this.dir) {
+      if (this.dir) this.arrows[this.dir].classList.remove("on");
+      if (dir) this.arrows[dir].classList.add("on");
+      this.dir = dir;
     }
-    this.knob.classList.toggle("walk", this.walking);
+    this.walking = walking;
+    this.knob.classList.toggle("walk", walking);
   }
 
   dispose(): void {
-    this.zone.remove();
     this.ring.remove();
   }
 }

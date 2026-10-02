@@ -112,18 +112,18 @@ export const CLIENT_TUNING = {
     opacityDesktop: 0.45,
   },
   /**
-   * The floating stick, the settings page's alternative to the pad: it appears
-   * where the thumb lands in the left part of the screen. A light push only
-   * turns the player; a push past `turnShare` of the radius walks.
+   * The joystick, the settings page's alternative to the pad: a ring fixed in
+   * the pad's corner. A light push only turns the player; a push past
+   * `turnShare` of the radius walks.
    */
   stick: {
-    /** Ring radius, px, capped at a share of the viewport height. */
-    radiusPx: 62,
-    maxRadiusVh: 17,
+    /** Ring radius, px, capped at a share of the viewport height (the same size as the pad). */
+    radiusPx: 75,
+    maxRadiusVh: 19,
     /** Knob size as a share of the ring radius. */
     knobShare: 0.5,
-    /** Share of the screen width, from the left edge, where a touch starts the stick. */
-    zoneShare: 0.5,
+    /** A press counts when it lands within this share of the radius from the centre. */
+    hitShare: 1.1,
     /** Movement under this many px from the centre is ignored. */
     deadZonePx: 8,
     /** Up to this share of the radius the push only turns; beyond it walks. */
@@ -132,9 +132,9 @@ export const CLIENT_TUNING = {
     switchBias: 1.2,
     /** Ticks before a turn that did not show up in the state (lag) is sent again. */
     turnRetryTicks: 10,
-    /** Opacity while held, and of the hint left in the corner while not. */
+    /** Opacity on touch devices, and on desktop where the keyboard is primary. */
     opacity: 0.9,
-    idleOpacity: 0.3,
+    opacityDesktop: 0.45,
   },
   audio: {
     /** Master volume, 0 to 1. `M` mutes; `?mute` starts muted. */
