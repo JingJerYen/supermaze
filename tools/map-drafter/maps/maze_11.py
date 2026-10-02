@@ -17,14 +17,20 @@ for x, y in [(cx, cy - 3), (cx, cy + 3), (cx - 3, cy), (cx + 3, cy)]:  # plaza g
     c.put(x, y)
 rows = c.rows()
 
+# One in each quarter: two onto small islands, one onto the outer wall, one onto a south-east island.
+STAIRS = [(5, 5), (17, 5), (5, 11), (17, 11)]
+
 if "--explore" in sys.argv:
     explore("maze-11", rows)
     sys.exit()
 
 finish("maze-11", rows,
-       stairs=[(5, 5), (17, 5)],  # each onto a small wall island that may hold a key
+       stairs=STAIRS,
        doors=0, traps=0, obstacles=0, time=180,
        candidates=dict(n_keys=8, n_road_keys=6, n_boxes=10, n_box_top=1, n_switch=4, key_gap=4, wall_cap=1,
                        road_cap=3, box_gap=4, switch_gap=8,
-                       keys_on_dead_ends=False, key_filter=lambda x, y, layer: abs(x - cx) + abs(y - cy) >= 8),
+                       keys_on_dead_ends=False,
+                       # Rooftop keys close to a stair, so they stay a short climb.
+                       key_filter=lambda x, y, layer: min(abs(x - sx) + abs(y - sy) for sx, sy in STAIRS) <= 3
+                       if layer == "w" else abs(x - cx) + abs(y - cy) >= 8),
        meta=dict(difficulty="easy", boxes=6, switches=2, theme="garden"))
