@@ -42,34 +42,58 @@ export class FootTrail {
 
 const VERT = `
 attribute float aAlpha;
+attribute vec3 aColor;
 varying float vAlpha;
+varying vec3 vColor;
 void main() {
   vAlpha = aAlpha;
+  vColor = aColor;
   gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
 }`;
 const FRAG = `
-uniform vec3 uColor;
 varying float vAlpha;
+varying vec3 vColor;
 void main() {
-  gl_FragColor = vec4(uColor, vAlpha);
+  gl_FragColor = vec4(vColor, vAlpha);
 }`;
+
+/** The two floors a print can sit on, as drawn by the map's theme. */
+export interface FootSurfaces {
+  road: number;
+  wallTop: number;
+}
+
+/** Perceived brightness of a 0xRRGGBB colour, 0..1. */
+export function luma(hex: number): number {
+  return (0.2126 * ((hex >> 16) & 255) + 0.7152 * ((hex >> 8) & 255) + 0.0722 * (hex & 255)) / 255;
+}
 
 /**
  * The local player's footprints (CLAUDE.md section 17.1): a pair of small
- * prints on each of the last few tiles walked, oldest faintest. Unlit, so they
- * show in the dark too; only the player's own, and never on the minimap.
+ * prints on each of the last few tiles walked, oldest faintest. Black on a
+ * light floor, light on a dark one and on everything with the lights off.
+ * Unlit, so they show in the dark too; only the player's own, and never on
+ * the minimap.
  * One instanced mesh, one draw call, rebuilt only when a step is added.
  */
 export class FootprintView {
   private readonly trail: FootTrail;
   private readonly mesh: THREE.InstancedMesh;
   private readonly alpha: THREE.InstancedBufferAttribute;
+  private readonly color: THREE.InstancedBufferAttribute;
+  private readonly ink: { dark: THREE.Color; light: THREE.Color };
+  private dark = false;
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
   private readonly up = new THREE.Vector3(0, 1, 0);
   private readonly flat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
 
-  constructor(scene: THREE.Scene, private readonly grid: MapGrid, steps: number) {
+  constructor(
+    scene: THREE.Scene,
+    private readonly grid: MapGrid,
+    steps: number,
+    private readonly surfaces: FootSurfaces,
+  ) {
     const t = CLIENT_TUNING.footprints;
     this.trail = new FootTrail(steps);
     const shape = new THREE.CircleGeometry(0.5, 12);
@@ -77,10 +101,12 @@ export class FootprintView {
     const count = Math.max(1, steps * 2);
     this.alpha = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
     shape.setAttribute("aAlpha", this.alpha);
+    this.color = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
+    shape.setAttribute("aColor", this.color);
+    this.ink = { dark: new THREE.Color(t.dark), light: new THREE.Color(t.light) };
     const material = new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
-      uniforms: { uColor: { value: new THREE.Color(t.color) } },
       transparent: true,
       depthWrite: false,
     });
@@ -91,9 +117,15 @@ export class FootprintView {
     scene.add(this.mesh);
   }
 
-  /** The tile the local player stands on, or null when there is none (no player yet, or on the tower). */
-  update(tile: TilePos | null): void {
-    if (!tile || !this.trail.visit(tile, this.grid)) return;
+  /**
+   * The tile the local player stands on, or null when there is none (no player
+   * yet, or on the tower), and whether the lights are off. Redraws only when a
+   * step is added or the lights change.
+   */
+  update(tile: TilePos | null, dark: boolean): void {
+    const stepped = !!tile && this.trail.visit(tile, this.grid);
+    if (!stepped && dark === this.dark) return;
+    this.dark = dark;
     const t = CLIENT_TUNING.footprints;
     const steps = this.trail.list;
     let n = 0;
@@ -104,6 +136,8 @@ export class FootprintView {
       const heading = Math.atan2(-s.dx, -s.dy);
       this.q.setFromAxisAngle(this.up, heading).multiply(this.flat);
       const y = tileElevation(this.grid, s.tile) + t.lift;
+      const floor = s.tile.layer === "road" ? this.surfaces.road : this.surfaces.wallTop;
+      const ink = dark || luma(floor) < t.lightBelowLuma ? this.ink.light : this.ink.dark;
       for (const side of [-1, 1]) {
         // Left and right print, one a little ahead of the other.
         const across = side * t.gap;
@@ -113,11 +147,13 @@ export class FootprintView {
         this.m.compose(new THREE.Vector3(x, y, z), this.q, new THREE.Vector3(1, 1, 1));
         this.mesh.setMatrixAt(n, this.m);
         this.alpha.setX(n, a);
+        this.color.setXYZ(n, ink.r, ink.g, ink.b);
         n++;
       }
     });
     this.mesh.count = n;
     this.mesh.instanceMatrix.needsUpdate = true;
     this.alpha.needsUpdate = true;
+    this.color.needsUpdate = true;
   }
 }

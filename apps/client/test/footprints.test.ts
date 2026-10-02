@@ -1,7 +1,7 @@
 import { MapGrid } from "@supermaze/sim";
 import { describe, expect, it } from "vitest";
 import { MAP_POOL } from "../src/maps.js";
-import { FootTrail } from "../src/render/footprints.js";
+import { FootTrail, luma } from "../src/render/footprints.js";
 
 const grid = MapGrid.fromMapData(MAP_POOL.find((m) => m.id === "maze-18")!);
 const road = (x: number, y: number) => ({ x, y, layer: "road" as const });
@@ -28,5 +28,14 @@ describe("footprint trail", () => {
     const off = new FootTrail(0);
     off.visit(road(1, 1), grid);
     expect(off.list).toHaveLength(0);
+  });
+});
+
+describe("footprint ink", () => {
+  it("dark floors get light prints, light floors black", () => {
+    expect(luma(0x232f44)).toBeLessThan(0.45); // stone road
+    expect(luma(0x444c5a)).toBeLessThan(0.45); // factory road
+    expect(luma(0xe2cfa6)).toBeGreaterThan(0.45); // garden path
+    expect(luma(0xf4f8ff)).toBeGreaterThan(0.45); // snow on ice wall tops
   });
 });

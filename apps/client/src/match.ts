@@ -95,7 +95,7 @@ export class Match {
     this.players.configure({ x: this.mapMesh.towerCenter.x, z: this.mapMesh.towerCenter.z });
     this.keys = new KeyViews(this.scene, mode.grid);
     const trail = this.demo ? 0 : (CLIENT_TUNING.footprints.steps[mode.difficulty ?? ""] ?? 0);
-    this.footprints = trail > 0 ? new FootprintView(this.scene, mode.grid, trail) : null;
+    this.footprints = trail > 0 ? new FootprintView(this.scene, mode.grid, trail, { road: theme.floor, wallTop: theme.wallTop }) : null;
     this.boxes = new BoxViews(this.scene, mode.grid);
     this.placeables = new PlaceableViews(this.scene, mode.grid);
     this.switches = new SwitchViews(this.scene, mode.grid);
@@ -179,7 +179,7 @@ export class Match {
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
     this.input?.setPlayer(meState ? { facing: meState.mover.facing, moving: meState.mover.target !== null } : null);
-    this.footprints?.update(meState && meState.phase !== "tower" ? meState.mover.from : null);
+    this.footprints?.update(meState && meState.phase !== "tower" ? meState.mover.from : null, !!s && !s.to.lightsOn);
     const onTower = meState?.phase === "tower";
     const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
     // Eagle eye (tower run skill): straight down from high above the player for a few seconds, from the maze.

@@ -10,7 +10,10 @@ export const CLIENT_TUNING = {
    */
   footprints: {
     steps: { easy: 0, medium: 30, hard: 50 } as Record<string, number>,
-    color: "#111111",
+    /** Black on light floors, light on dark ones (luma under `lightBelowLuma`) and on everything while the lights are off. */
+    dark: "#111111",
+    light: "#f0f0f0",
+    lightBelowLuma: 0.45,
     /** Opacity of the newest print, and the share of it the oldest keeps. */
     opacity: 0.8,
     oldest: 0.25,
