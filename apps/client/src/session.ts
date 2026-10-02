@@ -13,6 +13,7 @@ import { TowerRun } from "./modes/towerRun.js";
 import { loadTowerBest } from "./modes/towerProgress.js";
 import { StoreScreen } from "./lobby/storeScreen.js";
 import { AchievementsScreen } from "./lobby/achievementsScreen.js";
+import { SettingsScreen } from "./lobby/settingsScreen.js";
 import { Connection, ConnectTimeout, type JoinRequest } from "./net/connection.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 
@@ -30,6 +31,7 @@ export class Session {
   private profileScreen: CharacterSetup | null = null;
   private store: StoreScreen | null = null;
   private achievements: AchievementsScreen | null = null;
+  private settings: SettingsScreen | null = null;
   private matchMode: OnlineMatchMode | null = null;
   private pendingStart: MatchStartedMessage | null = null;
   private lastLobby: LobbyMessage | null = null;
@@ -49,6 +51,7 @@ export class Session {
       onRules: () => this.showRules(),
       onStore: () => this.showStore(),
       onAchievements: () => this.showAchievements(),
+      onSettings: () => this.showSettings(),
       onReady: (ready) => this.conn.setReady(ready),
       onSwitchTeam: () => this.conn.switchTeam(),
       onSetTeamMode: (mode) => this.conn.setTeamMode(mode),
@@ -130,6 +133,17 @@ export class Session {
     this.achievements = new AchievementsScreen(this.root, this.renderer, loadProfile(), () => {
       this.achievements?.dispose();
       this.achievements = null;
+      this.showHome();
+    });
+  }
+
+  /** Touch controls and other per-device choices; back returns to the home screen. */
+  private showSettings(): void {
+    this.teardownMatch();
+    this.ui.hide();
+    this.settings = new SettingsScreen(this.root, this.renderer, loadProfile(), () => {
+      this.settings?.dispose();
+      this.settings = null;
       this.showHome();
     });
   }

@@ -45,6 +45,12 @@ const CSS = `
 .sp-perks b{font-size:15px;font-weight:600}
 .sp-perks span{font-size:12px;color:#d8dbe6}
 .sp-spacer{flex:1}
+.sp-opts{display:flex;flex-direction:column;gap:8px}
+.sp-opts button{display:flex;align-items:center;gap:12px;text-align:left;padding:8px 12px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:rgba(70,110,200,.25);color:#fff;cursor:pointer}
+.sp-opts button svg{width:52px;height:52px;flex:none}
+.sp-opts button b{display:block;font-size:16px;font-weight:600}
+.sp-opts button small{display:block;font-size:12px;color:#d8dbe6;line-height:1.35;margin-top:2px}
+.sp-opts button.on{border-color:#ffd23f;background:rgba(255,210,63,.22)}
 /* The floor prep: a wider panel with roomier skill buttons, and the name over the character. */
 .sp.sp-wide{width:min(480px,58vw)}
 .sp-wide .sp-skills{gap:8px}
@@ -57,7 +63,7 @@ const CSS = `
   .sp-skills button{padding:4px 5px}.sp-skills button small{display:none}.sp-row button{height:36px}
   .sp.sp-wide{width:min(370px,50vw)}.sp-wide .sp-skills{gap:6px}.sp-wide .sp-skills button{padding:8px 6px}.sp-wide .sp-skills button b{font-size:14px}
   .sp-tag{font-size:15px;padding:3px 12px}
-  .sp-floors{gap:4px}.sp-floors button{height:30px;font-size:13px}.sp-perks{gap:5px}.sp-perks li{padding:5px 8px}.sp-perks b{font-size:13px}.sp-perks span{font-size:11px}}
+  .sp-floors{gap:4px}.sp-floors button{height:30px;font-size:13px}.sp-perks{gap:5px}.sp-opts{gap:5px}.sp-opts button{padding:5px 8px;gap:8px}.sp-opts button svg{width:40px;height:40px}.sp-opts button b{font-size:14px}.sp-opts button small{font-size:11px}.sp-perks li{padding:5px 8px}.sp-perks b{font-size:13px}.sp-perks span{font-size:11px}}
 `;
 
 /** A fresh panel on `root`, with the shared styles installed once. */

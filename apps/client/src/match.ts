@@ -173,6 +173,7 @@ export class Match {
 
     const mePos = meId ? this.players.position(meId) : null;
     const meState = meId && s ? s.to.players[meId] : undefined;
+    this.input?.setPlayer(meState ? { facing: meState.mover.facing, moving: meState.mover.target !== null } : null);
     const onTower = meState?.phase === "tower";
     const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
     // Eagle eye (tower run skill): straight down from high above the player for a few seconds, from the maze.
