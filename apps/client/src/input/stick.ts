@@ -35,16 +35,17 @@ const CSS = `
 `;
 
 /**
- * Joystick, the alternative to the corner pad (settings page): a ring fixed
- * in the same corner, drawn plainly so it is clear where to press. Only a
- * press inside the ring starts it; the thumb may then wander outside and the
- * knob stays on the rim. Like the pad it only ever asks for one of four
- * directions.
+ * Joystick, the default touch control (the corner pad is the settings page's
+ * alternative): a ring fixed in the bottom-left corner, drawn plainly so it is
+ * clear where to press. Only a press inside the ring starts it; the thumb may
+ * then wander outside and the knob stays on the rim.
  *
  * Inside the dashed inner ring the push only turns the player: a single tick
  * of input, which the sim's tap-to-turn rule (CLAUDE.md section 6) treats as
  * a turn without a step. It is sent only while standing and facing elsewhere,
- * so it never becomes a step. Past the inner ring it walks.
+ * so it never becomes a step. Past the inner ring it walks: one of four
+ * directions, or near a diagonal both of its directions, which the sim reads
+ * as "carry on, and turn into the other one at the first opening".
  */
 export class StickInput {
   private readonly ring: HTMLDivElement;
@@ -52,6 +53,8 @@ export class StickInput {
   private readonly arrows = {} as Record<Dir, HTMLDivElement>;
   private pointerId: number | null = null;
   private dir: Dir | null = null;
+  /** The second direction of a diagonal push (walking only), or null. */
+  private side: Dir | null = null;
   private walking = false;
   private player: StickPlayer | null = null;
   private tick = 0;
@@ -108,7 +111,7 @@ export class StickInput {
     const release = (e: PointerEvent) => {
       if (e.pointerId !== this.pointerId) return;
       this.pointerId = null;
-      this.setDir(null, false);
+      this.setDir(null, false, null);
       this.knob.style.transform = "";
     };
     this.ring.addEventListener("pointerup", release);
@@ -131,7 +134,11 @@ export class StickInput {
     this.tick++;
     if (!this.dir) return STILL;
     const v = VECTORS[this.dir];
-    if (this.walking) return v;
+    if (this.walking) {
+      // A diagonal sends both; the sim turns into the side one at the first opening.
+      const s = this.side ? VECTORS[this.side] : STILL;
+      return { moveX: v.moveX + s.moveX, moveY: v.moveY + s.moveY };
+    }
     const p = this.player;
     if (!p || p.moving || (p.facing.dx === v.moveX && p.facing.dy === v.moveY)) return STILL;
     const sent = this.turnSent;
@@ -156,16 +163,18 @@ export class StickInput {
     const travel = radius - this.knob.offsetWidth / 2;
     const shown = dist > travel ? travel / dist : 1;
     this.knob.style.transform = `translate(${dx * shown}px,${dy * shown}px)`;
-    if (dist < t.deadZonePx) this.setDir(null, false);
-    else this.setDir(pickDir(dx, dy, this.dir, t.switchBias), dist > radius * t.turnShare);
+    if (dist < t.deadZonePx) this.setDir(null, false, null);
+    else {
+      const dir = pickDir(dx, dy, this.dir, t.switchBias);
+      const walking = dist > radius * t.turnShare;
+      this.setDir(dir, walking, walking ? diagonalSide(dx, dy, dir, t.diagonalHalfDeg) : null);
+    }
   }
 
-  private setDir(dir: Dir | null, walking: boolean): void {
-    if (dir !== this.dir) {
-      if (this.dir) this.arrows[this.dir].classList.remove("on");
-      if (dir) this.arrows[dir].classList.add("on");
-      this.dir = dir;
-    }
+  private setDir(dir: Dir | null, walking: boolean, side: Dir | null): void {
+    for (const d of Object.keys(this.arrows) as Dir[]) this.arrows[d].classList.toggle("on", d === dir || d === side);
+    this.dir = dir;
+    this.side = side;
     this.walking = walking;
     this.knob.classList.toggle("walk", walking);
   }
@@ -184,4 +193,18 @@ export function pickDir(dx: number, dy: number, current: Dir | null, bias: numbe
       : Math.abs(dx) >= Math.abs(dy);
   if (horizontal) return dx > 0 ? "east" : "west";
   return dy > 0 ? "south" : "north";
+}
+
+/**
+ * The second direction of a diagonal push: the other axis, when the push
+ * lies within `halfDeg` of a 45-degree line. Null for a push close to
+ * `dir`'s own axis.
+ */
+export function diagonalSide(dx: number, dy: number, dir: Dir, halfDeg: number): Dir | null {
+  const horizontal = dir === "east" || dir === "west";
+  const major = Math.abs(horizontal ? dx : dy);
+  const minor = horizontal ? dy : dx;
+  if (Math.abs(minor) < major * Math.tan(((45 - halfDeg) * Math.PI) / 180)) return null;
+  if (horizontal) return minor > 0 ? "south" : "north";
+  return minor > 0 ? "east" : "west";
 }

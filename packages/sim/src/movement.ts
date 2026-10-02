@@ -60,7 +60,14 @@ export function stepMover(
     wasWalking = true;
   }
 
-  const dirs = intentDirections(intent);
+  const open = (dir: Dir) => {
+    const dest = grid.tryMove(from, dir);
+    return !!dest && (!allow || allow(from, dest, dir));
+  };
+  // A diagonal push heads for whichever of its two directions is open: the
+  // turn first while walking, the way the player faces from a standstill.
+  const wanted = orderDiagonal(intentDirections(intent), facing, wasWalking);
+  const dirs = wanted.length > 1 ? [...wanted.filter(open), ...wanted.filter((d) => !open(d))] : wanted;
   const primary = dirs[0];
   if (!primary) return { from, target: null, progress: 0, facing, turnHold: 0 };
 
@@ -84,6 +91,23 @@ export function stepMover(
 
 function sameDirection(a: Dir, b: Dir): boolean {
   return a.dx === b.dx && a.dy === b.dy;
+}
+
+/**
+ * A diagonal push (two directions) when one of them is the way the player
+ * faces. Walking, the other one (the turn) comes first: up a corridor with
+ * up-right held, the player turns right at the first opening on the right and
+ * carries on up until then (CLAUDE.md section 6). From a standstill the facing
+ * one comes first, so the push does not flip between the two every tick.
+ * Single directions are left alone.
+ */
+function orderDiagonal(dirs: Dir[], facing: Dir, walking: boolean): Dir[] {
+  if (dirs.length < 2) return dirs;
+  const [a, b] = dirs as [Dir, Dir];
+  const ahead = sameDirection(a, facing) ? a : sameDirection(b, facing) ? b : null;
+  if (!ahead) return dirs;
+  const other = ahead === a ? b : a;
+  return walking ? [other, ahead] : [ahead, other];
 }
 
 /** A single tick never completes a whole tile; speeds are expected to stay well below 1 tile/tick. */
