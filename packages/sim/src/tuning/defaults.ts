@@ -103,18 +103,18 @@ export const DEFAULT_TUNING: Tuning = {
     passShare: 0.5,
     maxContinues: 2,
     // map difficulty, CPUs, CPU vision (tiles), CPU speed, special rules. CPU counts are odd so the
-    // participants are even and "the first half" is exact. Medium maps take at most 4.
+    // participants are even and "the first half" is exact. Floors 1-3 easy maps, 4-9 medium, 10-20 hard.
     // Special floors: every third from 4, lights off and the ghost pack in turn.
     floors: floors([
       ["easy", 1, 2, 0.45],
       ["easy", 1, 2, 0.5],
       ["easy", 3, 2, 0.45],
-      ["easy", 3, 3, 0.5, ["dark"]],
+      ["medium", 3, 3, 0.5, ["dark"]],
       ["medium", 1, 3, 0.5],
       ["medium", 3, 3, 0.5],
       ["medium", 3, 3, 0.55, ["ghostPack"]],
-      ["hard", 1, 3, 0.5],
-      ["hard", 1, 3, 0.55],
+      ["medium", 1, 3, 0.5],
+      ["medium", 1, 3, 0.55],
       ["hard", 3, 3, 0.55, ["dark"]],
       ["hard", 3, 4, 0.55],
       ["hard", 3, 4, 0.6],
