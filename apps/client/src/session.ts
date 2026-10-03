@@ -10,7 +10,7 @@ import { loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { OnlineMatchMode } from "./modes/online.js";
 import { TowerRun } from "./modes/towerRun.js";
-import { loadTowerBest } from "./modes/towerProgress.js";
+import { isNewPlayer, loadTowerBest } from "./modes/towerProgress.js";
 import { StoreScreen } from "./lobby/storeScreen.js";
 import { AchievementsScreen } from "./lobby/achievementsScreen.js";
 import { SettingsScreen } from "./lobby/settingsScreen.js";
@@ -44,7 +44,7 @@ export class Session {
   ) {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
-      onTowerRun: () => this.playTowerRun(),
+      onTowerRun: () => (isNewPlayer() ? this.showRules(() => this.playTowerRun()) : this.playTowerRun()),
       onOnline: () => this.showOnline(),
       onHome: () => this.showHome(),
       onProfile: () => this.showProfile(),
@@ -92,15 +92,30 @@ export class Session {
     this.showHome();
   }
 
-  /** Rules cards over demo scenes; closing returns to the home screen. */
-  private showRules(): void {
+  /**
+   * Rules cards over demo scenes; closing returns to the home screen. `then`
+   * (a new player's first tower run) adds a button that goes on to it.
+   */
+  private showRules(then?: () => void): void {
     this.teardownMatch();
     this.ui.hide();
-    this.rules = new RulesScreen(this.root, this.renderer, () => {
+    const close = () => {
       this.rules?.dispose();
       this.rules = null;
-      this.showHome();
-    });
+    };
+    this.rules = new RulesScreen(
+      this.root,
+      this.renderer,
+      () => {
+        close();
+        this.showHome();
+      },
+      then &&
+        (() => {
+          close();
+          then();
+        }),
+    );
   }
 
   /** Single-player tower run in the page: no socket involved; quitting leads back here. */

@@ -2,6 +2,7 @@ import type * as THREE from "three";
 import { DEFAULT_TUNING } from "@supermaze/sim";
 import { t } from "../i18n/index.js";
 import { Match } from "../match.js";
+import { markRulesSeen } from "../modes/towerProgress.js";
 import { createDemoMode } from "./demoMode.js";
 import { RULE_SCENES, ruleText } from "./scenes.js";
 
@@ -17,6 +18,7 @@ const CSS = `
 .rs-rules *{box-sizing:border-box}
 .rs-rules h2{font-size:clamp(17px,2.6vh,21px);font-weight:500;margin:0;color:#ffd23f}
 .rs-rules-page{font-size:12px;color:#c9d2e3}
+.rs-rules-first{font-size:13px;color:#7fe0a0;font-weight:600}
 .rs-rules-text{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:clamp(13px,2.2vh,15px);line-height:1.55;color:#e8ecf4}
 .rs-rules-text p{margin:0}
 .rs-rules-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -47,7 +49,10 @@ export class RulesScreen {
     private readonly root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
     private readonly onClose: () => void,
+    /** Given for a new player sent here by the tower run button: a start button beside home. */
+    private readonly onStart?: () => void,
   ) {
+    markRulesSeen();
     const style = document.createElement("style");
     style.textContent = CSS;
     document.head.appendChild(style);
@@ -67,11 +72,12 @@ export class RulesScreen {
     this.match = new Match(this.root, this.renderer, createDemoMode(scene), { demo: true });
 
     this.panel.innerHTML = `
+      ${this.onStart ? `<div class="rs-rules-first"></div>` : ""}
       <div class="rs-rules-page"></div>
       <h2></h2>
       <div class="rs-rules-text"></div>
       <div class="rs-rules-nav"><button id="rs-prev"></button><button id="rs-next" class="primary"></button></div>
-      <div class="rs-rules-nav"><button id="rs-close" data-back></button></div>`;
+      <div class="rs-rules-nav"><button id="rs-close" data-back></button>${this.onStart ? `<button id="rs-start" class="primary"></button>` : ""}</div>`;
     this.panel.querySelector(".rs-rules-page")!.textContent = t("rules.screen.page", { page: index + 1, total: RULE_SCENES.length });
     this.panel.querySelector("h2")!.textContent = scene.title;
     const text = this.panel.querySelector(".rs-rules-text")!;
@@ -101,6 +107,13 @@ export class RulesScreen {
     prev.addEventListener("click", () => this.show(this.index - 1));
     next.addEventListener("click", () => this.show(this.index + 1));
     close.addEventListener("click", () => this.onClose());
+    const start = this.panel.querySelector<HTMLButtonElement>("#rs-start");
+    if (start && this.onStart) {
+      const go = this.onStart;
+      start.textContent = t("rules.screen.start");
+      start.addEventListener("click", () => go());
+      this.panel.querySelector(".rs-rules-first")!.textContent = t("rules.screen.firstTime");
+    }
   }
 
   dispose(): void {

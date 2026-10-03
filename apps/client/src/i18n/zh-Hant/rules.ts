@@ -96,4 +96,6 @@ export const rules = {
   "rules.screen.prev": "上一張",
   "rules.screen.next": "下一張",
   "rules.screen.home": "回首頁",
+  "rules.screen.start": "開始挑戰",
+  "rules.screen.firstTime": "第一次挑戰，先看看怎麼玩！",
 } as const;
