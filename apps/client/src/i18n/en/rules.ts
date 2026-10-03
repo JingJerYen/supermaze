@@ -97,4 +97,6 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.screen.prev": "Back",
   "rules.screen.next": "Next",
   "rules.screen.home": "Home",
+  "rules.screen.start": "Play",
+  "rules.screen.firstTime": "First time? Here is how to play.",
 };

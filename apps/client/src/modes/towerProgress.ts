@@ -54,3 +54,29 @@ export function noteReachedFloor(floor: number): void {
     /* storage unavailable */
   }
 }
+
+/** Set once the rules have been on screen in this browser. */
+const RULES_SEEN_KEY = "supermaze.rulesSeen";
+
+export function markRulesSeen(): void {
+  try {
+    localStorage.setItem(RULES_SEEN_KEY, "1");
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * A brand-new player: never seen the rules and no tower record yet. Their
+ * first press of the tower run button opens the rules instead (CLAUDE.md 4.1).
+ * Storage that cannot be read counts as not new, so nobody is shown the rules
+ * on every press.
+ */
+export function isNewPlayer(): boolean {
+  try {
+    if (localStorage.getItem(RULES_SEEN_KEY)) return false;
+  } catch {
+    return false;
+  }
+  return loadTowerBest() === null && loadReachedFloor() <= 1;
+}
