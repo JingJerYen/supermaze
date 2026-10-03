@@ -21,6 +21,11 @@ const FACES: Record<Face, Dir> = {
   west: { dx: -1, dy: 0 },
 };
 
+/** A face's outward direction, in map terms (y points south). */
+export function faceDir(face: Face): Dir {
+  return FACES[face];
+}
+
 /** Which face of the tower a tile is on, by its dominant offset from the centre. */
 export function faceOf(tile: { x: number; y: number }, center: { x: number; z: number }): Face {
   const dx = tile.x - center.x;
@@ -104,6 +109,8 @@ export class TowerAnimations {
   private readonly spillLight: THREE.PointLight;
   private readonly ascentMats: THREE.MeshBasicMaterial[] = [];
   private crystalPulse = 0;
+  /** When each face's light last reached the top, for the fade after the climb ends. */
+  private readonly afterglow = new Map<Face, number>();
 
   constructor(
     private readonly group: THREE.Group,
@@ -234,9 +241,22 @@ export class TowerAnimations {
     }
     this.spillLight.intensity = brightest * c.spillLightIntensity;
     for (const [face, strip] of this.ascents) {
-      const r = rise.get(face) ?? 0;
+      let r = rise.get(face) ?? 0;
+      let glow = r > 0 ? 1 : 0;
+      if (r > 0.98) this.afterglow.set(face, timeSec);
+      const reached = this.afterglow.get(face);
+      if (reached !== undefined && r <= 0.98) {
+        // Reached the top and the climb is over: the full strip fades out.
+        glow = 1 - (timeSec - reached) / c.ascentFadeSec;
+        r = 1;
+        if (glow <= 0 || timeSec < reached) {
+          this.afterglow.delete(face);
+          glow = 0;
+          r = 0;
+        }
+      }
       strip.scale.y = Math.max(0.001, r * this.shaftHeight);
-      (strip.material as THREE.MeshBasicMaterial).opacity = r > 0 && r < 1 ? 0.55 : r >= 1 ? 0.55 * Math.max(0, 1 - (r - 1) * 4) : 0;
+      (strip.material as THREE.MeshBasicMaterial).opacity = 0.55 * glow;
     }
     if (this.crystal) {
       this.crystalPulse = Math.max(0, this.crystalPulse - 0.02);

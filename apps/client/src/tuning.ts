@@ -29,16 +29,36 @@ export const CLIENT_TUNING = {
     doorOpenSec: 0.7,
     walkInSec: 1.0,
     doorCloseSec: 0.5,
-    ascentSec: 1.6,
+    ascentSec: 2.2,
     /** Light pouring out of the open door: colour, how far the beam reaches (tiles), peak strength. */
     spillColor: 0xffe2a0,
     spillReach: 2.4,
     spillOpacity: 0.5,
     spillLightIntensity: 5,
-    /** Your own climb: the camera rides up with the light, then swings down to the overview at this blend rate per second. */
+    /**
+     * Your own climb: once you are through the door the camera pulls back to a
+     * wide shot from out in front of that door, so the light is seen running up
+     * the whole tower; it stays there for the result screen, or (round still on)
+     * holds `holdSec` after the light reaches the top and swings to the overview.
+     */
+    front: {
+      /** How far through the walk into the door (0..1) the pull-back starts. */
+      fromWalkIn: 0.4,
+      /** Blend rate per second of the swing into the wide shot. */
+      swingPerSec: 2.2,
+      /** Room above the tower top, world units; frame height over the tower's; camera height and aim as shares of the framed height. */
+      headroom: 2.4,
+      margin: 1.2,
+      eyeShare: 0.3,
+      aimShare: 0.5,
+      holdSec: 2.2,
+    },
+    /** Blend rate per second of the swing from the wide shot down to the overview. */
     overviewPerSec: 1.1,
-    /** Seconds the overview swing gets before the result screen may cover it. */
+    /** Seconds the camera stays on the finished climb before the result screen may cover it. */
     settleSec: 1.8,
+    /** Seconds the light on the tower face takes to fade once it has reached the top. */
+    ascentFadeSec: 1.2,
   },
   intro: {
     /** Opening fly-in (its length is the sim's round.introSec): share of it spent holding the wide shot before moving. */

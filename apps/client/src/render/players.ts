@@ -36,10 +36,10 @@ export class PlayerViews {
     return out;
   }
 
-  /** Seconds into this player's climb animation, or null when none is playing. */
-  climbTime(id: string): number | null {
+  /** This player's climb animation, with the face they went in by, or null when none is playing. */
+  climb(id: string): { face: Face; t: number } | null {
     const c = this.climbs.get(id);
-    return c ? this.clockSec - c.startSec : null;
+    return c ? { face: c.face, t: this.clockSec - c.startSec } : null;
   }
 
   constructor(private readonly scene: THREE.Scene, private readonly grid: MapGrid) {}

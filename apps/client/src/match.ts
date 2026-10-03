@@ -19,6 +19,7 @@ import type { GameMode } from "./modes/mode.js";
 import { BoxViews } from "./render/boxes.js";
 import { FollowCamera } from "./render/camera.js";
 import { ClimbCamera } from "./render/climbCamera.js";
+import { faceDir } from "./render/climbSequence.js";
 import { platformTopY } from "./render/elevation.js";
 import { openingOf, type Opening } from "./opening.js";
 import { FootprintView } from "./render/footprints.js";
@@ -181,7 +182,7 @@ export class Match {
     this.input?.setPlayer(meState ? { facing: meState.mover.facing, moving: meState.mover.target !== null } : null);
     this.footprints?.update(meState && meState.phase !== "tower" ? meState.mover.from : null, !!s && !s.to.lightsOn);
     const onTower = meState?.phase === "tower";
-    const climbShot = this.climbCamera.update(meId ? this.players.climbTime(meId) : null, onTower, now / 1000);
+    const climbShot = this.climbCamera.update(meId ? this.players.climb(meId) : null, onTower, !!s && s.to.status !== "running", now / 1000);
     // Eagle eye (tower run skill): straight down from high above the player for a few seconds, from the maze.
     const tickNow = s?.to.tick ?? 0;
     const eagle = !onTower && !!meState && skillActive(meState, "eagleEye", tickNow);
@@ -189,7 +190,9 @@ export class Match {
     const lantern = !!meState && skillActive(meState, "lantern", tickNow);
     // The rank is already settled; the result screen waits until every climb has been shown.
     if (s && !shot.busy && this.players.activeClimbs().length === 0) this.results?.update(s.to, meId, this.mode.results());
-    this.follow.setMode(shot.camera, shot.camera === "overview" ? CLIENT_TUNING.climb.overviewPerSec : undefined);
+    if (shot.face) this.follow.setFront(this.mapMesh.towerCenter, platformTopY(), faceDir(shot.face));
+    const swing = shot.camera === "overview" ? CLIENT_TUNING.climb.overviewPerSec : shot.camera === "front" ? CLIENT_TUNING.climb.front.swingPerSec : undefined;
+    this.follow.setMode(shot.camera, swing);
     this.mapMesh.tower.setOverview(shot.towerOverview);
     this.mapMesh.tower.setForceFade(eagle);
     if (eagle && mePos) this.follow.setAboveHeight(eagleHeight(mePos, this.mapMesh.towerCenter));
@@ -197,7 +200,7 @@ export class Match {
       onTower ? DEFAULT_TUNING.lighting.darkRadiusTowerTiles : lantern ? DEFAULT_TUNING.skills.lantern.darkRadiusTiles : DEFAULT_TUNING.lighting.darkRadiusMazeTiles,
     );
     if (mePos) {
-      this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2 + shot.lift), dt);
+      this.follow.update(mePos.clone().setY(mePos.y + PLAYER_HEIGHT / 2), dt);
       // Opening fly-in: from far in front of the tower down to the follow view.
       if (s && opening && opening.introTicks > 0 && opening.introLeftSec > 0) {
         this.follow.applyIntro((s.to.tick - s.to.startTick + s.alpha) / opening.introTicks, this.mapMesh.towerCenter, platformTopY());
