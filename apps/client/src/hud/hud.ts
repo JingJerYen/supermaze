@@ -8,6 +8,8 @@ import type { HudModel, TeamRow } from "./model.js";
 const GO = t("hud.go");
 /** Action labels longer than this many characters get the smaller font (Chinese glyphs are about twice as wide as Latin letters). */
 const LONG_ACTION = locale === "zh-Hant" ? 3 : 6;
+/** Where the queued items hang on the big button's rim, degrees clockwise from straight up, nearest first. */
+const QUEUE_ANGLES = [-48, -8, 32];
 
 const CSS = `
 .hud{position:fixed;inset:0;pointer-events:none;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#fff;
@@ -45,19 +47,19 @@ const CSS = `
 .hud-badge.frozen{color:#9fd3ff}
 .hud-top,.hud-items{transition:opacity .5s}
 .hud.intro .hud-top,.hud.intro .hud-items{opacity:0;transition:none}
-.hud-items{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));height:84px;display:flex;gap:8px;align-items:center}
+.hud-items{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));width:84px;height:84px}
 .hud-items.hidden{display:none}
-.hud-slot{width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;box-sizing:border-box}
-.hud-slot svg{width:72%;height:72%;display:block}
-.hud-slot.empty,.hud-big.empty{border-style:dashed;background:rgba(0,0,0,.25)}
+.hud-big.empty{border-style:dashed;background:rgba(0,0,0,.25)}
+/* Items queued behind the big button: small pictures hung on its upper rim, not buttons. */
+.hud-queued{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:#1a2130;border:2px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;box-sizing:border-box;pointer-events:none}
+.hud-queued svg{width:78%;height:78%}
 .hud-big{position:relative;width:84px;height:84px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:30px;font-weight:500}
 .hud-big svg{width:74%;height:74%;display:block}
 .hud-big.ready{border:3px solid #ffd23f;box-shadow:0 0 14px rgba(255,210,63,.55)}
 .hud-big.dim svg{opacity:.35;filter:grayscale(.7)}
 .hud-big.action{background:rgba(255,210,63,.92);border:2px solid rgba(255,255,255,.75);color:#412402;font:700 19px/1.1 system-ui,-apple-system,"Noto Sans TC",sans-serif;text-align:center;padding:0 6px}
 .hud-big.action.long{font-size:14px}
-.hud-badge-item{position:absolute;left:-6px;top:-6px;width:32px;height:32px;border-radius:50%;background:#1a2130;border:2px solid #ffd23f;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
-.hud-badge-item svg{width:78%;height:78%}
+.hud-queued.first{border-color:#ffd23f}
 .hud-items.locked{filter:grayscale(1);opacity:.55}
 .hud-toasts{position:absolute;left:50%;top:100%;margin-top:8px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
 .hud-toast{background:rgba(0,0,0,.55);color:#ffe08a;font-size:14px;padding:6px 14px;border-radius:20px;white-space:nowrap;animation:hud-fade 2.2s forwards}
@@ -212,12 +214,14 @@ export class Hud {
   }
 
   /**
-   * The bag and the action button in one row at the bottom right: the big
-   * circle on the right is the next item (bright when it can be used here, dim
-   * when not) or, when the button would climb / flip a switch / pick up a node,
-   * that action in yellow with the next item as a small badge; the small
-   * circles to its left are the items queued behind it. All grey while the bag
-   * is locked (you are the ghost). Rebuilt only when something changed.
+   * The bag and the action button at the bottom right, as one round button:
+   * the big circle is the next item (bright when it can be used here, dim when
+   * not) or, when the button would climb / flip a switch / pick up a node, that
+   * action in yellow. The items queued behind it hang on its upper rim as small
+   * pictures, nearest first from the upper left; they are not buttons. When the
+   * action takes the circle, the next item joins them first (gold rim). All
+   * grey while the bag is locked (you are the ghost). Rebuilt only when
+   * something changed.
    */
   private renderItems(m: HudModel): void {
     const teamColor = m.myTeam ? `#${(TEAM_COLORS[m.myTeam.colorIndex % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}` : "#5be6ff";
@@ -227,21 +231,27 @@ export class Hud {
     this.items.className = `hud-items${m.onTower ? " hidden" : ""}${m.ghost.iAmGhost ? " locked" : ""}`;
     this.items.style.color = teamColor; // the teleport icon's pad takes the team colour through currentColor
     const icon = (kind: string) => itemIconSvg(kind) ?? `<span>${ITEM_GLYPH[kind] ?? "?"}</span>`;
-    const small = [];
-    for (let i = m.capacity - 1; i >= 1; i--) {
-      const kind = m.items[i];
-      small.push(kind ? `<div class="hud-slot" title="${ITEM_LABEL[kind] ?? kind}">${icon(kind)}</div>` : `<div class="hud-slot empty"></div>`);
-    }
     const next = m.items[0];
+    const actionShown = !!m.action && m.action !== "useItem";
     let big: string;
     if (m.action && m.action !== "useItem") {
       const label = ACTION_LABEL[m.action] ?? m.action;
-      const badge = next ? `<div class="hud-badge-item">${icon(next)}</div>` : "";
-      big = `<div class="hud-big action${label.length > LONG_ACTION ? " long" : ""}">${label}${badge}</div>`;
+      big = `<div class="hud-big action${label.length > LONG_ACTION ? " long" : ""}">${label}</div>`;
     } else if (next) {
       big = `<div class="hud-big ${m.action === "useItem" ? "ready" : "dim"}" title="${ITEM_LABEL[next] ?? next}">${icon(next)}</div>`;
     } else big = `<div class="hud-big empty"></div>`;
-    this.items.innerHTML = small.join("") + big;
+    // Upper-left, top, upper-right of the rim (degrees clockwise from straight up).
+    const queued = (actionShown ? m.items : m.items.slice(1)).filter((k) => !!k);
+    const rim = queued
+      .map((kind, i) => {
+        const a = ((QUEUE_ANGLES[i] ?? 0) * Math.PI) / 180;
+        const x = 42 + Math.sin(a) * 44;
+        const y = 42 - Math.cos(a) * 44;
+        const first = actionShown && i === 0 ? " first" : "";
+        return `<div class="hud-queued${first}" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px" title="${ITEM_LABEL[kind] ?? kind}">${icon(kind)}</div>`;
+      })
+      .join("");
+    this.items.innerHTML = big + rim;
   }
 
   dispose(): void {

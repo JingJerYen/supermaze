@@ -1,9 +1,10 @@
 import { t } from "../i18n/index.js";
 
 /**
- * On-screen button that throws away the oldest carried item. Small and above
- * the action button so a thumb reaching for "use" does not hit it by accident;
- * shown only while there is something to discard.
+ * On-screen button that throws away the oldest carried item. Small and just
+ * left of the action button, on the same line, a little apart so a thumb
+ * reaching for "use" does not hit it by accident; shown only while there is
+ * something to discard.
  */
 export class DiscardButton {
   private readonly el: HTMLButtonElement;
@@ -16,9 +17,9 @@ export class DiscardButton {
     this.el.textContent = label;
     Object.assign(this.el.style, {
       position: "fixed",
-      // Centred over the 84px action button, 12px above it.
-      right: "calc(max(24px, env(safe-area-inset-right)) + 14px)",
-      bottom: "calc(max(24px, env(safe-area-inset-bottom)) + 96px)",
+      // Left of the 84px action button with a 14px gap, centred on its height.
+      right: "calc(max(24px, env(safe-area-inset-right)) + 98px)",
+      bottom: "calc(max(24px, env(safe-area-inset-bottom)) + 14px)",
       width: "56px",
       height: "56px",
       borderRadius: "50%",
