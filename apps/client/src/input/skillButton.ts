@@ -17,9 +17,9 @@ export class SkillButton {
     this.el.dataset["nosound"] = ""; // pressed all game long: no menu tick
     Object.assign(this.el.style, {
       position: "fixed",
-      // Left of the discard button, at its height; the second skill one more step left.
-      right: `calc(max(24px, env(safe-area-inset-right)) + ${slot === 1 ? 104 : 168}px)`,
-      bottom: "calc(max(24px, env(safe-area-inset-bottom)) + 96px)",
+      // Left of the discard button, on the same line; the second skill one more step left.
+      right: `calc(max(24px, env(safe-area-inset-right)) + ${slot === 1 ? 164 : 228}px)`,
+      bottom: "calc(max(24px, env(safe-area-inset-bottom)) + 14px)",
       width: "56px",
       height: "56px",
       borderRadius: "50%",

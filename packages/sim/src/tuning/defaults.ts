@@ -13,7 +13,8 @@ export const DEFAULT_TUNING: Tuning = {
     maxParticipants: 6,
     timeoutClimbMetric: "count",
     startFreezeSec: 3,
-    introSec: 3,
+    // Opening fly-in: the wide front shot holds ~2.75 s (client tuning intro.holdShare), then 2.25 s to close in.
+    introSec: 5,
   },
 
   teams: {

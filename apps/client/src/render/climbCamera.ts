@@ -1,13 +1,12 @@
 import { CLIENT_TUNING } from "../tuning.js";
 import type { CameraMode } from "./camera.js";
-import { climbPhase } from "./climbSequence.js";
-import { platformTopY } from "./elevation.js";
+import { climbPhase, type Face } from "./climbSequence.js";
 
 /** What the local player's own climb asks of the camera and the screen this frame. */
 export interface ClimbShot {
   camera: CameraMode;
-  /** How far to raise the follow focus above the character, world units. */
-  lift: number;
+  /** The face the wide "front" shot looks at, when `camera` is "front". */
+  face: Face | null;
   /** Fade the tower's canopy and the like for the top-down view. */
   towerOverview: boolean;
   /** Keep the tower see-through while it may hide the character walking in. */
@@ -17,29 +16,40 @@ export interface ClimbShot {
 }
 
 /**
- * Your own climb, as a shot: the camera keeps following while the door opens
- * and you walk in, rides up the tower with the light, then swings slowly down
- * to the overview. The result screen waits until the swing has settled; the
- * rank itself was decided by the simulation the moment you pressed the button.
+ * Your own climb, as a shot: the camera follows while the door opens and you
+ * start walking in, then pulls back to a wide shot from out in front of that
+ * door, so the light is seen running up the whole tower to the crystal. With
+ * the round over it stays there under the result screen; with the round still
+ * on it holds a moment and swings down to the overview. The result screen
+ * waits until the finished climb has been on screen for a while; the rank
+ * itself was decided by the simulation the moment you pressed the button.
  */
 export class ClimbCamera {
-  private wasClimbing = false;
+  private face: Face | null = null;
   private endedAtSec: number | null = null;
 
-  /** `climbT`: seconds into your climb animation, or null when none is playing. */
-  update(climbT: number | null, onTower: boolean, nowSec: number): ClimbShot {
+  update(climb: { face: Face; t: number } | null, onTower: boolean, roundOver: boolean, nowSec: number): ClimbShot {
     const c = CLIENT_TUNING.climb;
-    if (climbT !== null) {
-      this.wasClimbing = true;
-      const ph = climbPhase(climbT);
-      const eased = ph.ascent * ph.ascent * (3 - 2 * ph.ascent);
-      return { camera: "follow", lift: eased * platformTopY(), towerOverview: false, watchTower: ph.walkIn < 1, busy: true };
+    if (climb) {
+      this.face = climb.face;
+      this.endedAtSec = null;
+      const pulled = climbPhase(climb.t).walkIn >= c.front.fromWalkIn;
+      return pulled
+        ? { camera: "front", face: climb.face, towerOverview: false, watchTower: false, busy: true }
+        : { camera: "follow", face: null, towerOverview: false, watchTower: true, busy: true };
     }
-    if (this.wasClimbing) {
-      this.wasClimbing = false;
-      this.endedAtSec = nowSec;
+    if (!onTower) {
+      // A new round, or never climbed: back to the plain follow view.
+      this.face = null;
+      this.endedAtSec = null;
+      return { camera: "follow", face: null, towerOverview: false, watchTower: true, busy: false };
     }
-    const settling = this.endedAtSec !== null && nowSec - this.endedAtSec < c.settleSec;
-    return { camera: onTower ? "overview" : "follow", lift: 0, towerOverview: onTower, watchTower: !onTower, busy: settling };
+    if (this.face && this.endedAtSec === null) this.endedAtSec = nowSec;
+    const since = this.endedAtSec === null ? Infinity : nowSec - this.endedAtSec;
+    const busy = since < c.settleSec;
+    if (this.face && (roundOver || since < c.front.holdSec)) {
+      return { camera: "front", face: this.face, towerOverview: false, watchTower: false, busy };
+    }
+    return { camera: "overview", face: null, towerOverview: true, watchTower: false, busy };
   }
 }

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { CLIENT_TUNING } from "../tuning.js";
 
-export type CameraMode = "follow" | "overview" | "above";
+export type CameraMode = "follow" | "overview" | "above" | "front";
 
 /**
  * Two fixed-orientation views, blended smoothly when switching:
@@ -10,6 +10,8 @@ export type CameraMode = "follow" | "overview" | "above";
  *    for players who reached the tower top (CLAUDE.md section 7).
  *  - above: straight down from `eagleEye.heightTiles` over the local player,
  *    following them, north up (the Eagle Eye skill; section 4.1).
+ *  - front: a wide shot of the whole tower from far out in front of one of its
+ *    faces (`setFront`), for watching your own climb's light run up it (section 5).
  */
 export class FollowCamera {
   readonly camera: THREE.PerspectiveCamera;
@@ -25,6 +27,10 @@ export class FollowCamera {
   private aboveHeight: number = CLIENT_TUNING.eagleEye.heightTiles;
   private mapW = 1;
   private mapH = 1;
+  private readonly frontPos = new THREE.Vector3();
+  private readonly frontQuat = new THREE.Quaternion();
+  /** What the front shot frames, kept so a resize can reframe it. */
+  private front: { tower: THREE.Vector3; topY: number; out: { dx: number; dy: number }; fov: number } | null = null;
 
   constructor(widthPx: number, heightPx: number, mapW: number, mapH: number) {
     const { fovDeg, height, distance } = CLIENT_TUNING.camera;
@@ -40,6 +46,7 @@ export class FollowCamera {
   resize(widthPx: number, heightPx: number): void {
     this.fit(widthPx, heightPx);
     this.setMapSize(this.mapW, this.mapH);
+    if (this.front) this.setFront(this.front.tower, this.front.topY, this.front.out);
   }
 
   /**
@@ -67,6 +74,25 @@ export class FollowCamera {
   setMode(mode: CameraMode, swingPerSec: number = CLIENT_TUNING.overview.transitionPerSec): void {
     this.mode = mode;
     this.swingPerSec = swingPerSec;
+  }
+
+  /**
+   * Pose of the "front" view: the whole tower in frame, seen from far out along
+   * `out` (the face's outward direction in map terms, y pointing south).
+   */
+  setFront(tower: THREE.Vector3, topY: number, out: { dx: number; dy: number }): void {
+    const f = this.front;
+    if (f && f.topY === topY && f.out.dx === out.dx && f.out.dy === out.dy && f.tower.equals(tower) && f.fov === this.camera.fov) return;
+    this.front = { tower: tower.clone(), topY, out: { ...out }, fov: this.camera.fov };
+    const t = CLIENT_TUNING.climb.front;
+    const h = topY + t.headroom;
+    const tan = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+    const dist = (h * 0.5 * t.margin) / tan;
+    const probe = new THREE.PerspectiveCamera();
+    probe.position.set(tower.x + out.dx * dist, h * t.eyeShare, tower.z + out.dy * dist);
+    probe.lookAt(tower.x, h * t.aimShare, tower.z);
+    this.frontPos.copy(probe.position);
+    this.frontQuat.copy(probe.quaternion);
   }
 
   /**
@@ -122,6 +148,9 @@ export class FollowCamera {
     if (this.mode === "overview") {
       this.camera.position.lerp(this.overviewPos, swing);
       this.camera.quaternion.slerp(this.overviewQuat, swing);
+    } else if (this.mode === "front") {
+      this.camera.position.lerp(this.frontPos, swing);
+      this.camera.quaternion.slerp(this.frontQuat, swing);
     } else if (this.mode === "above") {
       // Looking straight down is the overview's orientation, whatever the position.
       const above = this.focus.clone().setY(this.focus.y + this.aboveHeight);
