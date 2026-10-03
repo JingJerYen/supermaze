@@ -42,7 +42,7 @@ export const CLIENT_TUNING = {
   },
   intro: {
     /** Opening fly-in (its length is the sim's round.introSec): share of it spent holding the wide shot before moving. */
-    holdShare: 0.25,
+    holdShare: 0.55,
     /** Room above the tower top in the wide shot, world units, and how much larger than the tower the frame is. */
     headroom: 1.5,
     margin: 1.35,
