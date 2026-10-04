@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DIRS } from "../src/map/grid.js";
 import type { MapData } from "../src/map/types.js";
 import { availableAction, canDiscard } from "../src/actions.js";
+import { placeableMoveFilter } from "../src/placeables.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
 import { DEFAULT_TUNING as BASE_TUNING, type ItemKind, type Tuning } from "../src/tuning/index.js";
 
@@ -208,16 +209,19 @@ describe("trap", () => {
 });
 
 describe("bridges", () => {
-  it("take no placeable, neither on the deck nor on the road under it", () => {
+  it("take a placeable on the road under the deck, which leaves the deck above it open", () => {
     const sim = armed("obstacle"); // a on (2,5) holding an obstacle
-    walk(sim, "a", [N, E, E, N]); // (2,4) -> (3,4) -> (4,4) -> (4,3), facing north at plain road (4,2)
-    expect(sim.getState().players["a"]!.mover.from).toEqual({ x: 4, y: 3, layer: "road" });
-    expect(sim.availableAction(sim.getState().players["a"]!)).toBe("useItem");
+    walk(sim, "a", [N, E, E, N]); // (2,4) -> (3,4) -> (4,4) -> (4,3)
     sim.step(new Map([["a", E]])); // tap east: now facing the road under the bridge (5,3)
-    expect(sim.availableAction(sim.getState().players["a"]!)).toBeNull();
+    expect(sim.availableAction(sim.getState().players["a"]!)).toBe("useItem");
     sim.step(new Map([["a", press]]));
-    expect(Object.values(sim.getState().placeables)).toHaveLength(0);
-    expect(sim.getState().players["a"]!.items).toEqual(["obstacle"]);
+    const placed = Object.values(sim.getState().placeables);
+    expect(placed).toHaveLength(1);
+    expect(placed[0]!.pos).toEqual({ x: 5, y: 3, layer: "road" });
+    expect(sim.getState().players["a"]!.items).toEqual([]);
+    const ok = placeableMoveFilter(sim.getState().placeables);
+    expect(ok({ x: 4, y: 3, layer: "road" }, { x: 5, y: 3, layer: "road" }, DIRS.east)).toBe(false);
+    expect(ok({ x: 5, y: 2, layer: "wallTop" }, { x: 5, y: 3, layer: "wallTop" }, DIRS.south)).toBe(true);
   });
 });
 

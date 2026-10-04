@@ -33,8 +33,7 @@ export interface ItemWork extends PlacementContext {
 export function placementProblem(grid: MapGrid, work: PlacementContext, tile: TilePos): string | null {
   if (!grid.isWalkable(tile.x, tile.y, tile.layer)) return "前方不可通行";
   if (grid.kindAt(tile.x, tile.y) === "stairs") return "不能放在樓梯上";
-  // A bridge cell is two floors at once (road under, wall top over); nothing is ever placed on either.
-  if (grid.kindAt(tile.x, tile.y) === "bridge") return "不能放在橋上或橋下";
+  // A bridge cell is two floors at once (deck over, road under): each takes its own placeable, told apart by layer.
   if (tile.layer === "road" && grid.isTowerEntry(tile.x, tile.y)) return "不能放在塔入口";
   const id = tileId(tile);
   // Box candidates, and where this round's keys and switches were drawn; decided at the start of the round.
