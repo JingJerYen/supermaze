@@ -61,7 +61,7 @@ export const rules = {
   "rules.scoring.line3": "只剩最後一個人還沒登塔，或時間到，回合就結束。沒登塔的人拿不到名次分數。",
 
   "rules.towerRun.title": "爬塔挑戰（單機）",
-  "rules.towerRun.line1": "單機是 {floors} 層的爬塔挑戰，每層和 CPU 比分數，越往上越難。",
+  "rules.towerRun.line1": "單機是爬塔挑戰，每層和 CPU 比分數，越往上越難；第 {floors} 層之後每層都是現場產生的新迷宮。",
   "rules.towerRun.line2": "你一登塔這層就結算，分數排前一半就晉級，各層分數加成總分。",
   "rules.towerRun.line3": "每層開打前選一個技能，按 R 或技能鍵用一次。沒晉級可以按「繼續」，每次挑戰最多 2 次。",
 
@@ -89,6 +89,8 @@ export const rules = {
   "rules.table.map.medium": "中等地圖",
   "rules.table.map.hard": "困難地圖",
   "rules.table.specialFloors": "第 {floors} 層",
+  "rules.table.endlessFrom": "第 {from} 層起",
+  "rules.table.endless": "現場產生的困難地圖，每 {every} 層一個特殊樓層",
   "rules.table.floorSep": "、",
 
   // The rules screen around the cards.

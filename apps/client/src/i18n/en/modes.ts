@@ -29,6 +29,8 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.prep.unlocked": "✓ Unlocked, tap a skill to change",
   "modes.prep.watchAd": "📺 Watch Ad to pick a skill",
   "modes.prep.title": "Floor {n}/{total}",
+  "modes.prep.titleEndless": "Floor {n}",
+  "modes.prep.generated": "🎲 This floor's maze was just made. Nobody has walked it before.",
   "modes.prep.home": "Home",
   "modes.prep.start": "Start Floor {n}",
   "modes.prep.adReward": "pick your own skill for this floor",
@@ -45,6 +47,7 @@ export const modes: Record<keyof typeof zh, string> = {
 
   "modes.tower.noMap": "No map available, so the game can't start",
   "modes.tower.caption": "Floor {floor}/{floors} · Advance: top {pass} · Total {score}",
+  "modes.tower.captionEndless": "Floor {floor} · Advance: top {pass} · Total {score}",
   "modes.tower.captionMods": "{caption} · {mods}",
   "modes.floor.dark.tag": "🌑 Dark",
   "modes.floor.dark.line": "🌑 Dark floor: the lights start off",
@@ -55,7 +58,7 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.tower.best": "Best: total {score} (reached Floor {floor})",
   "modes.tower.home": "Home",
   "modes.tower.clearedPassed": "Summit! All {n} floors cleared",
-  "modes.tower.cleared": "All {n} floors played",
+  "modes.tower.endlessAhead": "Every floor above is a brand-new maze. How high can you go?",
   "modes.tower.tryAgain": "Try Again",
   "modes.tower.continue": "Continue ({n} left)",
   "modes.tower.continueAd": "📺 Watch Ad & Continue ({n} left)",
@@ -86,6 +89,7 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.tower.failure": "Failed",
   "modes.tower.advanced": "Advanced! #{rank} by score",
   "modes.tower.next": "Total {score} · Next: Floor {floor}/{floors}",
+  "modes.tower.nextEndless": "Total {score} · Next: Floor {floor}",
   "modes.tower.goTo": "Go to Floor {n}",
   "modes.tower.adReward": "continue to the next floor",
 

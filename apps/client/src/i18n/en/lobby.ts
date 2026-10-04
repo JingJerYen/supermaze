@@ -11,7 +11,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.home.profile": "Character",
   "lobby.home.towerRun": "Start Game",
   "lobby.home.towerSubBest": "Solo · Best: floor {floor}, {score} pts",
-  "lobby.home.towerSubNew": "Solo · {floors} floors to the top",
+  "lobby.home.towerSubNew": "Solo · How high can you climb?",
   "lobby.home.online": "Online",
   "lobby.home.night": "Night Parade",
   "lobby.home.nightSub": "Pitch dark · banish all {ghosts} ghosts",

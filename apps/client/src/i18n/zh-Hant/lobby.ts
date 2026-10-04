@@ -11,7 +11,7 @@ export const lobby = {
   "lobby.home.profile": "角色設定",
   "lobby.home.towerRun": "征服高塔",
   "lobby.home.towerSubBest": "單人挑戰・最佳：第 {floor} 層・{score} 分",
-  "lobby.home.towerSubNew": "單人挑戰・{floors} 層・每層前一半晉級",
+  "lobby.home.towerSubNew": "單人挑戰・每層前一半晉級・看你能爬多高",
   "lobby.home.online": "連線對戰",
   "lobby.home.night": "百鬼夜行",
   "lobby.home.nightSub": "全黑迷宮 · 抓光 {ghosts} 隻鬼",

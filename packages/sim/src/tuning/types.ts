@@ -180,8 +180,10 @@ export interface Tuning {
     passShare: number;
     /** Continues after a failed floor, per run. */
     maxContinues: number;
-    /** Bottom floor first; the run is cleared after the last one. */
+    /** Bottom floor first. Past the last one the run goes on with `endless`. */
     floors: TowerFloor[];
+    /** Floors past the table (section 4.1): a map generated for each, CPUs as on the last table floor. */
+    endless: EndlessFloors;
   };
 
   scoring: {
@@ -216,6 +218,26 @@ export interface TowerFloor {
   cpuSpeed: number;
   /** Special rules for this floor (section 4.1); empty on an ordinary floor. */
   mods: FloorMod[];
+}
+
+/** How the tower run's generated floors are made (section 4.1). */
+export interface EndlessFloors {
+  /** Every this many floors past the table is a special floor, lights off and the ghost pack in turn. */
+  specialEvery: number;
+  /** Generated map size in tiles: odd, three more than a multiple of four (31, 35, 39, 43, 47). */
+  width: number;
+  height: number;
+  /** Round length for two participants, seconds (as a map file's `timeLimitSec`). */
+  timeLimitSec: number;
+  /** Fixtures on the first generated floor. */
+  traps: number;
+  obstacles: number;
+  doors: number;
+  /** One more of each fixture kind every this many generated floors, up to the caps. */
+  moreFixturesEvery: number;
+  maxTraps: number;
+  maxObstacles: number;
+  maxDoors: number;
 }
 
 /**

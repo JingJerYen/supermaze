@@ -62,7 +62,7 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.scoring.line3": "The round ends when only one person hasn't climbed, or when time runs out. No climb, no placement points.",
 
   "rules.towerRun.title": "Solo Mode",
-  "rules.towerRun.line1": "Solo mode is a {floors}-floor climb: each floor is a race against CPUs on score. It gets harder as you go up.",
+  "rules.towerRun.line1": "Solo mode is a climb: each floor is a race against CPUs on score, harder as you go up. Past floor {floors} every floor is a brand-new maze.",
   "rules.towerRun.line2": "The floor ends when you climb. Score in the top half to advance; floor scores add up to your total.",
   "rules.towerRun.line3": "Pick a skill before each floor and use it once with R or the skill button. Miss the cut and you can Continue, up to 2 times.",
 
@@ -90,6 +90,8 @@ export const rules: Record<keyof typeof zh, string> = {
   "rules.table.map.medium": "Medium maps",
   "rules.table.map.hard": "Hard maps",
   "rules.table.specialFloors": "Floors {floors}",
+  "rules.table.endlessFrom": "Floor {from}+",
+  "rules.table.endless": "Hard maps made on the spot, a special floor every {every}",
   "rules.table.floorSep": ", ",
 
   // The rules screen around the cards.

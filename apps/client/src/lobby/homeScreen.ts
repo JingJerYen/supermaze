@@ -118,7 +118,7 @@ export interface HomeView {
 }
 
 export function homeHtml(v: HomeView): string {
-  const sub = v.best ? t("lobby.home.towerSubBest", { floor: v.best.floor, score: v.best.score }) : t("lobby.home.towerSubNew", { floors: 20 });
+  const sub = v.best ? t("lobby.home.towerSubBest", { floor: v.best.floor, score: v.best.score }) : t("lobby.home.towerSubNew");
   return `
     ${LOGO}
     <div class="hm-panel">

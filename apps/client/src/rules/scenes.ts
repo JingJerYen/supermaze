@@ -448,6 +448,7 @@ export const RULE_SCENES: DemoScene[] = [
         [t("rules.table.cpu"), t("rules.table.cpuValue", { min: Math.min(...cpus), max: Math.max(...cpus) })],
         ...bands,
         ...specialRows(floors),
+        [t("rules.table.endlessFrom", { from: floors.length + 1 }), t("rules.table.endless", { every: tuning.towerRun.endless.specialEvery })],
       ];
     },
   },

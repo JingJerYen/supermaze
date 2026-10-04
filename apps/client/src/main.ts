@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SKILL_KINDS, rotateMap, type QuarterTurns } from "@supermaze/sim";
+import { DEFAULT_TUNING, SKILL_KINDS, endlessMapOptions, generateMap, rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { drawMap, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
@@ -58,7 +58,9 @@ if (params.has("rules")) {
   const players = Number(params.get("players") ?? 1);
   const seed = Number(params.get("seed") ?? 1);
   const named = params.get("map");
-  const chosen = named ? loadMapById(named) : (drawMap(players, seed) ?? loadMapById(""));
+  // ?gen plays a map generated like the tower run's floors past the table (?theme= dresses it).
+  const generated = params.has("gen") ? generateMap(seed, endlessMapOptions(DEFAULT_TUNING.towerRun.floors.length + 1, params.get("theme") ?? "stone")) : null;
+  const chosen = generated ?? (named ? loadMapById(named) : (drawMap(players, seed) ?? loadMapById("")));
   const rot = (Number(params.get("rot") ?? (named ? 0 : seed)) % 4) as QuarterTurns;
   const map = rotateMap(chosen, rot);
   const mode = createLocalMode(map, {

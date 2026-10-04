@@ -8,6 +8,7 @@ export * from "./map/normalize.js";
 export * from "./map/validate.js";
 export * from "./map/transform.js";
 export * from "./map/pool.js";
+export * from "./map/gen/generate.js";
 export * from "./movement.js";
 export * from "./playerMove.js";
 export * from "./events.js";
