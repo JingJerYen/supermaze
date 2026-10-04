@@ -51,7 +51,7 @@ describe("music rate", () => {
 describe("theme tracks", () => {
   it("a theme with no track of its own plays the shared match track", () => {
     expect(fallbackTrack("game-candy")).toBe("game");
-    expect(fallbackTrack("game-garden")).toBe("game-candy");
+    expect(fallbackTrack("game-garden")).toBe("game");
     expect(fallbackTrack("game")).toBeNull();
     expect(fallbackTrack("menu")).toBeNull();
   });

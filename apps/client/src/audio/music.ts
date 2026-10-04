@@ -158,8 +158,8 @@ export function loopable(ctx: BaseAudioContext, input: AudioBuffer, blendSec: nu
 /** "menu", "game", or a theme's own match track, "game-<theme id>". */
 export type TrackKey = TrackName | `game-${string}`;
 
-/** Themes that play another theme's track (one file, no copy in the app). */
-const SHARED_TRACKS: Record<string, TrackKey> = { "game-garden": "game-candy" };
+/** Themes that play another theme's track (one file, no copy in the app). Every theme has its own now. */
+const SHARED_TRACKS: Record<string, TrackKey> = {};
 
 /** The track to play instead when `track` has no file: a theme sharing another's track takes that one, any other theme's match track falls back to the shared one. */
 export function fallbackTrack(track: TrackKey): TrackKey | null {
