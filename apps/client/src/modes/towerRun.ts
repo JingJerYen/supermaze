@@ -4,7 +4,6 @@ import {
   continueRun,
   DEFAULT_TUNING,
   floorSpec,
-  isGeneratedFloor,
   judgeFloor,
   newRoundTracker,
   planFloor,
@@ -107,13 +106,12 @@ export class TowerRun {
   private prepare(): void {
     this.dispose();
     const floor = this.run.floor;
-    const generated = isGeneratedFloor(floor);
     this.prep = new FloorPrep(
       this.root,
       this.renderer,
       {
-        title: generated ? t("modes.prep.titleEndless", { n: floor }) : t("modes.prep.title", { n: floor, total: this.floorsTotal }),
-        lines: [...(generated ? [t("modes.prep.generated")] : []), ...floorModLines(floorSpec(floor)?.mods ?? [])],
+        title: t("modes.prep.title", { n: floor }),
+        lines: floorModLines(floorSpec(floor)?.mods ?? []),
         start: t("modes.prep.start", { n: floor }),
       },
       loadProfile(),
@@ -166,9 +164,7 @@ export class TowerRun {
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
       caption: () => {
-        const caption = plan.generated
-          ? t("modes.tower.captionEndless", { floor: plan.floor, pass: plan.passRank, score: this.run.totalScore })
-          : t("modes.tower.caption", { floor: plan.floor, floors: this.floorsTotal, pass: plan.passRank, score: this.run.totalScore });
+        const caption = t("modes.tower.caption", { floor: plan.floor, pass: plan.passRank, score: this.run.totalScore });
         const mods = floorModTags(plan.spec.mods);
         return mods ? t("modes.tower.captionMods", { caption, mods }) : caption;
       },
@@ -208,9 +204,7 @@ export class TowerRun {
     } else {
       // Passing the top of the table is the summit; the run goes on above it.
       const summit = plan.floor === this.floorsTotal;
-      const next = isGeneratedFloor(run.floor)
-        ? t("modes.tower.nextEndless", { score: run.totalScore, floor: run.floor })
-        : t("modes.tower.next", { score: run.totalScore, floor: run.floor, floors: this.floorsTotal });
+      const next = t("modes.tower.next", { score: run.totalScore, floor: run.floor });
       this.verdict = {
         endsAt: null,
         title: verdictTitle(true),

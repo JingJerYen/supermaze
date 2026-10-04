@@ -27,9 +27,7 @@ export const modes = {
   "modes.prep.labelRandom": "這一層的技能（隨機抽到）",
   "modes.prep.unlocked": "✓ 已解鎖，點技能更換",
   "modes.prep.watchAd": "📺 看廣告，自己挑技能",
-  "modes.prep.title": "第 {n} / {total} 層",
-  "modes.prep.titleEndless": "第 {n} 層",
-  "modes.prep.generated": "🎲 這一層的迷宮是現場產生的，誰都沒走過",
+  "modes.prep.title": "第 {n} 層",
   "modes.prep.home": "回首頁",
   "modes.prep.start": "開始第 {n} 層",
   "modes.prep.adReward": "這一層自己挑技能",
@@ -47,8 +45,7 @@ export const modes = {
 
   // Tower run (towerRun.ts)
   "modes.tower.noMap": "沒有可用的地圖，無法開始爬塔挑戰",
-  "modes.tower.caption": "第 {floor} / {floors} 層　分數前 {pass} 名晉級　總分 {score}",
-  "modes.tower.captionEndless": "第 {floor} 層　分數前 {pass} 名晉級　總分 {score}",
+  "modes.tower.caption": "第 {floor} 層　分數前 {pass} 名晉級　總分 {score}",
   "modes.tower.captionMods": "{caption}　{mods}",
   "modes.floor.dark.tag": "🌑 黑暗層",
   "modes.floor.dark.line": "🌑 黑暗層：一開始就是關燈",
@@ -89,8 +86,7 @@ export const modes = {
   "modes.tower.success": "成功！",
   "modes.tower.failure": "失敗",
   "modes.tower.advanced": "晉級！分數第 {rank} 名",
-  "modes.tower.next": "總分 {score}　下一層：第 {floor} / {floors} 層",
-  "modes.tower.nextEndless": "總分 {score}　下一層：第 {floor} 層",
+  "modes.tower.next": "總分 {score}　下一層：第 {floor} 層",
   "modes.tower.goTo": "前往第 {n} 層",
   "modes.tower.adReward": "繼續挑戰下一層",
 
