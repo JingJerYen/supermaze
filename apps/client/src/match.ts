@@ -34,6 +34,7 @@ import { qualityFrame, qualityStatus, restartQuality } from "./render/quality.js
 import { useTeams } from "./render/teamColors.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
+import { skyTexture } from "./render/sky.js";
 import { SwitchViews } from "./render/switches.js";
 import { DEV_TOOLS } from "./platform.js";
 import { CLIENT_TUNING } from "./tuning.js";
@@ -45,6 +46,9 @@ import { CLIENT_TUNING } from "./tuning.js";
  */
 export class Match {
   private readonly scene: THREE.Scene;
+  /** Lit background (the theme's gradient) and the plain one while dark. */
+  private readonly sky: THREE.Texture;
+  private readonly darkSky = new THREE.Color(CLIENT_TUNING.dark.clearColor);
   private readonly follow: FollowCamera;
   /** Null in a rules demo: nobody plays it, so there are no controls, scoreboard, minimap or exit button. */
   private readonly input: InputSource | null;
@@ -91,7 +95,8 @@ export class Match {
     restartQuality();
     this.scene = createScene();
     this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
-    this.scene.background = new THREE.Color(theme.sky);
+    this.sky = skyTexture(theme.sky);
+    this.scene.background = this.sky;
     this.scene.add(this.mapMesh.group);
     this.players = new PlayerViews(this.scene, mode.grid);
     this.players.configure({ x: this.mapMesh.towerCenter.x, z: this.mapMesh.towerCenter.z });
@@ -156,7 +161,7 @@ export class Match {
       const dark = drawDark(s.to.lightsOn, s.to.lightsOffAtTick, s.to.tick + s.alpha, this.mode.tickRate, now / 1000);
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
-      this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : themeFor(this.mode.theme).sky);
+      this.scene.background = dark ? this.darkSky : this.sky;
       opening = openingOf(s.to, this.mode.tickRate);
       // The doors open with the countdown, after the fly-in.
       this.mapMesh.update(now / 1000, this.players.activeClimbs(), opening.countdownProgress);

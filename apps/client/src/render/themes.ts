@@ -9,8 +9,8 @@ import * as THREE from "three";
  */
 export interface Theme {
   id: string;
-  /** Scene background while lit. */
-  sky: number;
+  /** Scene background while lit: gradient colours from the top of the screen to the bottom (render/sky.ts). */
+  sky: number[];
   hemiSky: number;
   hemiGround: number;
   hemiIntensity: number;
@@ -101,7 +101,7 @@ export function bandedWalls(kind: PatternKind): boolean {
 export const THEMES: Record<string, Theme> = {
   stone: {
     id: "stone",
-    sky: 0x0b1424,
+    sky: [0x0e1a3a, 0x2c4474, 0x6c7fa6],
     hemiSky: 0xbcd0ff,
     hemiGround: 0x243044,
     hemiIntensity: 0.95,
@@ -136,7 +136,7 @@ export const THEMES: Record<string, Theme> = {
   /** Clipped hedges, flagstone paths and stone lanterns in golden evening light; a great tree instead of the tower. */
   garden: {
     id: "garden",
-    sky: 0x1d3441,
+    sky: [0x2d4f7a, 0x8a8fb0, 0xf2b884],
     hemiSky: 0xfff0d4,
     hemiGround: 0x4e6634,
     hemiIntensity: 1.2,
@@ -176,7 +176,7 @@ export const THEMES: Record<string, Theme> = {
    */
   factory: {
     id: "factory",
-    sky: 0x060b1c,
+    sky: [0x03061a, 0x0d1f4a, 0x1f5a8a],
     hemiSky: 0xd6e2ff,
     hemiGround: 0x1a2233,
     hemiIntensity: 1.0,
@@ -215,7 +215,7 @@ export const THEMES: Record<string, Theme> = {
    */
   candy: {
     id: "candy",
-    sky: 0x2b1a16,
+    sky: [0x6a4fa0, 0xd88ac0, 0xffd0e0],
     hemiSky: 0xfff0e6,
     hemiGround: 0x5a3a2a,
     hemiIntensity: 1.15,
@@ -257,7 +257,7 @@ export const THEMES: Record<string, Theme> = {
    */
   ice: {
     id: "ice",
-    sky: 0x121838,
+    sky: [0x0a0f30, 0x1c2e6a, 0x2e8a96],
     hemiSky: 0xe4eeff,
     hemiGround: 0x46527c,
     hemiIntensity: 1.3,
@@ -297,7 +297,7 @@ export const THEMES: Record<string, Theme> = {
    */
   desert: {
     id: "desert",
-    sky: 0x8a5a38,
+    sky: [0xb05a2e, 0xe0904e, 0xf6d49a],
     hemiSky: 0xfff0d8,
     hemiGround: 0x7a4a2e,
     hemiIntensity: 1.1,
