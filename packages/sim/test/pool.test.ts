@@ -44,3 +44,13 @@ describe("pickMap", () => {
     expect(counts.get("small")).toBeGreaterThan(120);
   });
 });
+
+describe("map modes", () => {
+  const night: MapData = { ...LATTICE_MAP, id: "night", modes: ["night"] };
+  const both: MapData = { ...LATTICE_MAP, id: "both", modes: ["race", "night"] };
+
+  it("keeps night maps out of the race pool and race maps out of the night pool", () => {
+    expect(playableMaps([LATTICE_MAP, night, both]).map((m) => m.id)).toEqual(["both", "lattice"]);
+    expect(playableMaps([LATTICE_MAP, night, both], undefined, undefined, "night").map((m) => m.id)).toEqual(["both", "night"]);
+  });
+});

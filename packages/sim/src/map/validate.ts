@@ -1,7 +1,7 @@
 import { DEFAULT_TUNING, type Tuning } from "../tuning/index.js";
 import { ALL_DIRS, DIRS, MapGrid, tileKey } from "./grid.js";
 import { normalizeMap } from "./normalize.js";
-import { MAP_DIFFICULTIES, type MapData, type NormalizedMapData, type TilePos } from "./types.js";
+import { MAP_DIFFICULTIES, MAP_MODES, type MapData, type NormalizedMapData, type TilePos } from "./types.js";
 
 /**
  * Structural checks a hand-made map must pass (CLAUDE.md section 6).
@@ -137,6 +137,9 @@ export function validateMap(raw: MapData, tuning: Tuning = DEFAULT_TUNING): stri
   }
   if (data.difficulty !== undefined && !MAP_DIFFICULTIES.includes(data.difficulty)) {
     errors.push(`difficulty must be one of ${MAP_DIFFICULTIES.join(", ")} (got ${String(data.difficulty)})`);
+  }
+  for (const m of data.modes ?? []) {
+    if (!MAP_MODES.includes(m)) errors.push(`modes may only list ${MAP_MODES.join(", ")} (got ${String(m)})`);
   }
 
   return errors;

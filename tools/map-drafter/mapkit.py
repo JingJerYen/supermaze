@@ -93,6 +93,26 @@ class Canvas:
             self.put(x, y)
 
 
+    def braid(self, cells, seed):
+        """Open walls until no junction is a dead end: every junction gets at
+        least two ways out, so a chase can always go round (the night parade's
+        maps, CLAUDE.md 4.4). A dead end opens toward a neighbouring dead end
+        when it has one, otherwise toward any neighbour."""
+        rnd = random.Random(seed)
+        cells = set(cells)
+        steps = [(2, 0), (-2, 0), (0, 2), (0, -2)]
+        open_ways = lambda c: sum(self.get(c[0] + dx // 2, c[1] + dy // 2) != "#" for dx, dy in steps)
+        for c in sorted(cells):
+            if open_ways(c) > 1:
+                continue
+            shut = [(c[0] + dx, c[1] + dy) for dx, dy in steps
+                    if (c[0] + dx, c[1] + dy) in cells and self.get(c[0] + dx // 2, c[1] + dy // 2) == "#"]
+            if not shut:
+                continue
+            dead = [n for n in shut if open_ways(n) <= 1]
+            n = rnd.choice(dead or shut)
+            self.put((c[0] + n[0]) // 2, (c[1] + n[1]) // 2)
+
     def _prim(self, cells, seen, rnd):
         steps = [(2, 0), (-2, 0), (0, 2), (0, -2)]
         frontier = sorted({(a[0] + dx, a[1] + dy) for a in seen for dx, dy in steps} & cells - seen)
@@ -435,8 +455,12 @@ def load_rows(map_id):
     return json.loads((MAPS_DIR / f"{map_id}.json").read_text())["rows"]
 
 
-def write_map(map_id, rows, time=240, participants=(2, 3, 4, 5, 6), switches=4, boxes=12, difficulty="hard", theme="stone"):
-    d = {"id": map_id, "name": map_id.replace("maze-", "Maze "), "theme": theme, "difficulty": difficulty,
-         "supportedParticipants": list(participants), "plazaRadius": 1, "timeLimitSec": time,
-         "lightSwitchCount": switches, "itemBoxCount": boxes, "rows": rows}
+def write_map(map_id, rows, time=240, participants=(2, 3, 4, 5, 6), switches=4, boxes=12, difficulty="hard", theme="stone", modes=None):
+    d = {"id": map_id, "name": map_id.replace("maze-", "Maze ").replace("night-", "Night "), "theme": theme}
+    if difficulty is not None:
+        d["difficulty"] = difficulty
+    if modes is not None:
+        d["modes"] = list(modes)
+    d.update({"supportedParticipants": list(participants), "plazaRadius": 1, "timeLimitSec": time,
+              "lightSwitchCount": switches, "itemBoxCount": boxes, "rows": rows})
     (MAPS_DIR / f"{map_id}.json").write_text(json.dumps(d, indent=2, ensure_ascii=False) + "\n")

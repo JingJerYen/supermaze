@@ -2,7 +2,7 @@ import type * as THREE from "three";
 import { rotateMap, SeededRandom, SKILL_KINDS, type SimEvent, type SimulationState, type SkillKind } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
-import { MAPS } from "../maps.js";
+import { NIGHT_POOL } from "../maps.js";
 import { Match } from "../match.js";
 import { isPremium } from "../monetize/premium.js";
 import { loadProfile } from "../profile.js";
@@ -10,13 +10,6 @@ import { FloorPrep } from "./floorPrep.js";
 import { createLocalMode } from "./local.js";
 
 const PLAYER_ID = "local"; // createLocalMode's id for you
-
-/**
- * The maps a night is played on: easy ones with few dead ends and no fixture
- * that could shut the player in, so there is always a way round a ghost
- * (CLAUDE.md section 4.4).
- */
-export const NIGHT_MAPS = ["maze-20", "maze-02", "maze-18", "maze-11"];
 
 /** Ghosts still in the maze. */
 export function ghostsLeft(state: SimulationState): number {
@@ -71,7 +64,8 @@ export class NightRun {
   private play(skills: SkillKind[]): void {
     this.dispose();
     const rng = new SeededRandom(this.seed ^ 0x9e3779b9);
-    const map = MAPS[rng.pick(NIGHT_MAPS)] ?? Object.values(MAPS)[0]!;
+    // The night maps (section 4.4): braided, so there is always a way round a ghost.
+    const map = rng.pick(NIGHT_POOL);
     const profile = loadProfile();
     this.verdict = null;
     this.notices = [];
