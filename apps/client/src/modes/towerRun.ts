@@ -29,7 +29,7 @@ import { showRewardedAd } from "../monetize/ads.js";
 import { isPremium } from "../monetize/premium.js";
 import { loadProfile } from "../profile.js";
 import { FloorPrep } from "./floorPrep.js";
-import { floorModTags } from "./floorMods.js";
+import { floorModLines, floorModTags } from "./floorMods.js";
 import { FloorSelect } from "./floorSelect.js";
 import { createLocalMode } from "./local.js";
 import { loadReachedFloor, loadTowerBest, noteReachedFloor, saveBest } from "./towerProgress.js";
@@ -100,8 +100,11 @@ export class TowerRun {
     this.prep = new FloorPrep(
       this.root,
       this.renderer,
-      this.run.floor,
-      this.floorsTotal,
+      {
+        title: t("modes.prep.title", { n: this.run.floor, total: this.floorsTotal }),
+        lines: floorModLines(DEFAULT_TUNING.towerRun.floors[this.run.floor - 1]?.mods ?? []),
+        start: t("modes.prep.start", { n: this.run.floor }),
+      },
       loadProfile(),
       randomSkill(this.run.seed, this.run.floor),
       isPremium(),

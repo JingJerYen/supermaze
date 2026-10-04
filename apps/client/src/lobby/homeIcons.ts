@@ -12,6 +12,7 @@ export const ICONS = {
   users: svg(`<circle cx="9" cy="8" r="3.5" fill="currentColor"/><path d="M2.5 20c.8-4 3.5-6 6.5-6s5.7 2 6.5 6" fill="currentColor"/><circle cx="17" cy="9" r="2.8"/><path d="M17.5 14c2.2.4 3.6 2.2 4 5"/>`),
   doorIn: svg(`<path d="M14 3h5a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-5"/><path d="M3 12h11M10 8l4 4-4 4"/>`),
   key: svg(`<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2"/>`),
+  ghost: svg(`<path d="M5 20.5V11a7 7 0 0 1 14 0v9.5l-2.4-1.7-2.3 1.7-2.3-1.7-2.3 1.7-2.3-1.7z" fill="currentColor" fill-opacity=".25"/><circle cx="9.5" cy="11" r="1.1" fill="currentColor"/><circle cx="14.5" cy="11" r="1.1" fill="currentColor"/>`),
   tower: svg(`<path d="M6 21V9h12v12"/><path d="M5 9V4h3v2h2V4h4v2h2V4h3v5z" fill="currentColor"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/><path d="M4 21h16"/>`),
   book: svg(`<path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/>`),
   chevron: svg(`<path d="M9 5l7 7-7 7"/>`),

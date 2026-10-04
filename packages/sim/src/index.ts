@@ -27,3 +27,6 @@ export * from "./cpu/controller.js";
 export * from "./run/towerRun.js";
 export * from "./run/runAchievements.js";
 export * from "./achievements.js";
+export * from "./catches.js";
+export * from "./night/spread.js";
+export * from "./night/nightSimulation.js";

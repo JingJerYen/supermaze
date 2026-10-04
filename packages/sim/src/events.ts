@@ -30,9 +30,17 @@ export type SimEvent =
   | { type: "teamCompleted"; tick: Tick; teamId: TeamId; isWinner: boolean }
   | { type: "skillUsed"; tick: Tick; playerId: PlayerId; skill: SkillKind }
   | { type: "shieldBlocked"; tick: Tick; playerId: PlayerId; by: "trap" | "ghost" }
-  | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason };
+  | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason }
+  /** Night parade: a ghost is gone for good, sprung by a trap (set by `playerId`, null for a map fixture) or the lights coming on. */
+  | { type: "ghostBanished"; tick: Tick; ghostId: PlayerId; by: "trap" | "light"; playerId: PlayerId | null };
 
 export type RoundEndReason =
+  /** Night parade: every ghost gone and the player climbed. */
+  | "night:cleared"
+  /** Night parade: the player was caught with no lives left. */
+  | "night:caught"
+  /** Night parade: time ran out before the player climbed. */
+  | "night:timeout"
   | "allClimbed"
   /** Teams: all but one participant are on the tower, so the round stops; the first complete team won. */
   | "lastOneLeft"

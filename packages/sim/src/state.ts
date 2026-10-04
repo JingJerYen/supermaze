@@ -99,6 +99,8 @@ export interface PlayerState extends Participant {
   skillEffect: SkillEffect | null;
   /** The amulet is up: the next trap or ghost catch is shrugged off. */
   shielded: boolean;
+  /** Catches the player can still take (night parade, section 4.4); absent where catches cost no life. */
+  lives?: number;
 }
 
 export type RoundStatus = "lobby" | "running" | "finished";

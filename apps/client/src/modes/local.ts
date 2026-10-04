@@ -1,4 +1,4 @@
-import { CpuController, DEFAULT_TUNING, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimEvent, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
+import { CpuController, DEFAULT_TUNING, NightSimulation, Simulation, withCpuDifficulty, type CpuDifficulty, type MapData, type SimEvent, type SimulationState, type SkillKind, type Tuning } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
 import { formatSeconds } from "./roundHud.js";
@@ -31,6 +31,8 @@ export interface LocalOptions {
   startDark?: boolean;
   /** Every ghost event turns all the CPUs into ghosts at once, hunting you (tower run special floor). */
   ghostPack?: boolean;
+  /** A night parade instead of a race (section 4.4): `players` is ignored, the ghosts come with it. */
+  night?: { ghostName: string };
   /** Called after every tick with the states either side of it and its events (the tower run's achievements). */
   onStep?: (prev: SimulationState, next: SimulationState, events: readonly SimEvent[]) => void;
   /** Big toasts to show now; see GameMode.notices. */
@@ -60,16 +62,19 @@ export function createLocalMode(map: MapData, options: LocalOptions = {}): GameM
     name: c.name,
     character: c.character,
   }));
-  const sim = new Simulation({
-    seed: options.seed ?? 1,
-    map,
-    teamMode: "solo",
-    ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
-    ...(options.startDark ? { startDark: true } : {}),
-    ...(options.ghostPack ? { ghostPack: id } : {}),
-    tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
-    participants: [{ id, teamId: id, controller: "human", name: options.name ?? t("hud.you"), skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null }, ...idle],
-  });
+  const me = { id, teamId: id, controller: "human" as const, name: options.name ?? t("hud.you"), skill: options.skill ?? null, skill2: options.skill2 ?? null, character: options.character ?? null };
+  const sim = options.night
+    ? new NightSimulation({ seed: options.seed ?? 1, map, player: me, ghostName: options.night.ghostName, ...(options.tuning ? { tuning: options.tuning } : {}) })
+    : new Simulation({
+        seed: options.seed ?? 1,
+        map,
+        teamMode: "solo",
+        ...(options.endWhenYouClimb ? { endWhenClimbed: id } : {}),
+        ...(options.startDark ? { startDark: true } : {}),
+        ...(options.ghostPack ? { ghostPack: id } : {}),
+        tuning: options.tuning ?? withCpuDifficulty(options.difficulty ?? "easy"),
+        participants: [me, ...idle],
+      });
   sim.start();
   const cpu = new CpuController(sim, (options.seed ?? 1) + 1);
   let prev: SimulationState = sim.getState();

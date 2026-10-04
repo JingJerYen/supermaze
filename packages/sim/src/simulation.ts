@@ -38,7 +38,7 @@ export type StepWork = ItemWork & {
  *
  * This class runs the race to the tower (sections 3-13). Other kinds of round
  * extend it and override the protected hooks below (keyCount, chooseSwitches,
- * scheduleGhost, springTrap, lightsToggled, catchRules, afterCatches,
+ * scheduleGhost, springTrap, lightsToggled, afterMoves, catchRules, afterCatches,
  * decideEnd); everything else, from movement to items, is shared.
  */
 export class Simulation {
@@ -224,6 +224,9 @@ export class Simulation {
   protected catchRules(): CatchRules {
     return { stealKeys: true };
   }
+
+  /** Called once every player has moved and acted this tick, before the catches; `players` is the working copy. */
+  protected afterMoves(_players: Record<PlayerId, PlayerState>, _tick: Tick, _events: SimEvent[]): void {}
 
   /** Called with the runners caught this tick, after the catches; `players` is the working copy. */
   protected afterCatches(_players: Record<PlayerId, PlayerState>, _caught: PlayerId[], _tick: Tick, _events: SimEvent[]): void {}
@@ -443,6 +446,7 @@ export class Simulation {
       if (scorer) players[s.playerId] = { ...scorer, score: scorer.score + s.points };
     }
     this.pendingScores = [];
+    this.afterMoves(players, tick, work.events);
 
     // Catches: a ghost overlapping an unprotected runner freezes them and empties their bag.
     if (this.state.status === "running") {

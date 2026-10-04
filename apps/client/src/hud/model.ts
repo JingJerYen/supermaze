@@ -82,7 +82,8 @@ export function buildHudModel(
     return owner?.name ?? teamId.slice(0, 6);
   };
   const byTeam = new Map<string, PlayerRow[]>();
-  for (const p of Object.values(state.players)) {
+  // The night parade's ghosts are not contestants: no roster rows (section 4.4).
+  for (const p of Object.values(state.players).filter((o) => !o.monster)) {
     const rows = byTeam.get(p.teamId) ?? [];
     rows.push(toRow(state, p, p.id === meId));
     byTeam.set(p.teamId, rows);
@@ -119,7 +120,8 @@ export function buildHudModel(
     myFreeze: running && me && me.phase === "maze" && me.frozenUntilTick > state.tick ? { sec: (me.frozenUntilTick - state.tick) / tickRate, by: me.frozenBy } : null,
     // A round that ends mid-warning or mid-chase leaves the schedule where it
     // stopped; the HUD shows no event once the round is over.
-    ghost: running
+    // An endless hunt is the night parade: its caption says how many are left, not a timer.
+    ghost: running && state.ghost.phaseEndsAtTick < Number.MAX_SAFE_INTEGER
       ? {
           phase: state.ghost.phase,
           // A pack (tower run special floor) is everyone but the hunted player.

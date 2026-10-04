@@ -9,6 +9,7 @@ import { loadProfile, portraits } from "./profile.js";
 import { loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { OnlineMatchMode } from "./modes/online.js";
+import { NightRun } from "./modes/nightRun.js";
 import { TowerRun } from "./modes/towerRun.js";
 import { isNewPlayer, loadTowerBest } from "./modes/towerProgress.js";
 import { StoreScreen } from "./lobby/storeScreen.js";
@@ -28,6 +29,7 @@ export class Session {
   private match: Match | null = null;
   private rules: RulesScreen | null = null;
   private towerRun: TowerRun | null = null;
+  private night: NightRun | null = null;
   private profileScreen: CharacterSetup | null = null;
   private store: StoreScreen | null = null;
   private achievements: AchievementsScreen | null = null;
@@ -45,6 +47,7 @@ export class Session {
     this.ui = new LobbyUi(root, {
       onJoin: (req) => void this.join(req),
       onTowerRun: () => (isNewPlayer() ? this.showRules(() => this.playTowerRun()) : this.playTowerRun()),
+      onNight: () => this.playNight(),
       onOnline: () => this.showOnline(),
       onHome: () => this.showHome(),
       onProfile: () => this.showProfile(),
@@ -173,6 +176,16 @@ export class Session {
     this.towerRun.start();
   }
 
+  private playNight(): void {
+    this.teardownMatch();
+    this.ui.hide();
+    this.night = new NightRun(this.root, this.renderer, () => {
+      this.teardownMatch();
+      this.showHome();
+    });
+    this.night.start();
+  }
+
   private showHome(notice?: string): void {
     this.ui.setPortraits(portraits(this.renderer));
     this.ui.showHome(loadProfile(), notice, loadTowerBest());
@@ -253,6 +266,8 @@ export class Session {
   private teardownMatch(): void {
     this.towerRun?.dispose();
     this.towerRun = null;
+    this.night?.dispose();
+    this.night = null;
     this.match?.dispose();
     this.match = null;
     this.matchMode = null;

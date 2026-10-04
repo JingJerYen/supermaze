@@ -24,6 +24,11 @@ export interface Participant {
   skill2?: SkillKind | null;
   /** Character model chosen by the player (client-side file name); purely cosmetic. */
   character?: string | null;
+  /**
+   * A night parade ghost (section 4.4): always a ghost, never holds a key or
+   * an item, and gone for good when banished. Absent for everyone else.
+   */
+  monster?: boolean;
 }
 
 /**
