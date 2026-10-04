@@ -312,6 +312,9 @@ export const CLIENT_TUNING = {
     hover: 0.12,
     bobAmp: 0.05,
     bobHz: 0.7,
+    /** Night parade, knocked down by the lights: how fast it tips over (per second) and how high it lies. */
+    fallPerSec: 6,
+    downHeight: 0.25,
   },
   keyBeam: {
     /** World units above the key. */

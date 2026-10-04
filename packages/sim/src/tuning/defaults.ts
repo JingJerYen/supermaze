@@ -107,6 +107,7 @@ export const DEFAULT_TUNING: Tuning = {
     ghostSpeed: 0.5,
     ghostVisionTiles: 3,
     ghostMinStartSteps: 12,
+    lightStunSec: 30,
     // Traps are half of every box; no teleports.
     boxWeights: { trap: 50, hammer: 20, obstacle: 17, oneWayDoor: 13, teleportNode: 0 },
   },

@@ -113,14 +113,30 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount - 1);
   });
 
-  it("turning the lights on banishes every ghost at once", () => {
+  it("turning the lights on knocks every ghost down for a while, harmless until it is up", () => {
     const sim = night();
     const sw = Object.values(sim.getState().switches)[0]!;
     setPlayer(sim, ME, (p) => ({ ...p, mover: at(sw.pos) }));
     const events = sim.step(new Map([[ME, { moveX: 0, moveY: 0, action: true }]]));
-    expect(sim.getState().lightsOn).toBe(true);
-    expect(events.filter((e) => e.type === "ghostBanished")).toHaveLength(sim.tuning.night.ghostCount);
-    expect(ghosts(sim)).toHaveLength(0);
+    const s = sim.getState();
+    expect(s.lightsOn).toBe(true);
+    const stun = events.find((e) => e.type === "ghostsStunned");
+    expect(stun).toBeDefined();
+    const until = s.tick + sim.tuning.night.lightStunSec * sim.tuning.tickRate;
+    expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount);
+    for (const g of ghosts(sim)) {
+      expect(g.frozenBy).toBe("light");
+      expect(g.frozenUntilTick).toBe(until);
+    }
+    // A downed ghost lying right on the player catches nobody.
+    const g = ghosts(sim)[0]!;
+    setPlayer(sim, g.id, (p) => ({ ...p, mover: at(sim.getState().players[ME]!.mover.from) }));
+    let caught = 0;
+    while (sim.getState().tick < until - 1) caught += sim.step(new Map()).filter((e) => e.type === "playerCaught").length;
+    expect(caught).toBe(0);
+    // Back up: the same ghost catches at once.
+    for (let i = 0; i < 3; i++) caught += sim.step(new Map()).filter((e) => e.type === "playerCaught").length;
+    expect(caught).toBe(1);
   });
 
   it("each catch costs a life and the last one ends the round", () => {

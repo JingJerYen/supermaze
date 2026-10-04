@@ -86,7 +86,7 @@ export interface PlayerState extends Participant {
   /** Cannot move until this tick (trap or ghost catch). 0 when free. */
   frozenUntilTick: Tick;
   /** What caused the latest freeze; meaningful while `frozenUntilTick` is in the future. Clients pick the look from it. */
-  frozenBy: "trap" | "ghost" | "skill" | null;
+  frozenBy: "trap" | "ghost" | "skill" | "light" | null;
   /** Node the player just arrived on by teleport; no bounce-back until they step off it. */
   teleportImmunity: string | null;
   /** Cannot be caught by a ghost until this tick (covers the post-catch freeze and protection). */

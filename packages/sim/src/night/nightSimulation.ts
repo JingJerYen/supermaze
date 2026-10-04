@@ -37,8 +37,8 @@ export function nightTuning(base: Tuning = DEFAULT_TUNING): Tuning {
 /**
  * Night parade (CLAUDE.md section 4.4): one player in the dark with eight
  * ghosts hunting from the start. Traps banish a ghost for good; the single
- * light switch, the one farthest from the tower, banishes every ghost at
- * once. The key opens the door only when no ghost is left; three catches end
+ * light switch, the one farthest from the tower, knocks every ghost down for
+ * a while, time to lay traps in their way. The key opens the door only when no ghost is left; three catches end
  * the round. The race's rules carry everything else.
  */
 export class NightSimulation extends Simulation {
@@ -117,13 +117,14 @@ export class NightSimulation extends Simulation {
   }
 
   /** Lights on: every ghost is gone. */
+  /** Lights on: every ghost drops where it is for `night.lightStunSec`; time to lay traps. */
   protected override lightsToggled(work: StepWork, playerId: PlayerId, tick: Tick): void {
     if (!work.lightsOn) return;
-    for (const g of Object.values(work.players).filter((p) => p.monster).sort((a, b) => a.id.localeCompare(b.id))) {
-      if (this.banished.has(g.id)) continue;
-      this.banished.add(g.id);
-      work.events.push({ type: "ghostBanished", tick, ghostId: g.id, by: "light", playerId });
+    const untilTick = tick + Math.round(this.tuning.night.lightStunSec * this.tuning.tickRate);
+    for (const g of Object.values(work.players).filter((p) => p.monster)) {
+      work.players[g.id] = { ...g, frozenUntilTick: Math.max(g.frozenUntilTick, untilTick), frozenBy: "light", mover: { ...g.mover, target: null, progress: 0 } };
     }
+    work.events.push({ type: "ghostsStunned", tick, untilTick, playerId });
   }
 
   protected override afterMoves(players: Record<PlayerId, PlayerState>): void {
@@ -133,7 +134,8 @@ export class NightSimulation extends Simulation {
 
   /** Ghosts here never climb, so there is no key to steal. */
   protected override catchRules(): CatchRules {
-    return { stealKeys: false };
+    // A ghost the lights knocked down cannot catch anyone until it is back up.
+    return { stealKeys: false, heldGhostsCatch: false };
   }
 
   /** Each catch costs a life. */
