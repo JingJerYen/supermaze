@@ -23,14 +23,11 @@ export const modes = {
   "modes.prep.note": "{skill}：{text}",
   "modes.prep.pickHint": "點技能選擇，最多兩個；再點一次取消。",
   "modes.prep.labelPremium": "這一層的技能（⭐ 完整版：可選兩個，已選 {n} / 2）",
-  "modes.prep.labelUnlocked": "這一層的技能（點一個更換）",
   "modes.prep.labelRandom": "這一層的技能（隨機抽到）",
-  "modes.prep.unlocked": "✓ 已解鎖，點技能更換",
-  "modes.prep.watchAd": "📺 看廣告，自己挑技能",
+  "modes.prep.upgrade": "⭐ 完整版：每層自己挑兩個技能",
   "modes.prep.title": "第 {n} 層",
   "modes.prep.home": "回首頁",
   "modes.prep.start": "開始第 {n} 層",
-  "modes.prep.adReward": "這一層自己挑技能",
 
   // Floor select (floorSelect.ts)
   "modes.select.easy": "簡單",
@@ -59,8 +56,8 @@ export const modes = {
   "modes.tower.endlessAhead": "再往上每層都是現場產生的新迷宮，看你能爬多高！",
   "modes.tower.tryAgain": "再挑戰一次",
   "modes.tower.continue": "繼續（剩 {n} 次）",
-  "modes.tower.continueAd": "📺 看廣告繼續（剩 {n} 次）",
-  "modes.tower.continuesUsed": "這次挑戰的 {n} 次繼續已用完",
+  "modes.tower.continueFree": "繼續",
+  "modes.tower.continuesUsed": "這次挑戰的 {n} 次繼續已用完（完整版可以無限次繼續）",
   "modes.tower.failed": "挑戰結束：分數第 {rank} 名，需要前 {pass} 名",
   // Night parade (CLAUDE.md 4.4).
   "modes.night.title": "👻 百鬼夜行",
@@ -88,16 +85,4 @@ export const modes = {
   "modes.tower.advanced": "晉級！分數第 {rank} 名",
   "modes.tower.next": "總分 {score}　下一層：第 {floor} 層",
   "modes.tower.goTo": "前往第 {n} 層",
-  "modes.tower.adReward": "繼續挑戰下一層",
-
-  // Rewarded ad placeholder (monetize/ads.ts)
-  "modes.ad.tag": "廣告",
-  "modes.ad.body": "這裡會播放一則廣告",
-  "modes.ad.placeholder": "（測試用的佔位畫面）",
-  "modes.ad.reward": "看完可以：{reward}",
-  "modes.ad.countdown": "{n} 秒後獲得獎勵",
-  "modes.ad.earned": "已獲得獎勵",
-  "modes.ad.skip": "略過（沒有獎勵）",
-  "modes.ad.claim": "領取獎勵",
-  "modes.ad.close": "關閉",
 } as const;

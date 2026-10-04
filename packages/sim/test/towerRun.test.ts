@@ -128,6 +128,16 @@ describe("recordFloor and continueRun", () => {
     expect(continueRun(run)).toBe(run);
   });
 
+  it("continues without limit when given one (the full version)", () => {
+    let run = startTowerRun(1);
+    for (let i = 0; i < DEFAULT_TUNING.towerRun.maxContinues + 3; i++) {
+      run = recordFloor(run, plan(run), outcome(false));
+      expect(canContinue(run, DEFAULT_TUNING, Infinity)).toBe(true);
+      run = continueRun(run, DEFAULT_TUNING, Infinity);
+    }
+    expect(run.continues).toBe(DEFAULT_TUNING.towerRun.maxContinues + 3);
+  });
+
   it("can start on a later floor, within the run", () => {
     expect(startTowerRun(1, 7)).toMatchObject({ floor: 7, startFloor: 7 });
     expect(startTowerRun(1, 99).floor).toBe(DEFAULT_TUNING.towerRun.floors.length);

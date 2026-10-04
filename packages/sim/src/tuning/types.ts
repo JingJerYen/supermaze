@@ -178,7 +178,7 @@ export interface Tuning {
      * you rank within the first max(1, floor(participants x passShare)).
      */
     passShare: number;
-    /** Continues after a failed floor, per run. */
+    /** Continues after a failed floor, per run, in the free game (the full version has no limit). */
     maxContinues: number;
     /** Bottom floor first. Past the last one the run goes on with `endless`. */
     floors: TowerFloor[];

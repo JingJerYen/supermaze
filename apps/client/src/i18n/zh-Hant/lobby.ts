@@ -86,10 +86,10 @@ export const lobby = {
 
   // Full version page (storeScreen.ts)
   "lobby.store.sub": "一次購買，永久擁有",
-  "lobby.store.noAds": "免廣告",
-  "lobby.store.noAdsDesc": "失敗直接繼續、技能直接自己挑，不用看廣告",
-  "lobby.store.twoSkills": "兩個技能",
-  "lobby.store.twoSkillsDesc": "爬塔每一層可以帶兩個技能",
+  "lobby.store.twoSkills": "自選兩個技能",
+  "lobby.store.twoSkillsDesc": "每一層自己挑技能，而且可以帶兩個（免費版每層隨機一個）",
+  "lobby.store.continues": "無限次繼續",
+  "lobby.store.continuesDesc": "沒晉級時想繼續幾次都可以（免費版每次挑戰 2 次）",
   "lobby.store.startFloor": "選擇起始樓層",
   "lobby.store.startFloorDesc": "從打過的任一層開始，選最高層就接著往上打",
   "lobby.store.buy": "購買　{price}",
@@ -102,6 +102,8 @@ export const lobby = {
   "lobby.store.restored": "已恢復完整版。",
   "lobby.store.nothingToRestore": "這個帳號沒有購買紀錄。",
   "lobby.store.home": "回首頁",
+  "lobby.store.back": "返回",
+  "lobby.store.placeholderPrice": "NT$ 60",
   "lobby.store.restore": "恢復購買",
   "lobby.store.dropForTesting": "改回免費版（測試用）",
 

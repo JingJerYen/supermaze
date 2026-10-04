@@ -81,10 +81,10 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.profile.done": "Done",
 
   "lobby.store.sub": "Buy once, keep forever",
-  "lobby.store.noAds": "No ads",
-  "lobby.store.noAdsDesc": "Continue after a loss and pick your skills without watching ads",
-  "lobby.store.twoSkills": "Two skills",
-  "lobby.store.twoSkillsDesc": "Take two skills onto every tower floor",
+  "lobby.store.twoSkills": "Pick two skills",
+  "lobby.store.twoSkillsDesc": "Choose your skills each floor, and take two (free: one at random)",
+  "lobby.store.continues": "Unlimited continues",
+  "lobby.store.continuesDesc": "Continue after a loss as often as you like (free: 2 per run)",
   "lobby.store.startFloor": "Pick your start floor",
   "lobby.store.startFloorDesc": "Start on any floor you've reached; pick the highest to carry on up",
   "lobby.store.buy": "Buy {price}",
@@ -97,6 +97,8 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.store.restored": "Full Version restored.",
   "lobby.store.nothingToRestore": "No purchase found for this account.",
   "lobby.store.home": "Home",
+  "lobby.store.back": "Back",
+  "lobby.store.placeholderPrice": "US$2.99",
   "lobby.store.restore": "Restore Purchases",
   "lobby.store.dropForTesting": "Back to Free (test)",
 

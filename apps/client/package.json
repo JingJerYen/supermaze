@@ -15,7 +15,6 @@
     "android:release": "npm run build:release && cap sync android && cd android && ./gradlew assembleRelease bundleRelease"
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.1.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",
     "@colyseus/sdk": "^0.18.4",

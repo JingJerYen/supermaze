@@ -11,7 +11,7 @@ import type { PlayerId } from "../types.js";
  * CPUs, each floor a normal solo round. You pass a floor when your score ranks
  * in the first half. A failed floor stops the run and shows the total; from
  * there you may continue to the next floor (`towerRun.maxContinues` times a
- * run; a continue costs an ad, or nothing with the full version) with the
+ * run, without limit with the full version) with the
  * score carried on. A run starts on floor 1, or with the full version on any
  * floor already reached up to the top of the table (`startFloor`). There is
  * no last floor: past the table every floor is played on a map generated from
@@ -191,14 +191,17 @@ export function recordFloor(run: TowerRunState, plan: FloorPlan, outcome: FloorO
   return { ...run, history, totalScore, floor: run.floor + 1, status: outcome.passed ? "playing" : "stopped" };
 }
 
-/** Whether a failed run may still carry on: `towerRun.maxContinues` continues a run. */
-export function canContinue(run: TowerRunState, tuning: Tuning = DEFAULT_TUNING): boolean {
-  return run.status === "stopped" && run.continues < tuning.towerRun.maxContinues;
+/**
+ * Whether a failed run may still carry on: `limit` continues a run, by default
+ * `towerRun.maxContinues` (the free game); the full version passes Infinity.
+ */
+export function canContinue(run: TowerRunState, tuning: Tuning = DEFAULT_TUNING, limit = tuning.towerRun.maxContinues): boolean {
+  return run.status === "stopped" && run.continues < limit;
 }
 
 /** Carry on after a failed floor: the next floor, score kept. */
-export function continueRun(run: TowerRunState, tuning: Tuning = DEFAULT_TUNING): TowerRunState {
-  if (!canContinue(run, tuning)) return run;
+export function continueRun(run: TowerRunState, tuning: Tuning = DEFAULT_TUNING, limit = tuning.towerRun.maxContinues): TowerRunState {
+  if (!canContinue(run, tuning, limit)) return run;
   return { ...run, status: "playing", continues: run.continues + 1 };
 }
 
