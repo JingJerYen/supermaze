@@ -156,6 +156,8 @@ export function endlessMapOptions(floor: number, theme: string, tuning: Tuning =
     width: e.width,
     height: e.height,
     timeLimitSec: e.timeLimitSec,
+    stairs: e.stairs,
+    bridges: e.bridges,
     theme,
     traps: Math.min(e.maxTraps, e.traps + more),
     obstacles: Math.min(e.maxObstacles, e.obstacles + more),

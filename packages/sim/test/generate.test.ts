@@ -5,7 +5,7 @@ import { normalizeMap } from "../src/map/normalize.js";
 import { validateMap } from "../src/map/validate.js";
 import { DEFAULT_TUNING } from "../src/tuning/index.js";
 
-const OPTS: GenerateOptions = { width: 43, height: 31, timeLimitSec: 300, theme: "ice", traps: 8, obstacles: 2, doors: 3 };
+const OPTS: GenerateOptions = { width: 43, height: 31, timeLimitSec: 300, theme: "ice", traps: 8, obstacles: 2, doors: 3, stairs: 8, bridges: 5 };
 const count = (rows: string[], chars: string) => [...rows.join("")].filter((c) => chars.includes(c)).length;
 
 describe("generateMap", () => {

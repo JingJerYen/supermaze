@@ -148,6 +148,8 @@ export const DEFAULT_TUNING: Tuning = {
       width: 43,
       height: 31,
       timeLimitSec: 300,
+      stairs: 12,
+      bridges: 8,
       traps: 6,
       obstacles: 1,
       doors: 2,

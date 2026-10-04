@@ -16,6 +16,9 @@ export interface GenerateOptions {
   traps: number;
   obstacles: number;
   doors: number;
+  /** Stairs onto the wall tops and bridges between them, as many as fit up to these. */
+  stairs: number;
+  bridges: number;
 }
 
 /** Tries before giving up; a map fails only when the validator finds too few places for something. */
@@ -53,8 +56,8 @@ function draw(seed: number, opts: GenerateOptions, id: string): MapData | null {
 
   const g = c.rows().map((r) => [...r]);
   const centre: Cell = [c.cx, c.cy];
-  addBridges(g, rng, Math.max(2, Math.round(area / 450)), centre, 3);
-  addStairs(g, rng, Math.max(3, Math.round(area / 220)), centre, 3);
+  addBridges(g, rng, opts.bridges, centre, 3);
+  addStairs(g, rng, opts.stairs, centre, 3);
   placeFixtures(g, rng, { doors: opts.doors, obstacles: opts.obstacles, traps: opts.traps }, centre, 4);
   if (!placeCandidates(g, rng, { keys: 10, topKeys: 4, boxes: 18, topBoxes: 3, switches: 6 })) return null;
 

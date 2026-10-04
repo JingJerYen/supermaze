@@ -229,6 +229,9 @@ export interface EndlessFloors {
   height: number;
   /** Round length for two participants, seconds (as a map file's `timeLimitSec`). */
   timeLimitSec: number;
+  /** Stairs onto the wall tops and bridges between them on each generated map (as many as fit). */
+  stairs: number;
+  bridges: number;
   /** Fixtures on the first generated floor. */
   traps: number;
   obstacles: number;
