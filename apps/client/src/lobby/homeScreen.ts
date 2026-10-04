@@ -69,7 +69,6 @@ export const HOME_CSS = `
 .hm-yellow .t b{letter-spacing:.03em}
 .hm-big .t small{font-size:.95em;font-weight:700;opacity:.85}
 .hm-big>svg:last-child{margin-left:auto;font-size:1.8em;margin-right:.1em}
-.hm-big .hm-soon{font-size:.45em;letter-spacing:.04em;background:#3b1d00;color:#ffd23f}
 .hm-rules{position:fixed;z-index:1;top:max(1em,env(safe-area-inset-top));right:max(1.2em,env(safe-area-inset-right));font-size:clamp(11px,1.9vh,17px);display:flex;flex-direction:column;align-items:stretch;gap:.5em}
 .lb .hm-rules button{--bh:2.8em;${plate("stone")};color:#fff;font-size:1.05em;font-weight:700;padding:0 .3em;display:flex;align-items:center;gap:.4em;cursor:pointer}
 .hm-rules svg{font-size:1.3em;color:#cfe0ff}
@@ -125,7 +124,7 @@ export function homeHtml(v: HomeView): string {
     <div class="hm-panel">
       <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}${t("lobby.home.profile")}</span></button>
       <button class="hm-big hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>${t("lobby.home.towerRun")}</b><small>${sub}</small></span>${ICONS.chevron}</button>
-      <button class="hm-big hm-yellow" id="lb-night">${ICONS.ghost}<span class="t"><b>${t("lobby.home.night")}<span class="hm-soon">${t("lobby.home.trial")}</span></b><small>${t("lobby.home.nightSub", { ghosts: 8 })}</small></span>${ICONS.chevron}</button>
+      <button class="hm-big hm-yellow" id="lb-night">${ICONS.ghost}<span class="t"><b>${t("lobby.home.night")}</b><small>${t("lobby.home.nightSub", { ghosts: 8 })}</small></span>${ICONS.chevron}</button>
       <button class="hm-stone hm-online" id="lb-online">${ICONS.swords}${t("lobby.home.online")}${v.online ? "" : `<span class="hm-soon">${t("lobby.home.soon")}</span>`}</button>
       <div class="hm-note ${v.error ? "err" : ""}" id="lb-home-notice">${v.error ?? ""}</div>
     </div>
