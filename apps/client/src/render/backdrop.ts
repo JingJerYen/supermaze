@@ -18,11 +18,24 @@ const SKY_FRAG = /* glsl */ `
   uniform vec3 top;
   uniform vec3 mid;
   uniform vec3 horizon;
+  uniform sampler2D pano;
+  uniform float hasPano;
+  uniform float repeats;
+  uniform float span;
+  uniform float horizonV;
   varying vec3 vDir;
   void main() {
-    float h = normalize(vDir).y;
+    vec3 d = normalize(vDir);
+    float h = d.y;
     vec3 c = mix(horizon, mid, smoothstep(0.0, 0.2, h));
     c = mix(c, top, smoothstep(0.2, 0.75, h));
+    if (hasPano > 0.5) {
+      // Wrapped round the horizon (mirrored copies, so the ends meet), the image's middle due north.
+      float u = atan(d.x, -d.z) / 6.2831853 * repeats + 0.5;
+      float v = horizonV + asin(clamp(h, -1.0, 1.0)) / span;
+      vec3 p = texture2D(pano, vec2(u, clamp(v, 0.002, 0.998))).rgb;
+      c = mix(c, p, 1.0 - smoothstep(0.9, 1.0, v));
+    }
     gl_FragColor = vec4(c, 1.0);
     #include <colorspace_fragment>
   }
@@ -95,13 +108,43 @@ export function createBackdrop(theme: Theme, mapWidth: number, mapHeight: number
     new THREE.ShaderMaterial({
       vertexShader: SKY_VERT,
       fragmentShader: SKY_FRAG,
-      uniforms: { radius: { value: b.skyRadius }, top: { value: hex(top) }, mid: { value: hex(mid) }, horizon: { value: hex(horizon) } },
+      uniforms: {
+        radius: { value: b.skyRadius },
+        top: { value: hex(top) },
+        mid: { value: hex(mid) },
+        horizon: { value: hex(horizon) },
+        pano: { value: null as THREE.Texture | null },
+        hasPano: { value: 0 },
+        repeats: { value: b.panoramaRepeats },
+        span: { value: 1 },
+        horizonV: { value: theme.panorama?.horizonV ?? 0 },
+      },
       side: THREE.BackSide,
       depthWrite: false,
     }),
   );
   sky.frustumCulled = false;
   sky.renderOrder = -10;
+  let pano: THREE.Texture | null = null;
+  if (theme.panorama) {
+    // Optional: until (or unless) it loads, the gradient alone.
+    new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}backdrops/${theme.panorama.file}`, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.MirroredRepeatWrapping;
+      // No mipmaps: the wrap seam behind the camera would pick the smallest one and draw a line.
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      const img = tex.image as { width: number; height: number };
+      const u = sky.material.uniforms;
+      u.pano!.value = tex;
+      // Square pixels: one copy spans 360 / repeats degrees across, so this many up.
+      u.span!.value = (2 * Math.PI) / b.panoramaRepeats / (img.width / img.height);
+      u.hasPano!.value = 1;
+      if (disposed) tex.dispose();
+      else pano = tex;
+    });
+  }
+  let disposed = false;
 
   const cx = (mapWidth - 1) / 2;
   const cz = (mapHeight - 1) / 2;
@@ -134,6 +177,8 @@ export function createBackdrop(theme: Theme, mapWidth: number, mapHeight: number
       group.visible = !dark;
     },
     dispose() {
+      disposed = true;
+      pano?.dispose();
       for (const m of [sky, ground]) {
         m.geometry.dispose();
         m.material.dispose();

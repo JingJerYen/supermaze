@@ -353,6 +353,8 @@ export const CLIENT_TUNING = {
     fadeStartTiles: 12,
     /** ...and is all horizon colour at this distance from the map centre. */
     fadeEndTiles: 190,
+    /** Copies of a theme's panorama round the horizon, every other one mirrored; fewer is wider and taller. */
+    panoramaRepeats: 2,
   },
   render: {
     /** Cap the device pixel ratio to keep phones smooth. */

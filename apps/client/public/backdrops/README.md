@@ -1,6 +1,8 @@
-# 遠景圖片放這裡（尚未接上程式）
+# 遠景圖片放這裡
 
-每個地圖主題一張橫向全景圖，之後會繞在地圖四周當遠景，接在程式畫的漸層天空與地面（`src/render/backdrop.ts`）之間。
+每個地圖主題一張橫向全景圖，繞在地圖四周當遠景，接在程式畫的漸層天空與地面（`src/render/backdrop.ts`）之間。放好圖之後要在 `src/render/themes.ts` 該主題加上 `panorama: { file, horizonV }`（`horizonV` 是地平線離圖片底部的比例，設得比山腳略高），並把主題的 `sky` 顏色照圖片取色。
+
+六個主題都有了：`stone`、`garden`、`factory`、`candy`、`ice`、`desert`（原圖在 `apps/client/assets-src/backdrops/`）。
 
 檔名：`<主題>.webp`，主題是 `stone`、`garden`、`factory`、`candy`、`ice`、`desert`。
 
