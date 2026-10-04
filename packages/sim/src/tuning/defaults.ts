@@ -138,8 +138,8 @@ export const DEFAULT_TUNING: Tuning = {
       ["hard", 5, 4, 0.6],
       ["hard", 3, 4, 0.6],
       ["hard", 5, 4, 0.65, ["dark"]],
-      ["hard", 5, 5, 0.65],
-      ["hard", 5, 5, 0.7, ["ghostPack"]],
+      ["hard", 5, 4, 0.65],
+      ["hard", 5, 4, 0.7, ["ghostPack"]],
     ]),
     // Floor 21 on: a hard map generated on the spot each floor, the CPUs of floor 20,
     // a special floor every third (23 dark, 26 ghost pack, ...) and a few more fixtures as you climb.
