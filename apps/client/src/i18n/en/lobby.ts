@@ -14,7 +14,7 @@ export const lobby: Record<keyof typeof zh, string> = {
   "lobby.home.towerSubNew": "Solo · {floors} floors to the top",
   "lobby.home.online": "Online",
   "lobby.home.night": "Night Parade",
-  "lobby.home.trial": "Beta",
+  "lobby.home.nightSub": "Pitch dark · trap all {ghosts} ghosts",
   "lobby.home.soon": "Coming Soon",
   "lobby.home.onlineSoon": "Online play is coming soon. Stay tuned!",
   "lobby.home.rules": "How to Play",

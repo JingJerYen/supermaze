@@ -57,14 +57,18 @@ export const HOME_CSS = `
 .hm-note.err{color:#ff8a8a}
 #lb-home-notice:empty{display:none}
 .lb .hm .hm-online{--bh:3.6em;font-size:1.25em!important;letter-spacing:.12em}
-.hm-night svg{color:#e6d6ff}
 .hm-soon{font-size:.62em;letter-spacing:.04em;font-weight:700;color:#3b1d00;background:#ffd23f;border-radius:1em;padding:.15em .6em}
-.lb .hm-blue{--bh:5.4em;${plate("blue")};color:#082a4a!important;justify-content:flex-start!important;padding-left:.4em!important}
-.hm-blue>svg:first-child{font-size:2.6em;color:#0b2c52;margin-right:.2em}
-.hm-blue .t{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}
-.hm-blue .t b{font-size:1.8em;font-weight:900;letter-spacing:.1em}
-.hm-blue .t small{font-size:.95em;font-weight:700;opacity:.85}
-.hm-blue>svg:last-child{margin-left:auto;font-size:1.8em;margin-right:.1em}
+.lb .hm-big{--bh:5.4em;justify-content:flex-start!important;padding-left:.4em!important}
+.lb .hm-blue{${plate("blue")};color:#082a4a!important}
+.lb .hm-yellow{${plate("gold")};color:#3b1d00!important}
+.hm-big>svg:first-child{font-size:2.6em;margin-right:.2em}
+.hm-blue>svg:first-child{color:#0b2c52}
+.hm-yellow>svg:first-child{color:#4a2400}
+.hm-big .t{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}
+.hm-big .t b{font-size:1.8em;font-weight:900;letter-spacing:.1em;display:flex;align-items:center;gap:.35em;white-space:nowrap}
+.hm-yellow .t b{letter-spacing:.03em}
+.hm-big .t small{font-size:.95em;font-weight:700;opacity:.85}
+.hm-big>svg:last-child{margin-left:auto;font-size:1.8em;margin-right:.1em}
 .hm-rules{position:fixed;z-index:1;top:max(1em,env(safe-area-inset-top));right:max(1.2em,env(safe-area-inset-right));font-size:clamp(11px,1.9vh,17px);display:flex;flex-direction:column;align-items:stretch;gap:.5em}
 .lb .hm-rules button{--bh:2.8em;${plate("stone")};color:#fff;font-size:1.05em;font-weight:700;padding:0 .3em;display:flex;align-items:center;gap:.4em;cursor:pointer}
 .hm-rules svg{font-size:1.3em;color:#cfe0ff}
@@ -83,7 +87,7 @@ export const HOME_CSS = `
   .hm-field label span{display:none}
   .lb .hm-gold{--bh:3.1em}
   .lb .hm-stone{--bh:2.7em}
-  .lb .hm-blue{--bh:4.3em}
+  .lb .hm-big{--bh:4.3em}
   .lb .hm .hm-online{--bh:3em}
 }
 `;
@@ -119,8 +123,8 @@ export function homeHtml(v: HomeView): string {
     ${LOGO}
     <div class="hm-panel">
       <button class="hm-profile" id="lb-profile">${v.portrait ? `<img src="${v.portrait}" alt="" />` : ICONS.user}<span class="n">${escapeHtml(v.name)}</span><span class="s">${ICONS.user}${t("lobby.home.profile")}</span></button>
-      <button class="hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>${t("lobby.home.towerRun")}</b><small>${sub}</small></span>${ICONS.chevron}</button>
-      <button class="hm-stone hm-online hm-night" id="lb-night">${ICONS.ghost}${t("lobby.home.night")}<span class="hm-soon">${t("lobby.home.trial")}</span></button>
+      <button class="hm-big hm-blue" id="lb-local">${ICONS.tower}<span class="t"><b>${t("lobby.home.towerRun")}</b><small>${sub}</small></span>${ICONS.chevron}</button>
+      <button class="hm-big hm-yellow" id="lb-night">${ICONS.ghost}<span class="t"><b>${t("lobby.home.night")}</b><small>${t("lobby.home.nightSub", { ghosts: 8 })}</small></span>${ICONS.chevron}</button>
       <button class="hm-stone hm-online" id="lb-online">${ICONS.swords}${t("lobby.home.online")}${v.online ? "" : `<span class="hm-soon">${t("lobby.home.soon")}</span>`}</button>
       <div class="hm-note ${v.error ? "err" : ""}" id="lb-home-notice">${v.error ?? ""}</div>
     </div>

@@ -14,7 +14,7 @@ export const lobby = {
   "lobby.home.towerSubNew": "單人挑戰・{floors} 層・每層前一半晉級",
   "lobby.home.online": "連線對戰",
   "lobby.home.night": "百鬼夜行",
-  "lobby.home.trial": "試玩",
+  "lobby.home.nightSub": "全黑迷宮 · 用陷阱抓光 {ghosts} 隻鬼",
   "lobby.home.soon": "即將推出",
   "lobby.home.onlineSoon": "連線對戰即將推出，敬請期待！",
   "lobby.home.rules": "遊戲規則",
