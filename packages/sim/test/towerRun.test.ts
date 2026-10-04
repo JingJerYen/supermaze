@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
-import { canContinue, continueRun, judgeFloor, passRank, planFloor, recordFloor, startTowerRun, type FloorPlan } from "../src/run/towerRun.js";
+import { validateMap } from "../src/map/validate.js";
+import { canContinue, continueRun, floorSpec, judgeFloor, passRank, planFloor, recordFloor, startTowerRun, type FloorPlan } from "../src/run/towerRun.js";
 import type { SimulationState } from "../src/simulation.js";
 import { DEFAULT_TUNING, type Tuning } from "../src/tuning/index.js";
 import { TINY_MAP } from "./fixtures.js";
@@ -30,6 +31,28 @@ describe("default floor table", () => {
       expect(f.cpus % 2).toBe(1);
       expect(f.cpus + 1).toBeLessThanOrEqual(DEFAULT_TUNING.round.maxParticipants);
     }
+  });
+});
+
+describe("floors past the table", () => {
+  const floors = DEFAULT_TUNING.towerRun.floors;
+  const last = floors[floors.length - 1]!;
+
+  it("keep the last floor's CPUs, with a special floor every few floors, dark and the ghost pack in turn", () => {
+    const every = DEFAULT_TUNING.towerRun.endless.specialEvery;
+    const past = (k: number) => floorSpec(floors.length + k)!;
+    for (let k = 1; k <= 4 * every; k++) {
+      expect(past(k)).toMatchObject({ map: "hard", cpus: last.cpus, cpuVisionTiles: last.cpuVisionTiles, cpuSpeed: last.cpuSpeed });
+    }
+    expect(past(1).mods).toEqual([]);
+    expect(past(every).mods).toEqual(["dark"]);
+    expect(past(2 * every).mods).toEqual(["ghostPack"]);
+    expect(past(3 * every).mods).toEqual(["dark"]);
+    expect(floorSpec(0)).toBeNull();
+  });
+
+  it("may not be picked as a starting floor", () => {
+    expect(startTowerRun(1, floors.length + 5).floor).toBe(floors.length);
   });
 });
 
@@ -105,6 +128,16 @@ describe("recordFloor and continueRun", () => {
     expect(continueRun(run)).toBe(run);
   });
 
+  it("continues without limit when given one (the full version)", () => {
+    let run = startTowerRun(1);
+    for (let i = 0; i < DEFAULT_TUNING.towerRun.maxContinues + 3; i++) {
+      run = recordFloor(run, plan(run), outcome(false));
+      expect(canContinue(run, DEFAULT_TUNING, Infinity)).toBe(true);
+      run = continueRun(run, DEFAULT_TUNING, Infinity);
+    }
+    expect(run.continues).toBe(DEFAULT_TUNING.towerRun.maxContinues + 3);
+  });
+
   it("can start on a later floor, within the run", () => {
     expect(startTowerRun(1, 7)).toMatchObject({ floor: 7, startFloor: 7 });
     expect(startTowerRun(1, 99).floor).toBe(DEFAULT_TUNING.towerRun.floors.length);
@@ -112,13 +145,21 @@ describe("recordFloor and continueRun", () => {
     expect(plan(startTowerRun(1, 7)).floor).toBe(7);
   });
 
-  it("clears after the last floor, passed or not", () => {
+  it("goes on past the last table floor, on a map generated for each floor", () => {
     const tuning: Tuning = { ...DEFAULT_TUNING, towerRun: { ...DEFAULT_TUNING.towerRun, floors: DEFAULT_TUNING.towerRun.floors.slice(0, 2) } };
     let run = startTowerRun(1);
-    run = recordFloor(run, plan(run, tuning), outcome(true), tuning);
-    run = recordFloor(run, plan(run, tuning), outcome(false), tuning);
-    expect(run.status).toBe("cleared");
-    expect(run.floor).toBe(2);
+    run = recordFloor(run, plan(run, tuning), outcome(true));
+    expect(plan(run, tuning).generated).toBe(false);
+    run = recordFloor(run, plan(run, tuning), outcome(true));
+    expect(run).toMatchObject({ status: "playing", floor: 3 });
+    const third = plan(run, tuning);
+    expect(third.generated).toBe(true);
+    expect(validateMap(third.map, tuning)).toEqual([]);
+    expect(third.map).toMatchObject({ difficulty: "hard", theme: "stone" }); // the only theme the pool uses
+    expect(plan(run, tuning).map).toEqual(third.map); // the same floor of the same run, the same map
+    expect(planFloor({ ...run, seed: 2 }, POOL, tuning)!.map.rows).not.toEqual(third.map.rows);
+    run = recordFloor(run, third, outcome(false));
+    expect(run).toMatchObject({ status: "stopped", floor: 4 });
   });
 });
 

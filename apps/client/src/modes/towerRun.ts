@@ -3,6 +3,7 @@ import {
   canContinue,
   continueRun,
   DEFAULT_TUNING,
+  floorSpec,
   judgeFloor,
   newRoundTracker,
   planFloor,
@@ -25,7 +26,6 @@ import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
 import { MAP_POOL } from "../maps.js";
 import { Match } from "../match.js";
-import { showRewardedAd } from "../monetize/ads.js";
 import { isPremium } from "../monetize/premium.js";
 import { loadProfile } from "../profile.js";
 import { FloorPrep } from "./floorPrep.js";
@@ -41,15 +41,20 @@ const PLAYER_ID = "local"; // createLocalMode's id for you
  * (`planFloor`, `judgeFloor`, `recordFloor`, `continueRun`); this class only
  * plays one floor after another and turns the run into result-screen text and
  * buttons. The best run total (runs from floor 1 only) and the highest floor
- * played are kept in this browser. Free players watch a rewarded ad to
- * continue or to pick a skill; the full version skips the ads, takes two
- * skills a floor and may start on any floor already played. Achievements
+ * played are kept in this browser. Free players get a random skill each
+ * floor and two continues a run; the full version picks two skills a floor,
+ * continues without limit and may start on any floor already played. Achievements
  * (section 4.3) are judged by the sim as the floor plays and kept in this
  * browser; new ones pop up in play and are listed on the result screen.
+ * Past the floor table the run goes on for good, each floor on a map made on
+ * the spot; that map is made while the floor's skill screen is up.
  */
 export class TowerRun {
   private run: TowerRunState;
   private plan: FloorPlan | null = null;
+  /** The next floor's plan, worked out while its skill screen is up. */
+  private ready: { seed: number; floor: number; plan: FloorPlan | null } | null = null;
+  private readyTimer: ReturnType<typeof setTimeout> | null = null;
   private match: Match | null = null;
   private verdict: ResultsActions | null = null;
   private prep: FloorPrep | null = null;
@@ -81,6 +86,8 @@ export class TowerRun {
   }
 
   dispose(): void {
+    if (this.readyTimer !== null) clearTimeout(this.readyTimer);
+    this.readyTimer = null;
     this.match?.dispose();
     this.match = null;
     this.prep?.dispose();
@@ -97,13 +104,14 @@ export class TowerRun {
   /** Before every floor: the floor's skill (section 4.1); who you are comes from the home screen's character setup. */
   private prepare(): void {
     this.dispose();
+    const floor = this.run.floor;
     this.prep = new FloorPrep(
       this.root,
       this.renderer,
       {
-        title: t("modes.prep.title", { n: this.run.floor, total: this.floorsTotal }),
-        lines: floorModLines(DEFAULT_TUNING.towerRun.floors[this.run.floor - 1]?.mods ?? []),
-        start: t("modes.prep.start", { n: this.run.floor }),
+        title: t("modes.prep.title", { n: floor }),
+        lines: floorModLines(floorSpec(floor)?.mods ?? []),
+        start: t("modes.prep.start", { n: floor }),
       },
       loadProfile(),
       randomSkill(this.run.seed, this.run.floor),
@@ -111,6 +119,19 @@ export class TowerRun {
       (skills) => this.playFloor(skills),
       () => this.quit(),
     );
+    // Work the floor out once the screen has been drawn: a generated map takes a moment to make.
+    const run = this.run;
+    this.readyTimer = setTimeout(() => {
+      this.readyTimer = null;
+      this.ready = { seed: run.seed, floor: run.floor, plan: planFloor(run, MAP_POOL) };
+    }, 50);
+  }
+
+  /** The current floor's plan: the one made while its skill screen was up, or made now. */
+  private planNow(): FloorPlan | null {
+    const r = this.ready;
+    this.ready = null;
+    return r && r.seed === this.run.seed && r.floor === this.run.floor ? r.plan : planFloor(this.run, MAP_POOL);
   }
 
   private playFloor(skills: SkillKind[]): void {
@@ -118,7 +139,7 @@ export class TowerRun {
     noteReachedFloor(this.run.floor);
     const profile = loadProfile();
     this.verdict = null;
-    this.plan = planFloor(this.run, MAP_POOL);
+    this.plan = this.planNow();
     if (!this.plan) {
       this.onHome(t("modes.tower.noMap"));
       return;
@@ -142,7 +163,7 @@ export class TowerRun {
       onFinish: (state) => this.finishFloor(state),
       results: () => this.verdict ?? { endsAt: null, buttons: [] },
       caption: () => {
-        const caption = t("modes.tower.caption", { floor: plan.floor, floors: this.floorsTotal, pass: plan.passRank, score: this.run.totalScore });
+        const caption = t("modes.tower.caption", { floor: plan.floor, pass: plan.passRank, score: this.run.totalScore });
         const mods = floorModTags(plan.spec.mods);
         return mods ? t("modes.tower.captionMods", { caption, mods }) : caption;
       },
@@ -167,23 +188,14 @@ export class TowerRun {
     const bestLine = record ? t("modes.tower.newRecord") : best ? t("modes.tower.best", { score: best.score, floor: best.floor }) : "";
     const home = { label: t("modes.tower.home"), back: true, run: () => this.quit() };
 
-    if (run.status === "cleared") {
-      this.verdict = {
-        endsAt: null,
-        title: verdictTitle(outcome.passed),
-        note: {
-          title: t(outcome.passed ? "modes.tower.clearedPassed" : "modes.tower.cleared", { n: this.floorsTotal }),
-          tone: outcome.passed ? "pass" : "info",
-          lines: [total, bestLine, achLine].filter(Boolean),
-        },
-        buttons: [{ label: t("modes.tower.tryAgain"), primary: true, run: () => this.restart() }, home],
-      };
-    } else if (run.status === "stopped") {
+    if (run.status === "stopped") {
+      const premium = isPremium();
       const left = DEFAULT_TUNING.towerRun.maxContinues - run.continues;
-      const carryOn = canContinue(run)
-        ? { label: t(isPremium() ? "modes.tower.continue" : "modes.tower.continueAd", { n: left }), primary: true, run: () => void this.continueAfterFail() }
+      const can = canContinue(run, DEFAULT_TUNING, continueLimit());
+      const carryOn = can
+        ? { label: premium ? t("modes.tower.continueFree") : t("modes.tower.continue", { n: left }), primary: true, run: () => this.continueAfterFail() }
         : { label: t("modes.tower.tryAgain"), primary: true, run: () => this.restart() };
-      const used = canContinue(run) ? "" : t("modes.tower.continuesUsed", { n: DEFAULT_TUNING.towerRun.maxContinues });
+      const used = can ? "" : t("modes.tower.continuesUsed", { n: DEFAULT_TUNING.towerRun.maxContinues });
       this.verdict = {
         endsAt: null,
         title: verdictTitle(false),
@@ -191,10 +203,17 @@ export class TowerRun {
         buttons: [home, carryOn],
       };
     } else {
+      // Passing the top of the table is the summit; the run goes on above it.
+      const summit = plan.floor === this.floorsTotal;
+      const next = t("modes.tower.next", { score: run.totalScore, floor: run.floor });
       this.verdict = {
         endsAt: null,
         title: verdictTitle(true),
-        note: { title: t("modes.tower.advanced", { rank: outcome.rank }), tone: "pass", lines: [t("modes.tower.next", { score: run.totalScore, floor: run.floor, floors: this.floorsTotal }), achLine].filter(Boolean) },
+        note: {
+          title: summit ? t("modes.tower.clearedPassed", { n: this.floorsTotal }) : t("modes.tower.advanced", { rank: outcome.rank }),
+          tone: "pass",
+          lines: [next, summit ? t("modes.tower.endlessAhead") : "", achLine].filter(Boolean),
+        },
         buttons: [{ label: t("modes.tower.goTo", { n: run.floor }), primary: true, run: () => this.prepare() }, home],
       };
     }
@@ -212,11 +231,10 @@ export class TowerRun {
     this.notices.push(t("ach.toast", { name: fresh.map(achievementName).join(t("ach.sep")) }));
   }
 
-  /** After a failed floor: an ad (none with the full version), then on to the next floor with the score kept. */
-  private async continueAfterFail(): Promise<void> {
-    if (!canContinue(this.run)) return;
-    if (!isPremium() && !(await showRewardedAd(t("modes.tower.adReward")))) return;
-    this.run = continueRun(this.run);
+  /** After a failed floor: on to the next floor with the score kept. */
+  private continueAfterFail(): void {
+    if (!canContinue(this.run, DEFAULT_TUNING, continueLimit())) return;
+    this.run = continueRun(this.run, DEFAULT_TUNING, continueLimit());
     this.prepare();
   }
 
@@ -228,6 +246,11 @@ export class TowerRun {
     this.dispose();
     this.onHome();
   }
+}
+
+/** Continues a run may use: `towerRun.maxContinues` free, no limit with the full version. */
+function continueLimit(): number {
+  return isPremium() ? Number.POSITIVE_INFINITY : DEFAULT_TUNING.towerRun.maxContinues;
 }
 
 /** The skill a floor offers a free player, drawn from the run seed so it is the same each time the floor is prepared. */

@@ -21,9 +21,6 @@
             </intent-filter>
         </activity>
 
-        <!-- AdMob App ID, filled in by app/build.gradle (test ID unless keystore.properties sets admobAppId). -->
-        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${admobAppId}" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

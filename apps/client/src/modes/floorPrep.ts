@@ -2,7 +2,8 @@ import type * as THREE from "three";
 import { DEFAULT_TUNING, SKILL_KINDS, type SkillKind } from "@supermaze/sim";
 import { SKILL_INFO } from "../hud/labels.js";
 import { t } from "../i18n/index.js";
-import { showRewardedAd } from "../monetize/ads.js";
+import { StoreScreen } from "../lobby/storeScreen.js";
+import { isPremium } from "../monetize/premium.js";
 import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
@@ -21,9 +22,10 @@ export interface PrepHead {
  * setup, the same for online rooms, so it is shown here but not chosen: the
  * character turns on the right with the name above its head.
  *
- * Free: the floor comes with a skill drawn at random; watching an ad lets the
- * player pick another one instead. Full version: no ad, and up to two skills
- * picked freely (the first on the R key and the right skill button, the second on T and the one left of it).
+ * Free: the floor comes with a skill drawn at random, and a button leads to
+ * the full version's page (and back here, unlocked if bought). Full version:
+ * up to two skills picked freely (the first on the R key and the right skill
+ * button, the second on T and the one left of it).
  */
 export class FloorPrep {
   private readonly panel: HTMLDivElement;
@@ -32,24 +34,23 @@ export class FloorPrep {
   private readonly tag: HTMLDivElement;
   /** The skills taken onto the floor, in cast-button order. */
   private picks: SkillKind[];
-  /** The free player watched the ad: any skill may be picked. */
-  private unlocked: boolean;
   /** Last skill clicked, for the explanation under the buttons. */
   private shown: SkillKind | null;
+  /** The full version's page, opened from here. */
+  private store: StoreScreen | null = null;
 
   constructor(
-    root: HTMLElement,
+    private readonly root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
     private readonly head: PrepHead,
     private readonly profile: Profile,
-    /** The skill drawn for this floor; what a free player gets without the ad. */
+    /** The skill drawn for this floor; what a free player gets. */
     random: SkillKind,
-    private readonly premium: boolean,
+    private premium: boolean,
     private readonly onStart: (skills: SkillKind[]) => void,
     private readonly onHome: () => void,
   ) {
     this.picks = premium ? [] : [random];
-    this.unlocked = premium;
     this.shown = premium ? null : random;
     this.preview = new CharacterPreview(renderer);
     this.preview.show(profile.character ?? "local");
@@ -65,6 +66,8 @@ export class FloorPrep {
   }
 
   dispose(): void {
+    this.store?.dispose();
+    this.store = null;
     this.preview.stop();
     this.panel.remove();
     this.tag.remove();
@@ -92,32 +95,22 @@ export class FloorPrep {
     const skills = SKILL_KINDS.map((k) => {
       const at = this.picks.indexOf(k);
       const tag = this.premium && at >= 0 ? `<i>${at + 1}</i>` : "";
-      return `<button data-skill="${k}" class="${at >= 0 ? "on" : ""}" ${this.unlocked ? "" : "disabled"}>${tag}<b>${name(k)}</b><small>${detail(k)}</small></button>`;
+      return `<button data-skill="${k}" class="${at >= 0 ? "on" : ""}" ${this.premium ? "" : "disabled"}>${tag}<b>${name(k)}</b><small>${detail(k)}</small></button>`;
     }).join("");
-    const label = this.premium
-      ? t("modes.prep.labelPremium", { n: this.picks.length })
-      : this.unlocked
-        ? t("modes.prep.labelUnlocked")
-        : t("modes.prep.labelRandom");
-    const adRow = this.premium
-      ? ""
-      : `<div class="sp-row">${
-          this.unlocked
-            ? `<button class="owned" disabled>${t("modes.prep.unlocked")}</button>`
-            : `<button class="skill" id="fp-ad">${t("modes.prep.watchAd")}</button>`
-        }</div>`;
+    const label = this.premium ? t("modes.prep.labelPremium", { n: this.picks.length }) : t("modes.prep.labelRandom");
+    const upgradeRow = this.premium ? "" : `<div class="sp-row"><button class="skill" id="fp-upgrade">${t("modes.prep.upgrade")}</button></div>`;
     this.panel.innerHTML = `
       <h2>${this.head.title}</h2>
       ${this.head.lines.map((l) => `<div class="sp-sub">${l}</div>`).join("")}
       <div><label>${label}</label><div class="sp-skills">${skills}</div></div>
-      ${adRow}
+      ${upgradeRow}
       <div class="sp-note">${note}</div>
       <div class="sp-spacer"></div>
       <div class="sp-row"><button id="fp-home" data-back>${t("modes.prep.home")}</button><button class="primary" id="fp-go">${this.head.start}</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-skill]")) {
       b.addEventListener("click", () => this.pick(b.dataset["skill"] as SkillKind));
     }
-    this.panel.querySelector("#fp-ad")?.addEventListener("click", () => void this.watchAd());
+    this.panel.querySelector("#fp-upgrade")?.addEventListener("click", () => this.openStore());
     this.panel.querySelector("#fp-home")!.addEventListener("click", () => this.onHome());
     this.panel.querySelector("#fp-go")!.addEventListener("click", () => this.onStart(this.picks));
   }
@@ -131,8 +124,29 @@ export class FloorPrep {
     this.render();
   }
 
-  private async watchAd(): Promise<void> {
-    if (await showRewardedAd(t("modes.prep.adReward"))) this.unlocked = true;
-    this.render();
+  /** The full version's page over this one; back returns here, with free choice of two skills if it was bought. */
+  private openStore(): void {
+    this.preview.stop();
+    this.panel.style.display = "none";
+    this.tag.style.display = "none";
+    this.store = new StoreScreen(
+      this.root,
+      this.renderer,
+      this.profile,
+      () => {
+        this.store?.dispose();
+        this.store = null;
+        this.panel.style.display = "";
+        this.tag.style.display = "";
+        this.preview.start();
+        if (!this.premium && isPremium()) {
+          this.premium = true;
+          this.picks = [];
+          this.shown = null;
+        }
+        this.render();
+      },
+      t("lobby.store.back"),
+    );
   }
 }

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SKILL_KINDS, rotateMap, type QuarterTurns } from "@supermaze/sim";
+import { DEFAULT_TUNING, SKILL_KINDS, endlessMapOptions, generateMap, rotateMap, type QuarterTurns } from "@supermaze/sim";
 import { drawMap, loadMapById } from "./maps.js";
 import { Match } from "./match.js";
 import { createLocalMode } from "./modes/local.js";
@@ -11,7 +11,7 @@ import { music } from "./audio/music.js";
 import { fullscreenOnFirstTouch } from "./fullscreen.js";
 import { isNativeApp } from "./platform.js";
 import { installBackButton } from "./native/backButton.js";
-import { warmUpMonetization } from "./monetize/ads.js";
+import { warmUpPremium } from "./monetize/premium.js";
 import { applyDocumentLocale, t } from "./i18n/index.js";
 import { FALLBACK_NAME } from "./characterNames.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
@@ -40,7 +40,7 @@ applyDocumentLocale();
 // The app is fullscreen and landscape natively (Android handoff T4); only a browser needs the Fullscreen API.
 if (!isNativeApp()) fullscreenOnFirstTouch();
 installBackButton();
-warmUpMonetization();
+warmUpPremium();
 sfx.init();
 music.init();
 music.play("menu");
@@ -58,7 +58,9 @@ if (params.has("rules")) {
   const players = Number(params.get("players") ?? 1);
   const seed = Number(params.get("seed") ?? 1);
   const named = params.get("map");
-  const chosen = named ? loadMapById(named) : (drawMap(players, seed) ?? loadMapById(""));
+  // ?gen plays a map generated like the tower run's floors past the table (?theme= dresses it).
+  const generated = params.has("gen") ? generateMap(seed, endlessMapOptions(DEFAULT_TUNING.towerRun.floors.length + 1, params.get("theme") ?? "stone")) : null;
+  const chosen = generated ?? (named ? loadMapById(named) : (drawMap(players, seed) ?? loadMapById("")));
   const rot = (Number(params.get("rot") ?? (named ? 0 : seed)) % 4) as QuarterTurns;
   const map = rotateMap(chosen, rot);
   const mode = createLocalMode(map, {

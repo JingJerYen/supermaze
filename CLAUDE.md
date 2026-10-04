@@ -90,20 +90,21 @@
 
 ## 4.1 爬塔挑戰（單機，2026-09-29 定案並實作）
 
-- 單機唯一的玩法。一次挑戰共 20 層，每一層是一局一般的個人對戰（你對 CPU），規則與對局內容完全不變。
+- 單機唯一的玩法。每一層是一局一般的個人對戰（你對 CPU），規則與對局內容完全不變。前 20 層照層數表；第 21 層起沒有盡頭，每層都是現場產生的新地圖（見下方「無盡樓層」），只會在沒晉級又不繼續時結束。
 - 玩家一登上塔頂，這一層立刻結算（2026-09-29 定案並實作），不等其他 CPU 登塔；還在迷宮裡的 CPU 就當作沒有登塔。玩家沒登塔時，就算 CPU 全都登上塔了也不結束，要等玩家登塔或時間到（2026-10-02 改，原本「只剩一人未登塔」就結束：晉級看分數，玩家晚一點登塔仍可能靠名次分數與剩餘道具超過 CPU）。模擬層以 `SimulationOptions.endWhenClimbed`（只在個人對戰生效）表示，有它時不套用「只剩一人未登塔就結束」，結束原因為 `solo:climbed` 或 `solo:timeout`；連線對戰不使用。
 - 晉級條件：本局分數排在前一半，也就是排名不大於 `max(1, floor(參賽人數 × towerRun.passShare))`，`passShare` 初始 0.5。排名與個人對戰的勝負同一套：最終分數高者在前，同分時先登塔者在前（沒登塔視為最後），兩者都相同則並列同名次。登不登塔只影響分數與同分時的順位，不是晉級條件（2026-09-29 由「前一半登塔」改為依分數）。
-- 沒有愛心或其他容錯（2026-09-29 移除）：沒晉級時挑戰立即結算，顯示總分，按鈕是「回首頁」與「繼續（剩 n 次）」。按「繼續」直接進入下一層（不重打這一層），總分照算。每次挑戰最多繼續 `towerRun.maxContinues`（2）次（2026-10-01），用完後按鈕改為「再挑戰一次」。免費玩家繼續要先看一則獎勵廣告，完整版直接繼續（第 4.2 節）。模擬層以 `canContinue()`、`continueRun()` 表示並記錄次數（`continues`）。
-- 晉級時顯示「晉級！分數第 n 名」與「前往第 n 層／回首頁」。打完第 20 層（不論晉級與否）顯示完成與總分，提供「再挑戰一次／回首頁」。
+- 沒有愛心或其他容錯（2026-09-29 移除）：沒晉級時挑戰立即結算，顯示總分，按鈕是「回首頁」與「繼續（剩 n 次）」。按「繼續」直接進入下一層（不重打這一層），總分照算。免費玩家每次挑戰最多繼續 `towerRun.maxContinues`（2）次（2026-10-01），用完後按鈕改為「再挑戰一次」，說明加上「完整版可以無限次繼續」；完整版不限次數（2026-10-04 改：原本免費玩家要看廣告才能繼續、完整版也是 2 次；第 4.2 節）。模擬層以 `canContinue()`、`continueRun()` 表示並記錄次數（`continues`），次數上限由呼叫端傳入（完整版傳 `Infinity`，客戶端 `towerRun.ts` 的 `continueLimit()`）。
+- 晉級時顯示「晉級！分數第 n 名」與「前往第 n 層／回首頁」。通過第 20 層時標題改為「登頂成功！完成全部 20 層」，下面一行「再往上每層都是現場產生的新迷宮，看你能爬多高！」，按鈕照樣是前往下一層（2026-10-04 改：原本打完第 20 層不論晉級與否挑戰就結束；現在沒通過第 20 層和其他樓層一樣可以繼續）。
+- 無盡樓層（2026-10-04 定案並實作，使用者決定）：第 21 層起每層的地圖由種子現場產生（第 6 節的程序化地圖例外），都是困難地圖；CPU 人數、視野與速度固定和第 20 層相同（5 個 CPU、視野 4 格、速度 0.7）；每 `towerRun.endless.specialEvery`（3）層一個特殊樓層，黑暗層與群鬼層輪流（第 23 層黑暗、26 層群鬼、29 層黑暗……）。地圖 43×31（`endless.width`、`height`），兩人回合 300 秒（`timeLimitSec`，6 人 420 秒）；每張圖 12 座樓梯、8 座橋（`endless.stairs`、`bridges`，放得下就放滿；2026-10-04 使用者要求由 8、5 加多，接近手繪困難圖的 9～18 座樓梯、4～27 座橋）；第 21 層有 6 個固定陷阱、1 個障礙物、2 扇單向門，之後每 `moreFixturesEvery`（4）層各多一個，上限 12、4、5。主題從現有地圖用到的六種主題依種子抽，背景音樂跟著主題。同一次挑戰的同一層永遠是同一張圖（種子由挑戰種子與層數推得）。產生一張圖在桌機約 15～25 毫秒，客戶端趁該層的技能準備畫面顯示時先算好（`modes/towerRun.ts` 的 `ready`），按開始時直接用。所有樓層（包含前 20 層）的準備畫面標題、HUD 計時器下方與晉級後的「下一層」都只寫「第 n 層」，不寫「/ 20」分母，也不特別標出是產生的地圖（2026-10-04 使用者決定）。首頁照樣顯示最佳紀錄的層數與總分（只算從第 1 層開始的挑戰），沒有紀錄時副標為「單人挑戰・每層前一半晉級・看你能爬多高」。規則卡的爬塔表多一行「第 21 層起：現場產生的困難地圖，每 3 層一個特殊樓層」。CPU 試跑（第 20 層的 CPU、6 人）：首位登塔平均約 45 秒，手繪困難地圖約 50 秒，難度相當。開發沙盒 `?local&gen&seed=3&theme=ice` 直接玩一張產生的地圖。
 - 分數：每一層的最終分數累加為挑戰總分。本瀏覽器的最佳總分與當時到達的層數存在 localStorage，每打完一層就更新，顯示在首頁與結算畫面；只有從第 1 層開始的挑戰才計入最佳總分（2026-10-01，完整版可以從後面的樓層開始）。另外記錄打過的最高樓層（`supermaze.towerReached`，開打該層時更新），供完整版選擇起始樓層。程式在 `apps/client/src/modes/towerProgress.ts`。
-- 難度由層數表 `towerRun.floors` 決定（`packages/sim/src/tuning/defaults.ts`），每層指定：地圖難度、CPU 人數、CPU 視野（取代 `cpu.visionTiles`）與速度（取代 `cpu.speedMultiplier`）。CPU 人數一律是奇數（1、3、5），參賽人數為偶數，「前一半」沒有歧義。目前第 1～6 層簡單地圖、第 7～14 層中等、第 15～20 層困難（2026-10-02 兩度調整：先由「1～4 簡單、5～7 中等、8～20 困難」改為 1～3／4～9／10～20 並新增三張中等地圖 maze-15～17；玩家反應太難後再改為現值，並新增四張簡單地圖 maze-18～21、整體調低 CPU）；CPU 視野前 6 層一律 2 格、中等層 3 格、困難層 4～5 格，速度由 0.4 升到 0.7（原本 2～6 格、0.45～0.8）。數字都是試玩值。
+- 難度由層數表 `towerRun.floors` 決定（`packages/sim/src/tuning/defaults.ts`），每層指定：地圖難度、CPU 人數、CPU 視野（取代 `cpu.visionTiles`）與速度（取代 `cpu.speedMultiplier`）。CPU 人數一律是奇數（1、3、5），參賽人數為偶數，「前一半」沒有歧義。目前第 1～6 層簡單地圖、第 7～14 層中等、第 15～20 層困難（2026-10-02 兩度調整：先由「1～4 簡單、5～7 中等、8～20 困難」改為 1～3／4～9／10～20 並新增三張中等地圖 maze-15～17；玩家反應太難後再改為現值，並新增四張簡單地圖 maze-18～21、整體調低 CPU）；CPU 視野前 6 層一律 2 格、中等層 3 格、困難層 4 格（2026-10-04 由 4～5 格改為上限 4 格：視野 5 格時 CPU 隔牆看到同一批鑰匙、同時去搶最近的那把，常常成群結隊走在一起；使用者不要 CPU 互相讓鑰匙，怕太強），速度由 0.4 升到 0.7（原本 2～6 格、0.45～0.8）。數字都是試玩值。
 - 特殊樓層（2026-10-02 定案並實作）：層數表每層另有 `mods`，列出這一層的特殊規則，一般樓層為空。目前兩種，從第 6 層起每三層輪流一種（試玩值；2026-10-02 由第 4 層起改為第 6 層起，讓玩家先打完五層一般樓層）：
   - 黑暗層（`dark`）：第 6、12、18 層。一開局就是關燈，開關數量照地圖原本的設定，不另外調整，開關照常交替。開關數量是偶數，所以最後一個開關會把燈關掉、之後一直黑到這層結束；這是第 8 節「開關用完後必須亮燈」的明訂例外（2026-10-02 使用者確認，整層黑也沒關係）。CPU 不會去用開關，所以開關都是玩家在用。
   - 群鬼層（`ghostPack`）：第 9、15、20 層（都有 3 或 5 個 CPU；最後一層當壓軸）。每次鬼抓人都是所有還在迷宮的 CPU 同時變鬼、一起抓玩家，不輪替，玩家不會當鬼。時間表、預告、持續時間、抓人分數與偷鑰匙都和一般鬼抓人相同；鬼不會抓鬼。介面顯示「n 秒後 所有對手 變成鬼」。
   模擬層以 `SimulationOptions.startDark` 與 `SimulationOptions.ghostPack`（被追的玩家 id，只在個人對戰生效）表示；鬼抓人狀態的 `huntedTeamId` 在群鬼對局整局固定為被追的隊伍，此時 `teamId` 一律為 null，鬼抓人事件的 `teamId` 也是 null。是否當鬼一律用 `isGhost`／`isGhostTeam` 判斷。爬塔準備畫面標題下方與選樓層畫面的說明標出這一層的特殊規則，HUD 計時器下方的層數說明加上「🌑 黑暗層」或「👻 群鬼層」，規則卡的爬塔表也列出哪幾層是特殊樓層（`modes/floorMods.ts`）。開發沙盒可用 `?local&dark&pack` 試玩。
 - 地圖難度寫在地圖 JSON 的 `difficulty`（`easy`、`medium`、`hard`，第 6 節）。每層從該難度、且 `supportedParticipants` 含本層人數的地圖中依種子抽選並抽旋轉方向；沒有符合的地圖時改抽最接近的難度（同距離取較難的）；有別張可選時避開上一層剛玩過的地圖。地圖用完會重複抽，加上四種旋轉方向，20 層不需要 20 張地圖。
 - 每層的種子由挑戰種子與層數推得，可重現。
-- 特殊技能（2026-09-30 定案並實作，只限爬塔挑戰，連線對戰沒有；CPU 沒有技能）：每一層開打前有一個準備畫面（`apps/client/src/modes/floorPrep.ts`），只選這一層的技能（2026-09-30 改：暱稱與角色不在這裡選，一律用首頁角色設定的，確保連線與單機一致；畫面右側是目前角色的 3D 預覽，暱稱標在人物頭上（2026-10-01 起左側面板不再放頭像與暱稱，面板也加寬）；技能按鈕排成三排、每排三個，技能名不換行，下方顯示所選技能的完整說明）。2026-10-01 起：免費玩家每層由挑戰種子隨機抽一個技能（同一層重進準備畫面抽到的相同），看一則獎勵廣告後才能自己挑；完整版不用看廣告，可以自由選兩個（第 4.2 節）。角色以 `Participant.character` 傳入，只影響外觀。技能在這一層可以施放一次：桌機 R 鍵，手機是丟棄鍵左邊同樣大小的紫色小圓鈕（只顯示技能圖示、不寫字，名稱與按鍵在滑鼠移上去的提示；暫時不能施放時變淡；2026-10-01 起穿透的圖示由 👻 改為 ✨，避免和鬼抓人的 👻 混淆）。完整版的第二個技能是 T 鍵與再左邊一顆圓鈕；兩個都是持續型技能（衝刺、鷹眼、點燈、穿透）時，一次只能有一個在生效，另一個要等前一個結束才能施放（模擬層以 `Participant.skill2`、`PlayerInput.skill2` 與 `canUseSkill`／`castSkill` 的 `slot` 表示）。開局凍結、定身期間不能施放。九種技能（數值在 `tuning.skills`，試玩值；穿透、隨機傳送、補給為 2026-09-30 新增）：
+- 特殊技能（2026-09-30 定案並實作，只限爬塔挑戰，連線對戰沒有；CPU 沒有技能）：每一層開打前有一個準備畫面（`apps/client/src/modes/floorPrep.ts`），只選這一層的技能（2026-09-30 改：暱稱與角色不在這裡選，一律用首頁角色設定的，確保連線與單機一致；畫面右側是目前角色的 3D 預覽，暱稱標在人物頭上（2026-10-01 起左側面板不再放頭像與暱稱，面板也加寬）；技能按鈕排成三排、每排三個，技能名不換行，下方顯示所選技能的完整說明）。免費玩家每層由挑戰種子隨機抽一個技能（同一層重進準備畫面抽到的相同），技能按鈕不能點；下面有一顆「⭐ 完整版：每層自己挑兩個技能」按鈕，按下進入完整版頁面，返回鈕寫「返回」並回到準備畫面，在那裡買了就立刻變成可以自由選兩個（2026-10-04 改：原本看一則廣告可以自己挑一個）。完整版可以自由選兩個（第 4.2 節）。角色以 `Participant.character` 傳入，只影響外觀。技能在這一層可以施放一次：桌機 R 鍵，手機是丟棄鍵左邊同樣大小的紫色小圓鈕（只顯示技能圖示、不寫字，名稱與按鍵在滑鼠移上去的提示；暫時不能施放時變淡；2026-10-01 起穿透的圖示由 👻 改為 ✨，避免和鬼抓人的 👻 混淆）。完整版的第二個技能是 T 鍵與再左邊一顆圓鈕；兩個都是持續型技能（衝刺、鷹眼、點燈、穿透）時，一次只能有一個在生效，另一個要等前一個結束才能施放（模擬層以 `Participant.skill2`、`PlayerInput.skill2` 與 `canUseSkill`／`castSkill` 的 `slot` 表示）。開局凍結、定身期間不能施放。九種技能（數值在 `tuning.skills`，試玩值；穿透、隨機傳送、補給為 2026-09-30 新增）：
   - 衝刺：15 秒內移動速度 1.5 倍（與 CPU、鬼的倍率相乘）。
   - 鷹眼：10 秒內鏡頭改為從玩家正上方往下看並跟著玩家移動，北方朝上，之後回到跟隨鏡頭（2026-10-02 改：原本切到與塔頂相同的整張地圖俯瞰，但地圖大時玩家太小看不清楚）。鏡頭高度 `tuning.ts` 的 `eagleEye.heightTiles`（16，約看到 15×9 格）；靠近塔（`towerClearRadius` 6 格內）時鏡頭自動升到塔頂平台上方 `towerClearance` 處，塔身同時變淡，不會擋住或鑽進塔裡。鏡頭模式是 `render/camera.ts` 的 `above`。
   - 護身符：擋下下一次陷阱或鬼抓，用掉為止。擋陷阱時陷阱照樣消失但不定身、放陷阱的人不得分；擋鬼時不失去道具與鑰匙、鬼不得分，並照常給防重抓保護時間。
@@ -114,21 +115,22 @@
   - 隨機傳送：瞬間移到隨機的一格，站定、面向不變，走到一半的那一步取消。純隨機、不設最短距離；候選是從塔出發走得到的道路與牆頂，排除目前站的格子、樓梯、橋、塔旁一圈與有放置物或傳送點的格子（`skillEffects.ts` 的 `warpTargets`，以對局種子抽，重播相同）。落在鑰匙或道具箱上照常拾取。
   - 補給：背包空著的格子立刻補滿隨機道具，抽法與道具箱相同並遵守隊伍兩台傳送點的上限，沒有可抽的就提早停（`supplyItems`）。背包滿了或當鬼時不能施放。
   規則在 `packages/sim/src/skills.ts`，模擬層只認參賽者開局時帶的 `Participant.skill`，由哪些模式發放是呼叫端決定；輸入是 `PlayerInput.skill`，事件為 `skillUsed` 與 `shieldBlocked`。畫面下方紫色膠囊顯示進行中技能的剩餘秒數（護身符顯示「生效中」），施放與護身符擋下時有大字提示。開發沙盒可用 `?local&skill=sprint` 等直接帶技能。
-- 實作：規則是 `packages/sim/src/run/towerRun.ts` 的純函式（`startTowerRun`、`planFloor`、`judgeFloor`、`recordFloor`、`continueRun`、`passRank`），有單元測試；`apps/client/test/towerRunPool.test.ts` 確認現有地圖池的每一層都抽得到正確難度的地圖。客戶端 `apps/client/src/modes/towerRun.ts` 只負責逐層開局與結算畫面的文字、按鈕；HUD 計時器下方顯示「第 n / 20 層、分數前 k 名晉級、總分」。畫面右側的 ✕ 退出等於結束挑戰。
+- 實作：規則是 `packages/sim/src/run/towerRun.ts` 的純函式（`startTowerRun`、`floorSpec`、`isGeneratedFloor`、`planFloor`、`endlessMapOptions`、`judgeFloor`、`recordFloor`、`continueRun`、`passRank`），有單元測試；挑戰狀態只剩 `playing` 與 `stopped`（2026-10-04 拿掉 `cleared`），「征服高塔」與「一路晉級」成就改為通過第 20 層那一刻判斷；`apps/client/test/towerRunPool.test.ts` 確認現有地圖池的每一層都抽得到正確難度的地圖。客戶端 `apps/client/src/modes/towerRun.ts` 只負責逐層開局與結算畫面的文字、按鈕；HUD 計時器下方顯示「第 n 層、分數前 k 名晉級、總分」。畫面右側的 ✕ 退出等於結束挑戰。
 - 開發用的 `?local`（可帶 `players`、`seed`、`rot`、`map`、`cpu=hard`）仍是單局沙盒，不經爬塔流程。
 
-## 4.2 盈利模式（2026-10-01 定案；App 內接 AdMob 與 RevenueCat，網頁版是佔位）
+## 4.2 盈利模式（2026-10-01 定案，2026-10-04 改為不放廣告；App 內接 RevenueCat，網頁版是佔位）
 
-- 免費下載；收入來自玩家自己選擇要看的獎勵廣告，以及一次買斷的「完整版」。不放強制插播的廣告。
+- 免費下載、沒有任何廣告（2026-10-04 使用者決定，取代原本的獎勵廣告：上架少填廣告相關表單、不用等 AdMob 審核、iOS 不需要追蹤同意視窗）；收入只來自一次買斷的「完整版」。
 - 免費玩家：
-  - 失敗後看一則廣告才能繼續，每次挑戰最多 2 次；不看就回首頁。
-  - 每層的技能是隨機抽到的；看一則廣告才能自己挑。
-- 完整版（一次購買，永久擁有；測試價 NT$ 90，實際價格由商店決定）：
-  - 免廣告：失敗直接繼續（仍是每次挑戰最多 2 次）、技能直接自己挑。
-  - 每層可以帶兩個技能（第 4.1 節）。
-  - 選擇起始樓層：按「征服高塔」後先到選樓層畫面（`modes/floorSelect.ts`），可以選第 1 層到打過的最高層之間任一層，標「最高」的就是接著往上打；從第 1 層以外開始的挑戰不計入最佳總分。還沒打過第 2 層時直接開始第 1 層。
-- 頁面：首頁右上「遊戲規則」下方有「⭐ 完整版」按鈕（已購買時顯示「已擁有完整版」），進入完整版頁面（`lobby/storeScreen.ts`）列出三項好處、購買按鈕與「恢復購買」（iOS 規定必須有）。
-- 實作（2026-10-01，上架採方案 A：第一版就有廣告與完整版）：呼叫端只用 `monetize/ads.ts` 的 `showRewardedAd` 與 `monetize/premium.ts` 的 `isPremium`／`buyFullVersion`／`restorePurchases`，由它們依 `platform.ts` 的 `isNativeApp()` 分流。App 內：廣告是 AdMob 的獎勵廣告（`monetize/admob.ts`，`@capacitor-community/admob`；廣告長度由廣告主決定），第一次播放前依法顯示 Google 的同意訊息（UMP，歐盟與英國必須有），玩家拒絕或拿不到廣告（離線、沒有存貨）時，依 `tuning.ts` 的 `monetize.grantWhenNoAd`（預設 true）直接給獎勵，讓離線也能玩；完整版經 RevenueCat 走 Google Play 購買（`monetize/billing.ts`，`@revenuecat/purchases-capacitor`，商品與權益都叫 `full_version`），結果快取在 localStorage（`supermaze.premium`）讓 `isPremium()` 保持同步、離線也知道，啟動與打開完整版頁面時向商店同步（退款會被收回），頁面顯示商店的在地價格。廣告單元與 RevenueCat 金鑰是建置變數（`VITE_ADMOB_REWARDED_ID`、`VITE_REVENUECAT_KEY`，寫在不進 git 的 `apps/client/.env.production.local`，說明在 `monetize/config.ts`）；非上架版一律用 Google 的測試廣告單元。外掛都以動態載入使用，網頁版不載入。網頁版維持佔位：完整版旗標存在 localStorage，購買直接成功，網址加 `?premium=1` 或 `?premium=0` 可切換測試；debug APK 的購買同樣是佔位（2026-10-02，只有 `build:release` 建置的 App 才連商店，`premium.ts` 的 `storeBilling()`、`platform.ts` 的 `RELEASE_BUILD`），按下購買直接成功，已擁有時完整版頁面多一顆「改回免費版（測試用）」；廣告在 debug APK 仍是 AdMob 的測試廣告；廣告是全螢幕的佔位卡片，倒數 `monetize.placeholderAdSec`（5 秒）後才給獎勵，提前關閉就沒有獎勵。上架的完整步驟在 `docs/release-checklist.md`，商店頁文字與表單答案草稿在 `docs/store-listing.md`，隱私權政策頁是 `apps/client/public/privacy.html`（隨 GitHub Pages 部署，上架前要填聯絡信箱）。
+  - 每層的技能是隨機抽到的一個，不能換；準備畫面有一顆按鈕引導到完整版頁面（第 4.1 節）。
+  - 失敗後可以繼續，每次挑戰最多 2 次（`towerRun.maxContinues`），用完只能重新挑戰。
+- 完整版（一次購買，永久擁有）：
+  - 每層自己挑技能，而且可以帶兩個（第 4.1 節）。
+  - 失敗後無限次繼續。
+  - 選擇起始樓層：按「征服高塔」後先到選樓層畫面（`modes/floorSelect.ts`），可以選第 1 層到打過的最高層之間任一層（最高只到第 20 層，無盡樓層不能直接選，2026-10-04），標「最高」的就是接著往上打；從第 1 層以外開始的挑戰不計入最佳總分。還沒打過第 2 層時直接開始第 1 層。
+- 價格（2026-10-04 定案）：美國 US$2.99、台灣 NT$60，在 Play Console 設定（台灣手動設，其他地區用 Play Console 的匯率換算建議價）；App 內顯示商店傳回的在地價格，網頁版佔位依語言顯示「NT$ 60」或「US$2.99」（i18n 的 `lobby.store.placeholderPrice`）。
+- 頁面：首頁右上「遊戲規則」下方有「⭐ 完整版」按鈕（已購買時顯示「已擁有完整版」），進入完整版頁面（`lobby/storeScreen.ts`）列出三項好處（自選兩個技能、無限次繼續、選擇起始樓層）、購買按鈕與「恢復購買」（iOS 規定必須有）。從爬塔或百鬼夜行的準備畫面也能進入（返回鈕回到準備畫面）。
+- 實作：呼叫端只用 `monetize/premium.ts` 的 `isPremium`／`buyFullVersion`／`restorePurchases`。App 內完整版經 RevenueCat 走 Google Play 購買（`monetize/billing.ts`，`@revenuecat/purchases-capacitor`，商品與權益都叫 `full_version`），結果快取在 localStorage（`supermaze.premium`）讓 `isPremium()` 保持同步、離線也知道，啟動（`warmUpPremium`）與打開完整版頁面時向商店同步（退款會被收回），頁面顯示商店的在地價格。RevenueCat 金鑰是建置變數 `VITE_REVENUECAT_KEY`（寫在不進 git 的 `apps/client/.env.production.local`，說明在 `monetize/config.ts`）。外掛以動態載入使用，網頁版不載入。網頁版維持佔位：完整版旗標存在 localStorage，購買直接成功，網址加 `?premium=1` 或 `?premium=0` 可切換測試；debug APK 的購買同樣是佔位（2026-10-02，只有 `build:release` 建置的 App 才連商店，`premium.ts` 的 `storeBilling()`、`platform.ts` 的 `RELEASE_BUILD`），按下購買直接成功，已擁有時完整版頁面多一顆「改回免費版（測試用）」。廣告的程式（`monetize/ads.ts`、`admob.ts`）、`@capacitor-community/admob` 外掛、Android Manifest 的 AdMob App ID 與 `tuning.ts` 的 `monetize` 區塊都已於 2026-10-04 刪除。上架的完整步驟在 `docs/release-checklist.md`，商店頁文字與表單答案草稿在 `docs/store-listing.md`，隱私權政策頁是 `apps/client/public/privacy.html`（隨 GitHub Pages 部署，上架前要填聯絡信箱；已改為「沒有廣告」）。
 - 上架後如何判定付費玩家（2026-10-01 決定方向，尚未實作，要等 Android APK 能跑之後）：購買紀錄由商店保存並綁在玩家的 Google（或 Apple）帳號上，遊戲本身不記錄誰付過費。
   - Play Console 建一個一次性、不可消耗的應用程式內商品（例如 `full_version`），價格在 Play Console 設定。
   - 用 RevenueCat 的 Capacitor 外掛（`@revenuecat/purchases-capacitor`）串接 Google Play Billing，之後 iOS 共用同一套。只替換 `premium.ts` 的三個函式：`isPremium()` 在啟動時向商店查詢並把結果存一份在本機，`buyFullVersion()` 打開商店的購買畫面，`restorePurchases()` 重新查詢。購買後 3 天內必須向 Google 確認（acknowledge），否則自動退款；RevenueCat 會自動處理。
@@ -152,7 +154,7 @@
 
 ## 4.4 百鬼夜行（單機第二種玩法，2026-10-04 定案並實作，試玩中）
 
-- 目的：與爬塔的「找鑰匙、比快」不同，這是「在黑暗中躲鬼、抓鬼」的生存玩法。先做單關試玩，好玩再設計多關；不好玩就整個移除（使用者 2026-10-04 決定）。首頁「征服高塔」下方的金色長條按鈕「百鬼夜行」（副標「全黑迷宮 · 抓光 8 隻鬼」；2026-10-04 由石板小按鈕改成與「征服高塔」同款的長條按鈕，同日拿掉「試玩」標籤）進入，先到與爬塔相同的技能準備畫面（免費玩家隨機一個、看廣告可自己挑，完整版兩個），再開始一局；結算畫面寫「成功！／失敗」與原因，按鈕是「回首頁」與「再玩一次」。沒有紀錄、成就或排行。
+- 目的：與爬塔的「找鑰匙、比快」不同，這是「在黑暗中躲鬼、抓鬼」的生存玩法。先做單關試玩，好玩再設計多關；不好玩就整個移除（使用者 2026-10-04 決定）。首頁「征服高塔」下方的金色長條按鈕「百鬼夜行」（副標「全黑迷宮 · 抓光 8 隻鬼」；2026-10-04 由石板小按鈕改成與「征服高塔」同款的長條按鈕，同日拿掉「試玩」標籤）進入，先到與爬塔相同的技能準備畫面（免費玩家隨機一個，完整版自選兩個），再開始一局；結算畫面寫「成功！／失敗」與原因，按鈕是「回首頁」與「再玩一次」。沒有紀錄、成就或排行。
 - 規則（數值都在 `tuning.night`，試玩值）：
   - 一開局就是全黑，玩家一人，迷宮裡同時有 8 隻鬼（`ghostCount`；原本想每 5 秒放一隻，為了簡單改成一開始全部放出）。鬼從離塔至少 `ghostMinStartSteps`（12）步的地方出發，彼此盡量分散。
   - 鬼一直都是鬼，整局都在抓玩家：速度是玩家的 0.4 倍（`ghostSpeed`），視野 3 格、關燈時少 1 格，所以全黑時是 2 格（`ghostVisionTiles`；2026-10-04 試玩後由 0.8 倍、4 格調低，速度再由使用者調到 0.5、0.4），看不到玩家時四處遊蕩。鬼不帶燈，不另外增加繪圖。
@@ -194,7 +196,7 @@
 
 ## 6. 地圖與垂直結構
 
-- 迷宮幾何採人工製作的固定地圖，不使用每局從零生成的程序化迷宮。
+- 迷宮幾何採人工製作的固定地圖，不使用每局從零生成的程序化迷宮。唯一例外是爬塔挑戰第 21 層起的無盡樓層（2026-10-04 使用者決定，第 4.1 節）：地圖由 `packages/sim/src/map/gen/` 依種子產生（`generateMap`），是地圖草稿工具 `tools/map-drafter` 做法的 TypeScript 版：在奇數格點上挖迷宮（四種樣式：長走廊、東西向長廊、南北向長廊、短岔路很多的 Prim，兩成機率加一圈外環路），打通 `面積/120`（Prim 為 `面積/160`）道牆形成迴圈，接著加橋（優先連接兩塊不相連的牆頂，彼此至少隔 8 格）、在每塊夠大的牆頂放樓梯（每塊至少一座，其餘分散在大塊牆頂，彼此至少隔 8 格），再放公平的固定物（每放一扇單向門或一個障礙物就重算整張圖：原本走得到的地方不能變得走不到、走得到的地方都要回得來，所以障礙物只會擋捷徑），最後放候選點：鑰匙放在離塔最遠那一半的死路（牆頂 4 個、道路 6 個，每象限有上限），道具箱與開關沿走廊分散。每張圖都要通過與手繪地圖相同的驗證器，不過就換下一個子種子重抽（`reach.ts` 的 `Terrain` 是含固定物的可達性檢查）。有單元測試（`packages/sim/test/generate.test.ts`：同種子同圖、驗證全過、所有候選不用鐵鎚就走得到、鑰匙夠遠）。
 - 遊戲應維護多張已驗證的地圖池，每局開始時從符合模式、玩家數與難度的候選地圖中抽選一張。初步目標為 12 張手繪地圖。
 - 地圖適用的模式（2026-10-04）：地圖 JSON 可選填 `modes`（`race`、`night`），沒填就是一般比賽（爬塔、連線、沙盒）的地圖；目前只有百鬼夜行的 night-01～03 填 `["night"]`（第 4.4 節）。驗證器只檢查值是否合法。
 - 地圖難度（2026-09-29）：地圖 JSON 的 `difficulty` 為 `easy`、`medium` 或 `hard`，由地圖作者依地圖本身（尺寸、鑰匙遠近、機關）決定，與 CPU 無關；驗證器只檢查值是否合法。目前 maze-01、02、11、18～21 為 easy，maze-03、08、09、10、15、16、17 為 medium，maze-04～07、12～14 為 hard。爬塔挑戰依它分層抽圖（第 4.1 節），沒填的地圖不會出現在爬塔挑戰；連線對戰目前不看難度。
@@ -421,7 +423,7 @@
   - 登塔時每件剩餘道具轉換的結算分數。
   - 勝隊分數倍率；初步規則為 `2×`。
   - CPU 的視野半徑、思考停頓與移動速度倍率（`cpu.visionTiles`、`cpu.pauseMinSec`、`cpu.pauseMaxSec`、`cpu.speedMultiplier`）、關燈時的視野扣減（`cpu.darkVisionPenaltyTiles`，初始 1 格）與沙盒強度預設（`cpu.difficulties`，只剩 `?local&cpu=hard` 使用）。
-  - 爬塔挑戰的晉級比例與 20 層的層數表（`towerRun.passShare`、`towerRun.floors`：每層的地圖難度、CPU 人數、CPU 視野與速度，以及特殊樓層規則 `mods`）。
+  - 爬塔挑戰的晉級比例與 20 層的層數表（`towerRun.passShare`、`towerRun.floors`：每層的地圖難度、CPU 人數、CPU 視野與速度，以及特殊樓層規則 `mods`），以及第 21 層起的無盡樓層（`towerRun.endless`：特殊樓層間隔、產生地圖的尺寸、回合秒數與固定物數量）。
 - 設定必須有清楚的預設值、單位與合理範圍；暫定數字只能視為初始試玩值。
 - 隨機或動態規則仍必須能以明確的種子或測試設定重現，方便除錯與平衡驗證。
 
@@ -527,7 +529,7 @@
 - 手機瀏覽器的網址列（2026-09-27）：第一次觸控時請求全螢幕並嘗試鎖定橫向（`apps/client/src/fullscreen.ts`，桌機滑鼠不觸發，失敗靜默）；另提供 `manifest.webmanifest`（`display: fullscreen`、橫向、圖示在 `public/icons/`；2026-09-29 起所有圖示由一張方形原圖 `apps/client/assets-src/app-icon.webp` 以 `scripts/make_icons.sh` 產生：favicon 32／48、apple-touch-icon 180、192、512，另有給 Android 遮罩用的 maskable 版，原圖縮到 78% 疊在自身模糊放大的底圖上；換圖只要覆蓋原圖再執行腳本），從瀏覽器選單「加到主畫面」安裝後以獨立視窗開啟，沒有網址列。之後包成 App 則完全沒有這個問題。
 - 多國語言（2026-10-01 實作）：玩家看得到的文字一律經由 `apps/client/src/i18n/` 的 `t(key, params)` 取得，程式裡不寫死任何一種語言的字串。字典依區域分檔（`common`、`hud`、`lobby`、`modes`、`rules`），每種語言一個資料夾：`zh-Hant/` 是原文，也是所有鍵的標準；`en/` 是英文，型別規定英文每個區域都必須有中文的每個鍵，漏翻時型別檢查失敗。訊息裡的 `{名稱}` 由參數填入；為了不同語言的語序，一律寫整句的範本，不拼接翻譯片段；英文避開複數變化（秒數寫 `{n}s`、名次寫 `#{n}`）。語言在載入時決定、之後不變：網址 `?lang=en` 或 `?lang=zh-Hant` 指定並記在瀏覽器（`supermaze.lang`），否則依裝置語言，任何中文用繁體中文，其他一律英文。首頁右上「遊戲規則」「成就」「完整版」「設定」下方有語言按鈕（2026-10-01），顯示地球圖示加上另一種語言的自稱（中文畫面顯示 English、英文畫面顯示「中文」），按下記住選擇並重新載入頁面（`i18n/index.ts` 的 `switchLocale`，順便移除網址的 `?lang=`，否則網址會再蓋回去）；語言超過兩種時依序輪替。上架時中英文是同一個 App、同一個商店頁，不分開上架；Node 測試環境固定用繁體中文，所以既有測試照常比對中文。伺服器不送任何人看得懂的文字：大廳提示改送代碼與數字（`@supermaze/protocol` 的 `LobbyNotice`），由客戶端翻譯。角色預設暱稱每種語言一套（`characterNames.ts` 的 `namesFor`），中文是使用者取的台灣梗名，英文目前是佔位名字（Jerry~、Gramps、Sarge、Boss、Nerdy、Punk、Mabel、Honey、Madam、Diva、Ace、Rebel，沒選角色時 Player），待使用者另外決定；測試檢查每種語言的名字都在暱稱上限內且不重複（英文最多 10 個字母，2026-10-01 由 6 放寬）。首頁 logo 下方的中文名來自 `app.nameZh`，英文版留空不顯示。英文用語：首頁的「征服高塔」按鈕是 Start Game，其他文字裡的爬塔挑戰叫 Solo／Solo Mode（2026-10-01 定案；Super Maze 只留給遊戲名與 logo，避免英文首頁出現兩次；中間暫用過 Conquer the Tower（手機上放不下）、Tower Run 與 Super Maze），連線對戰 Online，完整版 Full Version，九個技能 Sprint、Eagle Eye、Amulet、Lantern、Time Stop、Jump、Phase、Warp、Resupply。英文版面已在桌機與手機橫向截圖確認（首頁、連線頁面、角色設定、完整版頁面、規則卡、爬塔準備畫面與 HUD）；英文較長的地方以縮短英文解決，不改中文。分頁標題依語言設定（`app.title`）；Android 的 App 名稱另見 `docs/android-apk-handoff.md`。新增語言：在 `i18n/` 加一個資料夾、在 `index.ts` 的 `Locale` 與 `pickLocale` 登記，型別檢查會列出所有缺的鍵；`namesFor` 也要補上那種語言的名字。
 - 避免使用 WebView 不支援的瀏覽器 API（例如 SharedArrayBuffer、WebGPU 專屬功能），以保留日後以 Capacitor 包裝為 iOS／Android App 的可能性。App 上架本身不在現階段範圍。
-- 行動 App（2026-09-29 決定方向）：以 Capacitor 包裝現有客戶端，不改用 Unity／Godot；第一版上架預計只放離線的爬塔挑戰。第一階段（在 WSL2 電腦產出可安裝試玩的 Android debug APK）的完整交接在 `docs/android-apk-handoff.md`，接手前先讀，完成後把結果寫回本文件並依該文件第 8 節更新。2026-10-01 已先做好不需要 Android SDK 的部分：Capacitor 8 與外掛的 JS 端（`@capacitor/app`、`@capacitor-community/admob`、`@revenuecat/purchases-capacitor`）、`platform.ts`（`isNativeApp`）、Android 返回鍵（`native/backButton.ts`：各畫面把代表返回的按鈕標上 `data-back`，返回鍵按下最上層看得到的那一個，首頁沒有就離開 App，對局中沿用 ✕ 的兩段式確認）、App 內不呼叫網頁的全螢幕 API，以及建置指令 `build:release`（`VITE_RELEASE=1`、`VITE_ONLINE=off`）、`android:apk`、`android:release`（同時產出已簽名的 release APK 與 AAB）。同日 appId 定為 `com.jjy.supermaze` 並建立原生專案 `apps/client/android/`（進 git；設定檔 `apps/client/capacitor.config.ts`）：橫向（`sensorLandscape`）、全螢幕（`MainActivity.java` 隱藏狀態列與導覽列；同一處把 WebView 的文字縮放固定為 100%，不跟手機的字型大小設定放大，否則固定的橫向版面會塞不下而要捲動）、App 名稱預設 Super Maze、繁體中文（`values-zh-rTW`、`values-zh-rHK`）為「迷宮高塔」；AdMob 的 App ID 必須在 AndroidManifest，否則 App 一啟動就閃退，由 `app/build.gradle` 填入，預設 Google 的測試 ID，正式的 ID 與 release 簽名金鑰寫在不進 git 的 `apps/client/android/keystore.properties`；圖示與啟動畫面由 `scripts/make_app_assets.sh` 從網頁圖示同一張原圖產生。雲端開發環境連不到 Google 的 Android SDK 下載點，所以 APK 由 GitHub Actions 編譯（`.github/workflows/android.yml`，改到客戶端的推送都會跑，也可手動執行，產物 `super-maze-debug-apk`）；也可在 WSL2 照交接文件自己編譯。尚未實機驗證。上架整體清單見 `docs/release-checklist.md`。
+- 行動 App（2026-09-29 決定方向）：以 Capacitor 包裝現有客戶端，不改用 Unity／Godot；第一版上架預計只放離線的爬塔挑戰。第一階段（在 WSL2 電腦產出可安裝試玩的 Android debug APK）的完整交接在 `docs/android-apk-handoff.md`，接手前先讀，完成後把結果寫回本文件並依該文件第 8 節更新。2026-10-01 已先做好不需要 Android SDK 的部分：Capacitor 8 與外掛的 JS 端（`@capacitor/app`、`@revenuecat/purchases-capacitor`；AdMob 外掛已於 2026-10-04 移除）、`platform.ts`（`isNativeApp`）、Android 返回鍵（`native/backButton.ts`：各畫面把代表返回的按鈕標上 `data-back`，返回鍵按下最上層看得到的那一個，首頁沒有就離開 App，對局中沿用 ✕ 的兩段式確認）、App 內不呼叫網頁的全螢幕 API，以及建置指令 `build:release`（`VITE_RELEASE=1`、`VITE_ONLINE=off`）、`android:apk`、`android:release`（同時產出已簽名的 release APK 與 AAB）。同日 appId 定為 `com.jjy.supermaze` 並建立原生專案 `apps/client/android/`（進 git；設定檔 `apps/client/capacitor.config.ts`）：橫向（`sensorLandscape`）、全螢幕（`MainActivity.java` 隱藏狀態列與導覽列；同一處把 WebView 的文字縮放固定為 100%，不跟手機的字型大小設定放大，否則固定的橫向版面會塞不下而要捲動）、App 名稱預設 Super Maze、繁體中文（`values-zh-rTW`、`values-zh-rHK`）為「迷宮高塔」；release 簽名金鑰寫在不進 git 的 `apps/client/android/keystore.properties`；圖示與啟動畫面由 `scripts/make_app_assets.sh` 從網頁圖示同一張原圖產生。雲端開發環境連不到 Google 的 Android SDK 下載點，所以 APK 由 GitHub Actions 編譯（`.github/workflows/android.yml`，改到客戶端的推送都會跑，也可手動執行，產物 `super-maze-debug-apk`）；也可在 WSL2 照交接文件自己編譯。尚未實機驗證。上架整體清單見 `docs/release-checklist.md`。
 
 ### 17.2 權威模擬層
 
@@ -556,7 +558,7 @@
 ### 17.4 儲存庫結構
 
 - 使用 npm workspaces 的 monorepo。
-- `packages/sim`：規則、狀態、調校參數結構與預設值、地圖資料型別與驗證邏輯。
+- `packages/sim`：規則、狀態、調校參數結構與預設值、地圖資料型別與驗證邏輯，以及無盡樓層的地圖產生器（`map/gen/`）。
 - `packages/protocol`：客戶端與伺服器之間的訊息型別與編碼。
 - `apps/client`：Three.js 渲染、輸入、HUD、除錯覆蓋層。客戶端專屬的手感參數放在 `apps/client/src/tuning.ts`。
 - `apps/server`：房間、連線、權威模擬迴圈。

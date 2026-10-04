@@ -129,8 +129,8 @@ describe("tower run achievements", () => {
 
   it("summit on passing the top floor; flawless when every floor from the first passed without continuing", () => {
     const all = Array.from({ length: floors }, (_, i) => record(i + 1));
-    expect(runAchievements(run({ status: "cleared", history: all })).sort()).toEqual(["flawless", "halfway", "summit"]);
-    expect(runAchievements(run({ status: "cleared", history: all, continues: 1 })).sort()).toEqual(["halfway", "summit"]);
-    expect(runAchievements(run({ status: "cleared", history: [...all.slice(0, -1), record(floors, false)] }))).toEqual([]);
+    expect(runAchievements(run({ history: all })).sort()).toEqual(["flawless", "halfway", "summit"]);
+    expect(runAchievements(run({ history: all, continues: 1 })).sort()).toEqual(["halfway", "summit"]);
+    expect(runAchievements(run({ history: [...all.slice(0, -1), record(floors, false)] }))).toEqual([]);
   });
 });

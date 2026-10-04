@@ -1,9 +1,10 @@
+import { t } from "../i18n/index.js";
 import { isNativeApp, RELEASE_BUILD } from "../platform.js";
 
 /**
- * The full version (one-time purchase). Owning it means: no ads (a continue
- * and a picked skill come free), two skills a floor, and starting a tower run
- * on any floor already reached (CLAUDE.md section 4.2).
+ * The full version (one-time purchase; the game has no ads). Owning it means:
+ * two skills a floor picked freely, continues without limit, and starting a
+ * tower run on any floor already reached (CLAUDE.md section 4.2).
  *
  * In the release app the store decides (billing.ts, Google Play through RevenueCat):
  * the answer is kept here so `isPremium()` stays synchronous and the game
@@ -55,12 +56,11 @@ export function isPremium(): boolean {
   return owned;
 }
 
-/** Placeholder price for the browser build; the app shows the store's own. */
-const PLACEHOLDER_PRICE = "NT$ 90";
 
 /** The price to print on the buy button; the store's once fetched (`syncPremium`). */
 export function fullVersionPrice(): string {
-  return price ?? (storeBilling() ? "" : PLACEHOLDER_PRICE);
+  // The browser build's placeholder is the planned list price (US$2.99, NT$60), in the page's language.
+  return price ?? (storeBilling() ? "" : t("lobby.store.placeholderPrice"));
 }
 
 /**
@@ -97,4 +97,9 @@ export async function restorePurchases(): Promise<boolean | null> {
 /** Placeholder builds only (the debug APK has no `?premium=0`): back to the free version. */
 export function dropPremiumForTesting(): void {
   if (!storeBilling()) write(false);
+}
+
+/** App only, at startup: ask the store whether the full version is owned, so the answer is ready before the first screen needs it. */
+export function warmUpPremium(): void {
+  if (isNativeApp()) void syncPremium();
 }

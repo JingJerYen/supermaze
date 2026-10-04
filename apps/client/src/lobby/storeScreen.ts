@@ -7,7 +7,7 @@ import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
 
 /**
- * The full version's page, opened from the home screen: what it gives, buy,
+ * The full version's page, opened from the home screen or a skill screen: what it gives, buy,
  * and restore an earlier purchase (the stores require the latter). In the app
  * this goes through Google Play (`monetize/premium.ts`); in a browser and the
  * debug APK buying is a placeholder that unlocks at once, and the debug APK
@@ -23,6 +23,8 @@ export class StoreScreen {
     renderer: THREE.WebGLRenderer,
     profile: Profile,
     private readonly onHome: () => void,
+    /** The back button's text: home by default, "back" when opened over another screen. */
+    private readonly backLabel = t("lobby.store.home"),
   ) {
     this.preview = new CharacterPreview(renderer);
     this.preview.show(profile.character ?? "local");
@@ -44,8 +46,8 @@ export class StoreScreen {
       <h2>⭐ ${t("lobby.home.fullVersion")}</h2>
       <div class="sp-sub">${t("lobby.store.sub")}</div>
       <ul class="sp-perks">
-        <li><b>🚫 ${t("lobby.store.noAds")}</b><span>${t("lobby.store.noAdsDesc")}</span></li>
         <li><b>🎯 ${t("lobby.store.twoSkills")}</b><span>${t("lobby.store.twoSkillsDesc")}</span></li>
+        <li><b>♾️ ${t("lobby.store.continues")}</b><span>${t("lobby.store.continuesDesc")}</span></li>
         <li><b>🏔️ ${t("lobby.store.startFloor")}</b><span>${t("lobby.store.startFloorDesc")}</span></li>
       </ul>
       <div class="sp-row">${
@@ -56,7 +58,7 @@ export class StoreScreen {
       <div class="sp-note">${this.notice || t(storeBilling() ? "lobby.store.payNoteApp" : "lobby.store.payNote")}</div>
       ${owned && isNativeApp() && !storeBilling() ? `<div class="sp-row"><button id="st-drop">${t("lobby.store.dropForTesting")}</button></div>` : ""}
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="st-home" data-back>${t("lobby.store.home")}</button><button id="st-restore">${t("lobby.store.restore")}</button></div>`;
+      <div class="sp-row"><button id="st-home" data-back>${this.backLabel}</button><button id="st-restore">${t("lobby.store.restore")}</button></div>`;
     this.panel.querySelector("#st-buy")?.addEventListener("click", () => void this.buy());
     this.panel.querySelector("#st-drop")?.addEventListener("click", () => {
       dropPremiumForTesting();
