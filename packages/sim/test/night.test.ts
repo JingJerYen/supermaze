@@ -111,6 +111,34 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount - 1);
   });
 
+  it("a hammer finishes off a ghost lying down ahead or underfoot, not one on its feet", () => {
+    const sim = night();
+    const [g0, g1] = ghosts(sim) as [PlayerState, PlayerState];
+    const here = { x: 1, y: 3, layer: "road" as const };
+    const ahead = { x: 2, y: 3, layer: "road" as const };
+    const swing = () => sim.step(new Map([[ME, { moveX: 0, moveY: 0, action: true }]]));
+    setPlayer(sim, ME, (p) => ({ ...p, items: ["hammer"], protectedUntilTick: 1e9, mover: at(here, { dx: 1, dy: 0 }) }));
+    setPlayer(sim, g0.id, (p) => ({ ...p, mover: at(ahead) }));
+    // On its feet: the swing is spent and the ghost is still there.
+    expect(swing().some((e) => e.type === "ghostBanished")).toBe(false);
+    expect(sim.getState().players[g0.id]).toBeDefined();
+    expect(sim.getState().players[ME]!.items).toEqual([]);
+    // Knocked down by the lights: gone for good, and the hammer pays like a trap.
+    const until = sim.getState().tick + 100;
+    for (const [id, tile] of [[g0.id, ahead], [g1.id, here]] as const) {
+      setPlayer(sim, id, (p) => ({ ...p, frozenBy: "light", frozenUntilTick: until, mover: at(tile) }));
+    }
+    setPlayer(sim, ME, (p) => ({ ...p, items: ["hammer"], mover: at(here, { dx: 1, dy: 0 }) }));
+    const score = sim.getState().players[ME]!.score;
+    const events = swing();
+    for (const id of [g0.id, g1.id]) {
+      expect(sim.getState().players[id]).toBeUndefined();
+      expect(events).toContainEqual(expect.objectContaining({ type: "ghostBanished", ghostId: id, by: "hammer", playerId: ME }));
+    }
+    expect(sim.getState().players[ME]!.score).toBe(score + 2 * sim.tuning.scoring.trapCatch);
+    expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount - 2);
+  });
+
   it("turning the lights on knocks every ghost down for a while, harmless until it is up", () => {
     const sim = night();
     const sw = Object.values(sim.getState().switches)[0]!;
