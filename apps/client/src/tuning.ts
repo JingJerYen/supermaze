@@ -341,6 +341,19 @@ export const CLIENT_TUNING = {
     /** Background colour while dark; the lit background comes from the map theme. */
     clearColor: 0x05060a,
   },
+  /** Sky dome and the ground around the maze (render/backdrop.ts); colours come from the map theme. */
+  backdrop: {
+    /** Sky dome radius in tiles, centred on the camera; must stay inside the camera's far plane (400). */
+    skyRadius: 200,
+    /** Ground disc radius in tiles around the map centre. */
+    groundRadius: 260,
+    /** Just below the road surface so the two never fight. */
+    groundY: -0.03,
+    /** The ground starts fading into the horizon colour this many tiles beyond the map's corners... */
+    fadeStartTiles: 12,
+    /** ...and is all horizon colour at this distance from the map centre. */
+    fadeEndTiles: 190,
+  },
   render: {
     /** Cap the device pixel ratio to keep phones smooth. */
     maxPixelRatio: 2,

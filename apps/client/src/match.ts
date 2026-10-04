@@ -34,7 +34,7 @@ import { qualityFrame, qualityStatus, restartQuality } from "./render/quality.js
 import { useTeams } from "./render/teamColors.js";
 import { PLAYER_HEIGHT } from "./render/playerView.js";
 import { createScene } from "./render/scene.js";
-import { skyTexture } from "./render/sky.js";
+import { createBackdrop, type Backdrop } from "./render/backdrop.js";
 import { SwitchViews } from "./render/switches.js";
 import { DEV_TOOLS } from "./platform.js";
 import { CLIENT_TUNING } from "./tuning.js";
@@ -46,9 +46,8 @@ import { CLIENT_TUNING } from "./tuning.js";
  */
 export class Match {
   private readonly scene: THREE.Scene;
-  /** Lit background (the theme's gradient) and the plain one while dark. */
-  private readonly sky: THREE.Texture;
-  private readonly darkSky = new THREE.Color(CLIENT_TUNING.dark.clearColor);
+  /** Sky and the ground around the maze; hidden in the dark, leaving the plain dark background. */
+  private readonly backdrop: Backdrop;
   private readonly follow: FollowCamera;
   /** Null in a rules demo: nobody plays it, so there are no controls, scoreboard, minimap or exit button. */
   private readonly input: InputSource | null;
@@ -95,8 +94,9 @@ export class Match {
     restartQuality();
     this.scene = createScene();
     this.mapMesh = buildMapMesh(mode.grid, theme, mode.plazaRadius, mode.switchTiles);
-    this.sky = skyTexture(theme.sky);
-    this.scene.background = this.sky;
+    this.backdrop = createBackdrop(theme, mode.grid.width, mode.grid.height);
+    this.scene.add(this.backdrop.group);
+    this.scene.background = new THREE.Color(CLIENT_TUNING.dark.clearColor);
     this.scene.add(this.mapMesh.group);
     this.players = new PlayerViews(this.scene, mode.grid);
     this.players.configure({ x: this.mapMesh.towerCenter.x, z: this.mapMesh.towerCenter.z });
@@ -161,7 +161,7 @@ export class Match {
       const dark = drawDark(s.to.lightsOn, s.to.lightsOffAtTick, s.to.tick + s.alpha, this.mode.tickRate, now / 1000);
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
-      this.scene.background = dark ? this.darkSky : this.sky;
+      this.backdrop.setDark(dark);
       opening = openingOf(s.to, this.mode.tickRate);
       // The doors open with the countdown, after the fly-in.
       this.mapMesh.update(now / 1000, this.players.activeClimbs(), opening.countdownProgress);
@@ -251,6 +251,7 @@ export class Match {
     this.system?.dispose();
     this.debug.dispose();
     this.input?.dispose();
+    this.backdrop.dispose();
     this.renderer.clear();
     if (!this.demo) {
       music.setRate(1);

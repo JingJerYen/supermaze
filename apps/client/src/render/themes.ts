@@ -7,10 +7,24 @@ import * as THREE from "three";
  * decorations are merged into the static map batches, so a theme costs the
  * same handful of draw calls whatever it looks like.
  */
+export interface GroundLook {
+  /** Two colours blended by soft noise. */
+  base: number;
+  alt: number;
+  /** Size of the noise blotches in tiles; `stretch` squashes them per axis (x, z), e.g. long dunes. */
+  scale: number;
+  stretch?: [number, number];
+  /** Optional grid lines every `lineEvery` tiles. */
+  line?: number;
+  lineEvery?: number;
+}
+
 export interface Theme {
   id: string;
   /** Scene background while lit: gradient colours from the top of the screen to the bottom (render/sky.ts). */
   sky: number[];
+  /** The land around the maze out to the horizon (render/backdrop.ts), in on-screen colours. */
+  ground: GroundLook;
   hemiSky: number;
   hemiGround: number;
   hemiIntensity: number;
@@ -102,6 +116,7 @@ export const THEMES: Record<string, Theme> = {
   stone: {
     id: "stone",
     sky: [0x0e1a3a, 0x2c4474, 0x6c7fa6],
+    ground: { base: 0x3b4838, alt: 0x56624a, scale: 6 },
     hemiSky: 0xbcd0ff,
     hemiGround: 0x243044,
     hemiIntensity: 0.95,
@@ -137,6 +152,7 @@ export const THEMES: Record<string, Theme> = {
   garden: {
     id: "garden",
     sky: [0x2d4f7a, 0x8a8fb0, 0xf2b884],
+    ground: { base: 0x4f7f34, alt: 0x6f9c42, scale: 5 },
     hemiSky: 0xfff0d4,
     hemiGround: 0x4e6634,
     hemiIntensity: 1.2,
@@ -177,6 +193,7 @@ export const THEMES: Record<string, Theme> = {
   factory: {
     id: "factory",
     sky: [0x03061a, 0x0d1f4a, 0x1f5a8a],
+    ground: { base: 0x1e2532, alt: 0x2a3344, scale: 8, line: 0x35516f, lineEvery: 4 },
     hemiSky: 0xd6e2ff,
     hemiGround: 0x1a2233,
     hemiIntensity: 1.0,
@@ -216,6 +233,7 @@ export const THEMES: Record<string, Theme> = {
   candy: {
     id: "candy",
     sky: [0x6a4fa0, 0xd88ac0, 0xffd0e0],
+    ground: { base: 0x5a3020, alt: 0x7a462c, scale: 5 },
     hemiSky: 0xfff0e6,
     hemiGround: 0x5a3a2a,
     hemiIntensity: 1.15,
@@ -258,6 +276,7 @@ export const THEMES: Record<string, Theme> = {
   ice: {
     id: "ice",
     sky: [0x0a0f30, 0x1c2e6a, 0x2e8a96],
+    ground: { base: 0xa7bbd4, alt: 0xc6d5e7, scale: 12 },
     hemiSky: 0xe4eeff,
     hemiGround: 0x46527c,
     hemiIntensity: 1.3,
@@ -298,6 +317,7 @@ export const THEMES: Record<string, Theme> = {
   desert: {
     id: "desert",
     sky: [0xb05a2e, 0xe0904e, 0xf6d49a],
+    ground: { base: 0xb47a3e, alt: 0xe6bb7a, scale: 7, stretch: [1, 3] },
     hemiSky: 0xfff0d8,
     hemiGround: 0x7a4a2e,
     hemiIntensity: 1.1,
