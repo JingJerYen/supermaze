@@ -35,9 +35,6 @@ export const SKILL_KINDS: readonly SkillKind[] = ["sprint", "eagleEye", "amulet"
 /** Which of a player's skills: the first, or the second a full-version tower run allows. */
 export type SkillSlot = 1 | 2;
 
-/** Skills that run for a while; only one of them runs at a time. */
-const TIMED: readonly SkillKind[] = ["sprint", "eagleEye", "lantern", "pierce"];
-
 /** The skill `p` holds in `slot`. */
 export function skillIn(p: PlayerState, slot: SkillSlot): SkillKind | null {
   return slot === 1 ? p.skill : p.skill2;
@@ -82,8 +79,6 @@ export function canUseSkill(
   if (kind === "lantern" && ctx.lightsOn) return false;
   if (kind === "jump" && !jumpTarget(grid, ctx.placeables, p)) return false;
   if (kind === "supply" && (p.items.length >= ctx.capacity || isGhost(ctx.ghost, p))) return false;
-  // With two skills, a timed one waits until the other timed one has run out (one effect at a time).
-  if (TIMED.includes(kind) && p.skillEffect && ctx.tick < p.skillEffect.untilTick) return false;
   return true;
 }
 
@@ -109,7 +104,7 @@ export function jumpTarget(grid: MapGrid, placeables: Record<string, PlaceableSt
 
 /** The timed effect `kind` is running for `p` at `tick`. */
 export function skillActive(p: PlayerState, kind: SkillKind, tick: Tick): boolean {
-  return p.skillEffect?.kind === kind && tick < p.skillEffect.untilTick;
+  return p.skillEffects.some((e) => e.kind === kind && tick < e.untilTick);
 }
 
 /** Pierce is on: obstacles and one-way doors do not stop `p` and traps do not spring. */
@@ -141,13 +136,14 @@ export function castSkill(
   const caster: PlayerState = slot === 1 ? { ...p, skill: null } : { ...p, skill2: null };
   switch (kind) {
     case "sprint":
-      return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.sprint.durationSec) } }, event, timeStopUntil: null };
     case "eagleEye":
-      return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.eagleEye.durationSec) } }, event, timeStopUntil: null };
     case "lantern":
-      return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.lantern.durationSec) } }, event, timeStopUntil: null };
-    case "pierce":
-      return { caster: { ...caster, skillEffect: { kind, untilTick: tick + ticks(s.pierce.durationSec) } }, event, timeStopUntil: null };
+    case "pierce": {
+      // Timed: runs alongside any other timed skill already on (section 4.1).
+      const sec = { sprint: s.sprint.durationSec, eagleEye: s.eagleEye.durationSec, lantern: s.lantern.durationSec, pierce: s.pierce.durationSec }[kind];
+      const skillEffects = [...p.skillEffects.filter((e) => e.kind !== kind), { kind, untilTick: tick + ticks(sec) }];
+      return { caster: { ...caster, skillEffects }, event, timeStopUntil: null };
+    }
     case "amulet":
       return { caster: { ...caster, shielded: true }, event, timeStopUntil: null };
     case "timeStop":

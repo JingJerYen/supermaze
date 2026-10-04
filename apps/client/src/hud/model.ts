@@ -28,7 +28,8 @@ export interface HudModel {
   /** The second skill (tower run, full version). */
   mySkill2: { kind: SkillKind; ready: boolean } | null;
   /** A skill of the local player's at work: seconds left, or null for the amulet (up until it blocks). */
-  skillStatus: { kind: SkillKind; sec: number | null } | null;
+  /** Skills in effect for you, each with its seconds left (null: until used up, the amulet). */
+  skillStatus: { kind: SkillKind; sec: number | null }[];
   /** The local player is frozen: seconds left and why; null otherwise. */
   myFreeze: { sec: number; by: PlayerState["frozenBy"] } | null;
   ghost: {
@@ -116,7 +117,7 @@ export function buildHudModel(
     onTower: me?.phase === "tower",
     mySkill: skillSlot(state, me, grid, running, capacity, 1),
     mySkill2: skillSlot(state, me, grid, running, capacity, 2),
-    skillStatus: running && me ? skillStatusOf(state, me, tickRate) : null,
+    skillStatus: running && me ? skillStatusOf(state, me, tickRate) : [],
     myFreeze: running && me && me.phase === "maze" && me.frozenUntilTick > state.tick ? { sec: (me.frozenUntilTick - state.tick) / tickRate, by: me.frozenBy } : null,
     // A round that ends mid-warning or mid-chase leaves the schedule where it
     // stopped; the HUD shows no event once the round is over.
@@ -165,12 +166,12 @@ function skillSlot(state: SimulationState, me: PlayerState | undefined, grid: Ma
   return { kind, ready: canUseSkill(ctx, me, grid, slot) };
 }
 
-function skillStatusOf(state: SimulationState, me: PlayerState, tickRate: number): { kind: SkillKind; sec: number | null } | null {
-  if (me.shielded) return { kind: "amulet", sec: null };
-  const e = me.skillEffect;
-  if (e && state.tick < e.untilTick) return { kind: e.kind, sec: (e.untilTick - state.tick) / tickRate };
+function skillStatusOf(state: SimulationState, me: PlayerState, tickRate: number): { kind: SkillKind; sec: number | null }[] {
+  const out: { kind: SkillKind; sec: number | null }[] = [];
+  if (me.shielded) out.push({ kind: "amulet", sec: null });
+  for (const e of me.skillEffects) if (state.tick < e.untilTick) out.push({ kind: e.kind, sec: (e.untilTick - state.tick) / tickRate });
   // A time stop shows as everyone else frozen by a skill (only the player casts skills).
   const stopped = Object.values(state.players).filter((p) => p.id !== me.id && p.frozenBy === "skill" && p.frozenUntilTick > state.tick);
-  if (stopped.length) return { kind: "timeStop", sec: Math.max(...stopped.map((p) => p.frozenUntilTick - state.tick)) / tickRate };
-  return null;
+  if (stopped.length) out.push({ kind: "timeStop", sec: Math.max(...stopped.map((p) => p.frozenUntilTick - state.tick)) / tickRate });
+  return out;
 }

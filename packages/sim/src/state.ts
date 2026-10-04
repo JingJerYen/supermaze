@@ -95,8 +95,11 @@ export interface PlayerState extends Participant {
   skill: SkillKind | null;
   /** Second skill still to cast (tower run, full version); null once cast or when none was given. */
   skill2: SkillKind | null;
-  /** The timed skill cast this round (sprint, eagle eye, lantern), kept after it runs out. */
-  skillEffect: SkillEffect | null;
+  /**
+   * Timed skills cast this round (sprint, eagle eye, lantern, pierce), one
+   * entry per kind, kept after they run out. Two can run at once (section 4.1).
+   */
+  skillEffects: SkillEffect[];
   /** The amulet is up: the next trap or ghost catch is shrugged off. */
   shielded: boolean;
   /** Catches the player can still take (night parade, section 4.4); absent where catches cost no life. */
