@@ -137,7 +137,7 @@ export class Simulation {
       keyScored: false,
       skill: p.skill ?? null,
       skill2: p.skill2 ?? null,
-      skillEffect: null,
+      skillEffects: [],
       shielded: false,
     };
     this.state = { ...this.state, players: { ...this.state.players, [p.id]: player } };

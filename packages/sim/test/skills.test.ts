@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MapData } from "../src/map/types.js";
 import { moverPosition } from "../src/movement.js";
 import { Simulation, type PlayerInput } from "../src/simulation.js";
-import { canUseSkill, jumpTarget, type SkillKind } from "../src/skills.js";
+import { canUseSkill, jumpTarget, piercing, skillActive, skillSpeedFactor, type SkillKind } from "../src/skills.js";
 import { warpTargets } from "../src/skillEffects.js";
 import { movePlayer } from "../src/playerMove.js";
 import { tileKey } from "../src/map/grid.js";
@@ -51,7 +51,7 @@ describe("skills", () => {
     const ev = stepAll(s, 1, new Map([["a", cast], ["b", cast]]));
     expect(ev.filter((e) => e.type === "skillUsed")).toEqual([expect.objectContaining({ playerId: "a", skill: "eagleEye" })]);
     expect(s.getState().players["a"]!.skill).toBeNull();
-    expect(s.getState().players["a"]!.skillEffect?.untilTick).toBe(s.getState().tick + DEFAULT_TUNING.skills.eagleEye.durationSec * T);
+    expect(s.getState().players["a"]!.skillEffects[0]?.untilTick).toBe(s.getState().tick + DEFAULT_TUNING.skills.eagleEye.durationSec * T);
     expect(stepAll(s, 1, new Map([["a", cast]])).filter((e) => e.type === "skillUsed")).toEqual([]);
   });
 
@@ -76,8 +76,8 @@ describe("skills", () => {
     stepAll(plain, 6, south);
     expect(moverPosition(fast.getState().players["a"]!.mover).y).toBeGreaterThan(moverPosition(plain.getState().players["a"]!.mover).y);
     const p = fast.getState().players["a"]!;
-    expect(p.skillEffect).toMatchObject({ kind: "sprint" });
-    expect(p.skillEffect!.untilTick - fast.getState().tick).toBe(DEFAULT_TUNING.skills.sprint.durationSec * T - 6);
+    expect(p.skillEffects).toMatchObject([{ kind: "sprint" }]);
+    expect(p.skillEffects[0]!.untilTick - fast.getState().tick).toBe(DEFAULT_TUNING.skills.sprint.durationSec * T - 6);
   });
 
   it("lantern: only in the dark", () => {
@@ -210,14 +210,14 @@ describe("skills", () => {
     expect(s.getState().players["a"]!.mover.from).toMatchObject({ x: 2, y: 6 });
     expect(ev.some((e) => e.type === "trapTriggered")).toBe(false);
     expect(Object.values(s.getState().placeables)).toHaveLength(1);
-    expect(s.getState().players["a"]!.skillEffect).toMatchObject({ kind: "pierce" });
+    expect(s.getState().players["a"]!.skillEffects).toMatchObject([{ kind: "pierce" }]);
   });
 
   it("pierce: standing on an obstacle when it runs out, the player can still walk off", () => {
     const grid = MapGrid.fromMapData(MAP);
     const s = sim([{ id: "a" }]);
     const a = s.getState().players["a"]!;
-    const on = { ...a, mover: { ...a.mover, from: { x: 2, y: 6, layer: "road" as const }, target: null, facing: { dx: 1, dy: 0 } }, skillEffect: { kind: "pierce" as const, untilTick: 5 } };
+    const on = { ...a, mover: { ...a.mover, from: { x: 2, y: 6, layer: "road" as const }, target: null, facing: { dx: 1, dy: 0 } }, skillEffects: [{ kind: "pierce" as const, untilTick: 5 }] };
     const placeables: Record<string, PlaceableState> = {
       o: { id: "o", kind: "obstacle", pos: { x: 2, y: 6, layer: "road" }, dir: { dx: 0, dy: 1 }, ownerId: null, expiresAtTick: 0, permanent: true },
     };
@@ -266,7 +266,7 @@ describe("skills", () => {
     expect(canUseSkill(ctx, { ...full, items: [] }, MapGrid.fromMapData(MAP))).toBe(true);
   });
 
-  it("two skills (full version): each cast on its own input; one timed effect at a time", () => {
+  it("two skills (full version): each cast on its own input, and two timed effects run together", () => {
     const s = new Simulation({
       seed: 1,
       map: MAP,
@@ -277,11 +277,13 @@ describe("skills", () => {
     s.start();
     const cast2: PlayerInput = { moveX: 0, moveY: 0, skill2: true };
     expect(stepAll(s, 1, new Map([["a", cast]]))).toContainEqual(expect.objectContaining({ type: "skillUsed", skill: "sprint" }));
-    // Pierce waits while the sprint runs.
-    expect(stepAll(s, 1, new Map([["a", cast2]])).some((e) => e.type === "skillUsed")).toBe(false);
-    expect(s.getState().players["a"]).toMatchObject({ skill: null, skill2: "pierce" });
-    stepAll(s, DEFAULT_TUNING.skills.sprint.durationSec * T);
+    // Pierce goes on while the sprint still runs: both are in effect.
     expect(stepAll(s, 1, new Map([["a", cast2]]))).toContainEqual(expect.objectContaining({ type: "skillUsed", skill: "pierce" }));
-    expect(s.getState().players["a"]).toMatchObject({ skill: null, skill2: null, skillEffect: { kind: "pierce" } });
+    const p = s.getState().players["a"]!;
+    const tick = s.getState().tick;
+    expect(p).toMatchObject({ skill: null, skill2: null });
+    expect(skillActive(p, "sprint", tick) && skillActive(p, "pierce", tick)).toBe(true);
+    expect(skillSpeedFactor(p, tick, DEFAULT_TUNING)).toBe(DEFAULT_TUNING.skills.sprint.speedMultiplier);
+    expect(piercing(p, tick)).toBe(true);
   });
 });

@@ -168,9 +168,15 @@ export class Hud {
     const frozenHtml = f ? `${t(f.by === "ghost" ? "hud.freeze.ghost" : "hud.freeze.trap")}<b>${Math.ceil(f.sec)}</b>` : "";
     if (this.frozen.innerHTML !== frozenHtml) this.frozen.innerHTML = frozenHtml;
 
-    const st = m.skillStatus;
-    const info = st ? SKILL_INFO[st.kind] : undefined;
-    const skillText = st && info ? st.sec === null ? t("hud.skill.active", { icon: info.icon, label: info.label }) : `${info.icon} ${info.label} ${Math.ceil(st.sec)}` : "";
+    // Every skill in effect, side by side in the one capsule (two timed skills can run together).
+    const skillText = m.skillStatus
+      .map((st) => {
+        const info = SKILL_INFO[st.kind];
+        if (!info) return "";
+        return st.sec === null ? t("hud.skill.active", { icon: info.icon, label: info.label }) : `${info.icon} ${info.label} ${Math.ceil(st.sec)}`;
+      })
+      .filter(Boolean)
+      .join("　");
     this.skill.classList.toggle("on", skillText !== "");
     if (this.skill.textContent !== skillText) this.skill.textContent = skillText;
   }
