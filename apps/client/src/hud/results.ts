@@ -125,7 +125,7 @@ export class ResultsPanel {
         : t("hud.team.letter", { letter: letters[teamColorIndex(id) % letters.length] as string });
     const teamColor = (id: string) => `#${(TEAM_COLORS[teamColorIndex(id) % TEAM_COLORS.length] as number).toString(16).padStart(6, "0")}`;
 
-    const rows = Object.values(state.players)
+    const rows = Object.values(state.players).filter((p) => !p.monster)
       .map((p) => ({ p, final: r.finalScores[p.id] ?? p.score }))
       .sort((a, b) => b.final - a.final || (a.p.towerArrival ?? 99) - (b.p.towerArrival ?? 99))
       .map(({ p, final }, i) => {

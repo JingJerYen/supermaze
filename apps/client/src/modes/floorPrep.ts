@@ -6,10 +6,17 @@ import { showRewardedAd } from "../monetize/ads.js";
 import type { Profile } from "../profile.js";
 import { CharacterPreview } from "../render/characterPreview.js";
 import { createSidePanel } from "../ui/sidePanel.js";
-import { floorModLines } from "./floorMods.js";
+
+/** What the prep screen is for: its heading, lines under it, and the start button. */
+export interface PrepHead {
+  title: string;
+  lines: string[];
+  start: string;
+}
 
 /**
- * Before each tower run floor (CLAUDE.md 4.1): only the floor's skills. Who the
+ * Before each tower run floor (CLAUDE.md 4.1), and before a night parade
+ * (4.4): only the round's skills. Who the
  * player is (name, character) is set once on the home screen's character
  * setup, the same for online rooms, so it is shown here but not chosen: the
  * character turns on the right with the name above its head.
@@ -33,8 +40,7 @@ export class FloorPrep {
   constructor(
     root: HTMLElement,
     private readonly renderer: THREE.WebGLRenderer,
-    private readonly floor: number,
-    private readonly floorsTotal: number,
+    private readonly head: PrepHead,
     private readonly profile: Profile,
     /** The skill drawn for this floor; what a free player gets without the ad. */
     random: SkillKind,
@@ -101,13 +107,13 @@ export class FloorPrep {
             : `<button class="skill" id="fp-ad">${t("modes.prep.watchAd")}</button>`
         }</div>`;
     this.panel.innerHTML = `
-      <h2>${t("modes.prep.title", { n: this.floor, total: this.floorsTotal })}</h2>
-      ${floorModLines(DEFAULT_TUNING.towerRun.floors[this.floor - 1]?.mods ?? []).map((l) => `<div class="sp-sub">${l}</div>`).join("")}
+      <h2>${this.head.title}</h2>
+      ${this.head.lines.map((l) => `<div class="sp-sub">${l}</div>`).join("")}
       <div><label>${label}</label><div class="sp-skills">${skills}</div></div>
       ${adRow}
       <div class="sp-note">${note}</div>
       <div class="sp-spacer"></div>
-      <div class="sp-row"><button id="fp-home" data-back>${t("modes.prep.home")}</button><button class="primary" id="fp-go">${t("modes.prep.start", { n: this.floor })}</button></div>`;
+      <div class="sp-row"><button id="fp-home" data-back>${t("modes.prep.home")}</button><button class="primary" id="fp-go">${this.head.start}</button></div>`;
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>("[data-skill]")) {
       b.addEventListener("click", () => this.pick(b.dataset["skill"] as SkillKind));
     }

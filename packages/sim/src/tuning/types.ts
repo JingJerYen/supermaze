@@ -151,6 +151,24 @@ export interface Tuning {
     pierce: { durationSec: number };
   };
 
+  /** Night parade, the second single-player mode (CLAUDE.md section 4.4). */
+  night: {
+    /** Ghosts in the maze from the start; all must be banished before the player may climb. */
+    ghostCount: number;
+    /** Catches the player can take; the last one ends the round. */
+    lives: number;
+    /** Round length, seconds. */
+    timeLimitSec: number;
+    /** Ghost speed as a share of the player's. */
+    ghostSpeed: number;
+    /** How far a ghost notices the player with the lights on, tiles (one less in the dark, `cpu.darkVisionPenaltyTiles`). */
+    ghostVisionTiles: number;
+    /** Ghosts start at least this far (path steps) from the tower spawn, when the map allows. */
+    ghostMinStartSteps: number;
+    /** Item box weights for the round (the race's own are `itemBoxes.weights`). */
+    boxWeights: Record<ItemKind, number>;
+  };
+
   /** Single-player tower run (CLAUDE.md section 4.1). */
   towerRun: {
     /**

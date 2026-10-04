@@ -1,7 +1,8 @@
 import { availableAction, canDiscard } from "./actions.js";
 import { boxAt, drawBoxTiles, drawItem, tileId, type BoxState, canDrawItem } from "./boxes.js";
+import { resolveCatches, type CatchRules } from "./catches.js";
 import type { SimEvent } from "./events.js";
-import { applyTimeStop, canUseSkill, castSkill, piercing, type SkillEffect, type SkillKind, type SkillSlot } from "./skills.js";
+import { applyTimeStop, canUseSkill, castSkill, piercing, type SkillSlot } from "./skills.js";
 import { beginWarning, initialGhostState, isGhost, stepGhost, type GhostState } from "./ghost.js";
 import { movePlayer } from "./playerMove.js";
 import { pickUpNode, teamNodeCount, useOldestItem, type ItemWork } from "./items.js";
@@ -9,166 +10,55 @@ import { createKeys, selectKeySpawns, unownedKeyAt, type KeyState } from "./keys
 import { createLightSwitches, usableSwitchAt, type LightSwitchState } from "./lighting.js";
 import { MapGrid } from "./map/grid.js";
 import { normalizeMap } from "./map/normalize.js";
-import type { MapData, NormalizedMapData, TilePos } from "./map/types.js";
-import { createMover, moverPosition, sameTile, type MoveIntent, type MoverState } from "./movement.js";
-import { nodeAt, placeableAt, placeableMoveFilter, type PlaceableState, type TeleportNodeState } from "./placeables.js";
+import type { NormalizedMapData, TilePos } from "./map/types.js";
+import { createMover, sameTile } from "./movement.js";
+import { nodeAt, placeableAt, type PlaceableState } from "./placeables.js";
 import { SeededRandom } from "./random/seeded.js";
+import type { RoundEndReason } from "./events.js";
 import { decideSoloWinner, decideTimeoutWinner, finalScores, teamProgress, type RoundResult } from "./round.js";
 import { DEFAULT_TUNING, type ItemKind, type Tuning } from "./tuning/index.js";
-import type { Controller, Participant, PlayerId, PlayerPhase, TeamId, TeamMode, Tick } from "./types.js";
+import type { Controller, Participant, PlayerId, TeamId, TeamMode, Tick } from "./types.js";
 
-/**
- * Player intent for one tick. The client and the CPU controller both produce this;
- * the simulation never sees raw keyboard or touch events.
- */
-export interface PlayerInput extends MoveIntent {
-  /**
-   * Press the single context action this tick: climb, flip the light switch
-   * underfoot, pick up the team's teleport node underfoot, or use the oldest
-   * carried item, in that priority. See `availableAction`.
-   */
-  action?: boolean;
-  /**
-   * Throw away the oldest carried item this tick (section 9). It vanishes; it is
-   * not dropped on the floor. Ignored on a tick that also presses `action`.
-   */
-  discard?: boolean;
-  /** Cast the one-shot skill this tick, if the player holds one (tower run; `canUseSkill`). */
-  skill?: boolean;
-  /** Cast the second skill this tick (tower run, full version). */
-  skill2?: boolean;
-}
+export * from "./state.js";
+import { NO_INPUT, type PlayerInput, type PlayerState, type SimulationOptions, type SimulationState } from "./state.js";
 
-export const NO_INPUT: PlayerInput = { moveX: 0, moveY: 0 };
-
-export interface SimulationOptions {
-  seed: number;
-  map: MapData;
-  participants: Participant[];
-  tuning?: Tuning;
-  /**
-   * Developer override of the round length, seconds. Default: the map's
-   * `timeLimitSec` plus `round.extraSecPerParticipant` per participant beyond two.
-   */
-  timeLimitSec?: number;
-  /** Two equal teams (default) or everyone for themselves; see `TeamMode`. */
-  teamMode?: TeamMode;
-  /**
-   * Solo only: the round ends the moment this player climbs, without waiting
-   * for the others (the tower run ends a floor when you climb; section 4.1).
-   * It also waits for them: the others all climbing does not end it, only this
-   * player climbing or the time running out.
-   */
-  endWhenClimbed?: PlayerId;
-  /**
-   * Start the round with the lights off (tower run special floor; section 4.1).
-   * The switches are the map's usual ones, so with an even count the last one
-   * puts the lights out for good: such a floor may end dark.
-   */
-  startDark?: boolean;
-  /**
-   * Solo only: every ghost event turns everyone else in the maze into ghosts
-   * at once, all hunting this player (tower run special floor; section 4.1).
-   */
-  ghostPack?: PlayerId;
-}
-
-export interface PlayerState extends Participant {
-  mover: MoverState;
-  phase: PlayerPhase;
-  /** Whether the score for finding a key has been given; it is given once per round, whatever happens to the key later. */
-  keyScored: boolean;
-  /** Key this player holds (or used to climb). Bound for the whole round; never transferable. */
-  keyId: string | null;
-  /** 0-based order of arrival on the tower top, null while still in the maze. */
-  towerArrival: number | null;
-  score: number;
-  /** Carried items, oldest first, at most tuning.inventory.capacity. */
-  items: ItemKind[];
-  /** Cannot move until this tick (trap or ghost catch). 0 when free. */
-  frozenUntilTick: Tick;
-  /** What caused the latest freeze; meaningful while `frozenUntilTick` is in the future. Clients pick the look from it. */
-  frozenBy: "trap" | "ghost" | "skill" | null;
-  /** Node the player just arrived on by teleport; no bounce-back until they step off it. */
-  teleportImmunity: string | null;
-  /** Cannot be caught by a ghost until this tick (covers the post-catch freeze and protection). */
-  protectedUntilTick: Tick;
-  /** Skill still to cast this round; null once cast or when none was given. */
-  skill: SkillKind | null;
-  /** Second skill still to cast (tower run, full version); null once cast or when none was given. */
-  skill2: SkillKind | null;
-  /** The timed skill cast this round (sprint, eagle eye, lantern), kept after it runs out. */
-  skillEffect: SkillEffect | null;
-  /** The amulet is up: the next trap or ghost catch is shrugged off. */
-  shielded: boolean;
-}
-
-export type RoundStatus = "lobby" | "running" | "finished";
-
-export interface SimulationState {
-  tick: Tick;
-  status: RoundStatus;
-  /** Fixed for the whole round. In `solo` every player's teamId is their own id. */
-  teamMode: TeamMode;
-  /** Tick the round started and the tick at which time runs out (exclusive). */
-  startTick: Tick;
-  endsAtTick: Tick;
-  /**
-   * Start freeze: until this tick nobody moves or acts (section 4). Set by
-   * `start()` from `round.introSec` + `round.startFreezeSec`; 0 in the lobby.
-   * Clients derive the opening fly-in and countdown from it, so no event is
-   * needed when it ends.
-   */
-  freezeUntilTick: Tick;
-  players: Record<PlayerId, PlayerState>;
+/** One tick's working copies while the step is being computed. */
+export type StepWork = ItemWork & {
   keys: Record<string, KeyState>;
-  /** Player ids in the order they reached the tower top. */
-  towerArrivals: PlayerId[];
-  /** Map-wide lighting (CLAUDE.md section 8). Starts lit, or dark on a tower run special floor. */
-  lightsOn: boolean;
-  switches: Record<string, LightSwitchState>;
-  /** Unopened boxes; always participants x perParticipant while running (section 9). */
   boxes: Record<string, BoxState>;
-  /** Doors, obstacles and traps currently on the map (section 10). */
-  placeables: Record<string, PlaceableState>;
-  /** Quantum teleport endpoints on the floor (section 10.5). */
-  nodes: Record<string, TeleportNodeState>;
-  /** Periodic ghost-tag event (section 13). */
-  ghost: GhostState;
-  /** Per team: tick at which its 1st, 2nd, ... member climbed. */
-  teamClimbTicks: Record<TeamId, Tick[]>;
-  /**
-   * Teams: set the moment the first team has every member on the tower. Solo:
-   * null during the round, decided by score when it ends.
-   */
-  winnerTeamId: TeamId | null;
-  /** Present once status is "finished". */
-  result: RoundResult | null;
-}
+  switches: Record<string, LightSwitchState>;
+  lightsOn: boolean;
+  openedBoxes: string[];
+};
 
 /**
  * Authoritative game simulation: seeded RNG, fixed tick, inputs in, state and
  * events out. Every rule lives here or in the modules it calls; clients only
  * render this state.
+ *
+ * This class runs the race to the tower (sections 3-13). Other kinds of round
+ * extend it and override the protected hooks below (keyCount, chooseSwitches,
+ * scheduleGhost, springTrap, lightsToggled, afterMoves, catchRules, afterCatches,
+ * decideEnd); everything else, from movement to items, is shared.
  */
 export class Simulation {
   readonly tuning: Tuning;
   readonly rng: SeededRandom;
   readonly grid: MapGrid;
-  private readonly map: NormalizedMapData;
-  private state: SimulationState;
+  protected readonly map: NormalizedMapData;
+  protected state: SimulationState;
   private readonly spawns: TilePos[];
   private spawnCursor = 0;
   private readonly timeLimitOverrideSec: number | undefined;
-  private readonly teamMode: TeamMode;
-  private readonly endWhenClimbed: PlayerId | undefined;
-  private readonly startDark: boolean;
+  protected readonly teamMode: TeamMode;
+  protected readonly endWhenClimbed: PlayerId | undefined;
+  protected readonly startDark: boolean;
   private readonly ghostPack: PlayerId | undefined;
   private nextBoxIndex = 0;
   private nextPlaceableIndex = 0;
   private nextNodeIndex = 0;
   /** Points earned this tick by players other than the one being stepped (trap owners); applied after the player loop. */
-  private pendingScores: { playerId: PlayerId; points: number }[] = [];
+  protected pendingScores: { playerId: PlayerId; points: number }[] = [];
 
   constructor(options: SimulationOptions) {
     this.tuning = options.tuning ?? DEFAULT_TUNING;
@@ -213,7 +103,7 @@ export class Simulation {
   }
 
   /** Round length for the current number of participants, in ticks. Fixed once the round starts. */
-  private timeLimitTicks(): number {
+  protected timeLimitTicks(): number {
     const extra = Math.max(0, Object.keys(this.state.players).length - 2) * this.tuning.round.extraSecPerParticipant;
     const sec = this.timeLimitOverrideSec ?? this.map.timeLimitSec + extra;
     return Math.max(1, Math.round(sec * this.tuning.tickRate));
@@ -285,8 +175,8 @@ export class Simulation {
    */
   start(): SimEvent[] {
     if (this.state.status !== "lobby") return [];
-    const count = Object.keys(this.state.players).length * this.tuning.keys.perParticipant;
-    const switches = createLightSwitches(this.rng, this.grid, this.map.spawns.lightSwitches, this.map.lightSwitchCount);
+    const count = this.keyCount();
+    const switches = this.chooseSwitches();
     // The opening fly-in comes first and is not part of the round: the clock and the ghost schedule start after it.
     const introTicks = Math.round(this.tuning.round.introSec * this.tuning.tickRate);
     const clockStart = this.state.tick + introTicks;
@@ -299,15 +189,50 @@ export class Simulation {
       switches,
       lightsOn: !this.startDark,
       // Solo: the hunted player's team is their own id.
-      ghost: initialGhostState(clockStart, this.tuning, this.timeLimitTicks(), this.ghostPack ?? null),
+      ghost: this.initialGhost(clockStart),
     };
     this.spawnKeys(count);
     // The map's own box count when it has one, otherwise so many per participant (section 9).
-    this.spawnBoxes(this.map.itemBoxCount ?? Object.keys(this.state.players).length * this.tuning.itemBoxes.perParticipant);
+    this.spawnBoxes(this.map.itemBoxCount ?? this.keyCount() * this.tuning.itemBoxes.perParticipant);
     this.placeFixtures();
     this.reserveTiles();
     return [{ type: "roundStarted", tick: this.state.tick, keyCount: count }];
   }
+
+  /** Keys for the round: one per participant (section 5). Boxes default to so many per key holder too. */
+  protected keyCount(): number {
+    return Object.keys(this.state.players).length * this.tuning.keys.perParticipant;
+  }
+
+  /** The round's light switches: the map's even number of them, drawn from its candidates (section 8). */
+  protected chooseSwitches(): Record<string, LightSwitchState> {
+    return createLightSwitches(this.rng, this.grid, this.map.spawns.lightSwitches, this.map.lightSwitchCount);
+  }
+
+  /** Ghost-tag state at the start: the schedule's first warning, after the opening fly-in (section 13). */
+  protected initialGhost(clockStart: Tick): GhostState {
+    // Solo: the hunted player's team is their own id.
+    return initialGhostState(clockStart, this.tuning, this.timeLimitTicks(), this.ghostPack ?? null);
+  }
+
+  /** Advance the ghost-tag schedule by a tick (section 13). */
+  protected scheduleGhost(ghost: GhostState, tick: Tick): { ghost: GhostState; events: SimEvent[] } {
+    return stepGhost(ghost, this.state.players, tick, this.tuning, this.state.endsAtTick);
+  }
+
+  /** How catches are treated (section 13). */
+  protected catchRules(): CatchRules {
+    return { stealKeys: true };
+  }
+
+  /** Called once every player has moved and acted this tick, before the catches; `players` is the working copy. */
+  protected afterMoves(_players: Record<PlayerId, PlayerState>, _tick: Tick, _events: SimEvent[]): void {}
+
+  /** Called with the runners caught this tick, after the catches; `players` is the working copy. */
+  protected afterCatches(_players: Record<PlayerId, PlayerState>, _caught: PlayerId[], _tick: Tick, _events: SimEvent[]): void {}
+
+  /** Called after a light switch flipped the lights this tick; `work.lightsOn` is the new state. */
+  protected lightsToggled(_work: StepWork, _playerId: PlayerId, _tick: Tick): void {}
 
   /** Fix where placeables may not go this round: once, here, never per tick (section 9). */
   private reserveTiles(): void {
@@ -345,7 +270,7 @@ export class Simulation {
   }
 
   /** Place `count` new boxes on free candidates: no box there and nobody standing on it. */
-  private spawnBoxes(count: number, players: Record<PlayerId, PlayerState> = this.state.players, strict = true): string[] {
+  protected spawnBoxes(count: number, players: Record<PlayerId, PlayerState> = this.state.players, strict = true): string[] {
     if (count <= 0) return [];
     const occupied = new Set<string>(Object.values(this.state.boxes).map((b) => tileId(b.pos)));
     for (const p of Object.values(players)) occupied.add(tileId(p.mover.from));
@@ -365,13 +290,7 @@ export class Simulation {
   step(inputs: ReadonlyMap<PlayerId, PlayerInput>): SimEvent[] {
     if (this.state.status === "finished") return [];
     const tick = this.state.tick + 1;
-    const work: ItemWork & {
-      keys: Record<string, KeyState>;
-      boxes: Record<string, BoxState>;
-      switches: Record<string, LightSwitchState>;
-      lightsOn: boolean;
-      openedBoxes: string[];
-    } = {
+    const work: StepWork = {
       tick,
       placeables: { ...this.state.placeables },
       nodes: { ...this.state.nodes },
@@ -396,7 +315,7 @@ export class Simulation {
     // Ghost-tag schedule advances first so this tick's movement uses the right roles and speeds.
     let ghost = this.state.ghost;
     if (this.state.status === "running") {
-      const g = stepGhost(ghost, this.state.players, tick, this.tuning, this.state.endsAtTick);
+      const g = this.scheduleGhost(ghost, tick);
       ghost = g.ghost;
       work.events.push(...g.events);
     }
@@ -485,6 +404,7 @@ export class Simulation {
             work.lightsOn = !work.lightsOn;
             p = { ...p, score: p.score + this.tuning.scoring.lightSwitch };
             work.events.push({ type: "lightsToggled", tick, playerId: id, switchId: sw.id, lightsOn: work.lightsOn });
+            this.lightsToggled(work, id, tick);
           } else if (action === "pickUpNode") {
             p = pickUpNode(work, p);
           } else if (action === "useItem") {
@@ -526,48 +446,13 @@ export class Simulation {
       if (scorer) players[s.playerId] = { ...scorer, score: scorer.score + s.points };
     }
     this.pendingScores = [];
+    this.afterMoves(players, tick, work.events);
 
     // Catches: a ghost overlapping an unprotected runner freezes them and empties their bag.
-    if (ghost.phase === "active" && this.state.status === "running") {
-      const radius = this.tuning.ghostEvent.catchRadiusTiles;
-      const ghosts = Object.values(players).filter((p) => isGhost(ghost, p)).sort((a, b) => a.id.localeCompare(b.id));
-      for (const g of ghosts) {
-        const gp = moverPosition(g.mover);
-        for (const r of Object.values(players).sort((a, b) => a.id.localeCompare(b.id))) {
-          // Ghosts never catch ghosts (in a pack round they are all on different teams).
-          if (r.phase !== "maze" || isGhost(ghost, r) || tick < r.protectedUntilTick) continue;
-          if (r.mover.from.layer !== g.mover.from.layer) continue;
-          const rp = moverPosition(r.mover);
-          if (Math.hypot(rp.x - gp.x, rp.y - gp.y) > radius) continue;
-          if (r.shielded) {
-            // The amulet takes the catch: nothing lost, nobody scores, and the usual protection follows.
-            players[r.id] = { ...r, shielded: false, protectedUntilTick: tick + Math.round(this.tuning.ghostEvent.caughtProtectionSec * this.tuning.tickRate) };
-            work.events.push({ type: "shieldBlocked", tick, playerId: r.id, by: "ghost" });
-            continue;
-          }
-          const frozenUntilTick = tick + Math.round(this.tuning.ghostEvent.caughtFreezeSec * this.tuning.tickRate);
-          const protectedUntilTick = frozenUntilTick + Math.round(this.tuning.ghostEvent.caughtProtectionSec * this.tuning.tickRate);
-          // A ghost without a key takes the runner's (section 13); a ghost that has one leaves it.
-          const scorer = players[g.id] as PlayerState;
-          const stolenKeyId = scorer.keyId === null ? r.keyId : null;
-          players[r.id] = {
-            ...r,
-            items: [], // everything carried is lost, teleport nodes included
-            keyId: stolenKeyId === null ? r.keyId : null,
-            frozenUntilTick,
-            frozenBy: "ghost",
-            protectedUntilTick,
-            mover: { ...r.mover, target: null, progress: 0 },
-          };
-          // Stealing pays the catch only, never the finder's score.
-          players[g.id] = { ...scorer, keyId: stolenKeyId ?? scorer.keyId, score: scorer.score + this.tuning.scoring.ghostCatch };
-          if (stolenKeyId !== null) {
-            const key = work.keys[stolenKeyId];
-            if (key) work.keys = { ...work.keys, [stolenKeyId]: { ...key, ownerId: g.id } };
-          }
-          work.events.push({ type: "playerCaught", tick, ghostId: g.id, runnerId: r.id, frozenUntilTick, stolenKeyId });
-        }
-      }
+    if (this.state.status === "running") {
+      const c = resolveCatches(players, work.keys, ghost, tick, this.tuning, work.events, this.catchRules());
+      work.keys = c.keys;
+      this.afterCatches(players, c.caught, tick, work.events);
     }
 
     // Team completion: every member on the tower. The first complete team wins (CLAUDE.md section 3).
@@ -606,35 +491,45 @@ export class Simulation {
     };
 
     if (next.status === "running") {
-      // The round stops once all but one participant (CPUs included) are on the tower:
-      // the last one never gets to climb (section 3). A lone participant must climb.
-      // Not when the round waits on one player (the tower run): that player may still
-      // climb and outscore the others, so it ends when they climb or time runs out.
-      const everyone = Object.values(players);
-      const climbed = everyone.filter((p) => p.phase === "tower").length;
-      const enoughClimbed = this.endWhenClimbed === undefined && everyone.length > 0 && climbed >= Math.max(1, everyone.length - 1);
-      const keyClimbed = this.endWhenClimbed !== undefined && players[this.endWhenClimbed]?.phase === "tower";
-      const timeUp = tick >= next.endsAtTick;
-      if (enoughClimbed || keyClimbed || timeUp) {
-        let reason: RoundResult["reason"];
-        if (this.teamMode === "solo") {
-          winnerTeamId = decideSoloWinner(players);
-          reason = enoughClimbed ? "solo:score" : keyClimbed ? "solo:climbed" : "solo:timeout";
-        } else if (winnerTeamId !== null) {
-          reason = enoughClimbed && climbed < everyone.length ? "lastOneLeft" : "allClimbed";
-        } else {
-          const decided = decideTimeoutWinner(teamProgress(players, teamClimbTicks), this.tuning);
-          winnerTeamId = decided.winnerTeamId;
-          reason = decided.reason;
-        }
-        const result: RoundResult = { winnerTeamId, reason, finalScores: finalScores(players, winnerTeamId, this.tuning, this.teamMode) };
+      const end = this.decideEnd(players, tick, next.endsAtTick, winnerTeamId, teamClimbTicks);
+      if (end) {
+        winnerTeamId = end.winnerTeamId;
+        const result: RoundResult = { winnerTeamId, reason: end.reason, finalScores: finalScores(players, winnerTeamId, this.tuning, this.teamMode) };
         next = { ...next, status: "finished", winnerTeamId, result };
-        work.events.push({ type: "roundEnded", tick, winnerTeamId, reason });
+        work.events.push({ type: "roundEnded", tick, winnerTeamId, reason: end.reason });
       }
     }
 
     this.state = next;
     return work.events;
+  }
+
+  /**
+   * Whether the round ends this tick, and how (section 3): all but one on the
+   * tower, the waited-on player climbed (tower run), or the time ran out.
+   */
+  protected decideEnd(
+    players: Record<PlayerId, PlayerState>,
+    tick: Tick,
+    endsAtTick: Tick,
+    winnerTeamId: TeamId | null,
+    teamClimbTicks: Record<TeamId, Tick[]>,
+  ): { winnerTeamId: TeamId | null; reason: RoundEndReason } | null {
+    // The round stops once all but one participant (CPUs included) are on the tower:
+    // the last one never gets to climb (section 3). A lone participant must climb.
+    // Not when the round waits on one player (the tower run): that player may still
+    // climb and outscore the others, so it ends when they climb or time runs out.
+    const everyone = Object.values(players);
+    const climbed = everyone.filter((p) => p.phase === "tower").length;
+    const enoughClimbed = this.endWhenClimbed === undefined && everyone.length > 0 && climbed >= Math.max(1, everyone.length - 1);
+    const keyClimbed = this.endWhenClimbed !== undefined && players[this.endWhenClimbed]?.phase === "tower";
+    const timeUp = tick >= endsAtTick;
+    if (!enoughClimbed && !keyClimbed && !timeUp) return null;
+    if (this.teamMode === "solo") {
+      return { winnerTeamId: decideSoloWinner(players), reason: enoughClimbed ? "solo:score" : keyClimbed ? "solo:climbed" : "solo:timeout" };
+    }
+    if (winnerTeamId !== null) return { winnerTeamId, reason: enoughClimbed && climbed < everyone.length ? "lastOneLeft" : "allClimbed" };
+    return decideTimeoutWinner(teamProgress(players, teamClimbTicks), this.tuning);
   }
 
   /** Effects of stepping onto a new tile: traps fire, own paired nodes teleport. */
@@ -647,16 +542,7 @@ export class Simulation {
       work.events.push({ type: "shieldBlocked", tick, playerId: p.id, by: "trap" });
       p = { ...p, shielded: false };
     } else if (trap?.kind === "trap") {
-      delete work.placeables[trap.id];
-      const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
-      // The owner scores only for catching another team; trapping yourself or a teammate is worth nothing.
-      // A fixture trap has no owner and scores for nobody.
-      const owner = trap.ownerId === null ? undefined : this.state.players[trap.ownerId];
-      const ownerScored = !!owner && owner.teamId !== p.teamId;
-      if (owner && ownerScored) this.pendingScores.push({ playerId: owner.id, points: this.tuning.scoring.trapCatch });
-      work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick, ownerId: trap.ownerId, ownerScored });
-      // Arriving cancels any queued movement; the player stands frozen on the trap tile.
-      p = { ...p, frozenUntilTick, frozenBy: "trap", mover: { ...p.mover, target: null, progress: 0 } };
+      p = this.springTrap(work, p, trap, tick);
     }
     const node = nodeAt(work.nodes, p.mover.from);
     if (node && node.teamId === p.teamId && node.pairedWith && p.teleportImmunity !== node.id) {
@@ -667,6 +553,20 @@ export class Simulation {
       }
     }
     return p;
+  }
+
+  /** `p` walked onto `trap` without an amulet: it springs and is gone, and holds them (section 10.4). */
+  protected springTrap(work: ItemWork, p: PlayerState, trap: PlaceableState, tick: Tick): PlayerState {
+    delete work.placeables[trap.id];
+    const frozenUntilTick = tick + Math.round(this.tuning.placeables.trapFreezeSec * this.tuning.tickRate);
+    // The owner scores only for catching another team; trapping yourself or a teammate is worth nothing.
+    // A fixture trap has no owner and scores for nobody.
+    const owner = trap.ownerId === null ? undefined : this.state.players[trap.ownerId];
+    const ownerScored = !!owner && owner.teamId !== p.teamId;
+    if (owner && ownerScored) this.pendingScores.push({ playerId: owner.id, points: this.tuning.scoring.trapCatch });
+    work.events.push({ type: "trapTriggered", tick, playerId: p.id, placeableId: trap.id, frozenUntilTick, ownerId: trap.ownerId, ownerScored });
+    // Arriving cancels any queued movement; the player stands frozen on the trap tile.
+    return { ...p, frozenUntilTick, frozenBy: "trap", mover: { ...p.mover, target: null, progress: 0 } };
   }
 
   /** Keys and boxes underfoot (sections 5 and 9). */

@@ -38,6 +38,8 @@ export interface LobbyUiHandlers {
   onJoin(req: JoinRequest): void;
   /** Single-player tower run against CPUs, run inside the page. */
   onTowerRun(): void;
+  /** Single-player night parade (section 4.4). */
+  onNight(): void;
   /** Open the online page (only when this build has online play). */
   onOnline(): void;
   /** Back to the home screen from the online page. */
@@ -118,6 +120,7 @@ export class LobbyUi {
     this.card.querySelector("#lb-lang")!.addEventListener("click", () => switchLocale(nextLocale()));
     this.card.querySelector("#lb-profile")!.addEventListener("click", () => this.handlers.onProfile());
     this.card.querySelector("#lb-local")!.addEventListener("click", () => this.handlers.onTowerRun());
+    this.card.querySelector("#lb-night")!.addEventListener("click", () => this.handlers.onNight());
     this.card.querySelector("#lb-online")!.addEventListener("click", () => {
       if (online) this.handlers.onOnline();
       else this.setNotice("#lb-home-notice", t("lobby.home.onlineSoon"));

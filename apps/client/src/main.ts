@@ -12,7 +12,7 @@ import { fullscreenOnFirstTouch } from "./fullscreen.js";
 import { isNativeApp } from "./platform.js";
 import { installBackButton } from "./native/backButton.js";
 import { warmUpMonetization } from "./monetize/ads.js";
-import { applyDocumentLocale } from "./i18n/index.js";
+import { applyDocumentLocale, t } from "./i18n/index.js";
 import { FALLBACK_NAME } from "./characterNames.js";
 import { RulesScreen } from "./rules/rulesScreen.js";
 import { loadProfile } from "./profile.js";
@@ -72,6 +72,8 @@ if (params.has("rules")) {
     // ?dark and ?pack try the tower run's special floors in the sandbox.
     startDark: params.has("dark"),
     ghostPack: params.has("pack"),
+    // ?night plays a night parade on the map (section 4.4).
+    ...(params.has("night") ? { night: { ghostName: t("modes.night.ghost") } } : {}),
   });
   new Match(root, renderer, mode);
 } else {

@@ -39,7 +39,9 @@ export function availableAction(grid: MapGrid, ctx: ActionContext, p: PlayerStat
   const at = p.mover.from;
   // A ghost's key and bag are locked for the chase; light switches stay usable (section 13).
   if (isGhost(ctx.ghost, p)) return usableSwitchAt(ctx.switches, at) ? "switch" : null;
-  if (at.layer === "road" && p.keyId !== null) {
+  // The night parade's ghosts must all be gone before the key opens the door (section 4.4).
+  const ghostsLeft = Object.values(ctx.players).some((o) => o.monster);
+  if (at.layer === "road" && p.keyId !== null && !ghostsLeft) {
     const door = grid.doorDir(at.x, at.y);
     if (door && door.dx === p.mover.facing.dx && door.dy === p.mover.facing.dy) return "climb";
   }

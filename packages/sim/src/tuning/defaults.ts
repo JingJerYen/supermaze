@@ -100,6 +100,17 @@ export const DEFAULT_TUNING: Tuning = {
     pierce: { durationSec: 10 },
   },
 
+  night: {
+    ghostCount: 8,
+    lives: 3,
+    timeLimitSec: 480,
+    ghostSpeed: 0.8,
+    ghostVisionTiles: 4,
+    ghostMinStartSteps: 12,
+    // Traps are half of every box; no teleports.
+    boxWeights: { trap: 50, hammer: 20, obstacle: 17, oneWayDoor: 13, teleportNode: 0 },
+  },
+
   towerRun: {
     passShare: 0.5,
     maxContinues: 2,
