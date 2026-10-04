@@ -21,6 +21,10 @@ export type MapDifficulty = "easy" | "medium" | "hard";
 
 export const MAP_DIFFICULTIES: readonly MapDifficulty[] = ["easy", "medium", "hard"];
 
+/** Which kind of round a map is drawn for: the race to the tower (tower run and online), or the night parade (section 4.4). */
+export type MapMode = "race" | "night";
+export const MAP_MODES: readonly MapMode[] = ["race", "night"];
+
 export interface TilePos {
   x: number;
   y: number;
@@ -82,6 +86,8 @@ export interface MapData {
    * from one difficulty; a map without it never appears there.
    */
   difficulty?: MapDifficulty;
+  /** The kinds of round the map is drawn for; a map without it is a race map only. */
+  modes?: MapMode[];
   /**
    * Doors, obstacles and traps present from the start of every round and never
    * timing out; only a hammer removes them (a trap also goes when it fires).

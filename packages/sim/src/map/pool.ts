@@ -1,20 +1,26 @@
 import { SeededRandom } from "../random/seeded.js";
 import { DEFAULT_TUNING, type Tuning } from "../tuning/index.js";
-import type { MapData } from "./types.js";
+import type { MapData, MapMode } from "./types.js";
 import { validateMap } from "./validate.js";
 
+/** Whether `map` is drawn for `mode`; a map that names no modes is a race map. */
+export function mapPlaysMode(map: MapData, mode: MapMode): boolean {
+  return (map.modes ?? ["race"]).includes(mode);
+}
+
 /**
- * The maps a round may be played on: those that pass the validator, in id
- * order so every machine sees the same list. A map that is still being drawn
- * simply stays out of the pool; `onInvalid` hears why.
+ * The maps a round may be played on: those made for `mode` that pass the
+ * validator, in id order so every machine sees the same list. A map that is
+ * still being drawn simply stays out of the pool; `onInvalid` hears why.
  */
 export function playableMaps(
   maps: readonly MapData[],
   onInvalid?: (map: MapData, problems: string[]) => void,
   tuning: Tuning = DEFAULT_TUNING,
+  mode: MapMode = "race",
 ): MapData[] {
   const ok: MapData[] = [];
-  for (const map of maps) {
+  for (const map of maps.filter((m) => mapPlaysMode(m, mode))) {
     const problems = validateMap(map, tuning);
     if (problems.length === 0) ok.push(map);
     else onInvalid?.(map, problems);

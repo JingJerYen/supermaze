@@ -1,4 +1,4 @@
-import { pickMap, playableMaps, type MapData } from "@supermaze/sim";
+import { DEFAULT_TUNING, pickMap, playableMaps, type MapData } from "@supermaze/sim";
 
 /**
  * Every JSON in content/maps is bundled; add a file there and it joins the
@@ -16,6 +16,14 @@ export const MAPS: Record<string, MapData> = Object.fromEntries(Object.values(fi
 /** The maps rounds are drawn from: the bundled ones that pass the validator. */
 export const MAP_POOL: MapData[] = playableMaps(Object.values(MAPS), (map, problems) =>
   console.warn(`[maps] ${map.id} is not in the pool: ${problems.length} problem(s), first: ${problems[0]}`),
+);
+
+/** The night parade's own maps (`modes: ["night"]`, section 4.4): braided, no dead ends. */
+export const NIGHT_POOL: MapData[] = playableMaps(
+  Object.values(MAPS),
+  (map, problems) => console.warn(`[maps] ${map.id} is not in the night pool: ${problems[0]}`),
+  DEFAULT_TUNING,
+  "night",
 );
 
 export function loadMapById(id: string): MapData {
