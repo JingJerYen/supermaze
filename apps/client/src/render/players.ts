@@ -101,6 +101,7 @@ export class PlayerViews {
       }
       view.setSelfMarker(id === meId && p.phase === "maze");
       view.setGhost(ghostIds.has(id));
+      view.setGhostDown(p.frozenUntilTick > tick && p.frozenBy === "light");
       view.setSeeThrough(piercing(p, tick));
     }
     for (const [id, view] of this.views) {

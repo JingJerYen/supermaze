@@ -10,6 +10,8 @@ import type { PlayerId, Tick } from "./types.js";
 export interface CatchRules {
   /** A ghost without a key takes the runner's (section 13). Off where ghosts never climb. */
   stealKeys: boolean;
+  /** A ghost held in place (trap, skill, light) still catches whoever walks into it. Off in the night parade, where the lights knock the ghosts down. */
+  heldGhostsCatch: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function resolveCatches(
   const sec = (s: number) => Math.round(s * tuning.tickRate);
   const ghosts = Object.values(players).filter((p) => isGhost(ghost, p)).sort((a, b) => a.id.localeCompare(b.id));
   for (const g of ghosts) {
+    if (!rules.heldGhostsCatch && tick < g.frozenUntilTick) continue;
     const gp = moverPosition(g.mover);
     for (const r of Object.values(players).sort((a, b) => a.id.localeCompare(b.id))) {
       // Ghosts never catch ghosts (in a pack round they are all on different teams).

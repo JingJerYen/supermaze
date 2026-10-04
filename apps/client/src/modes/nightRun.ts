@@ -1,5 +1,5 @@
 import type * as THREE from "three";
-import { rotateMap, SeededRandom, SKILL_KINDS, type SimEvent, type SimulationState, type SkillKind } from "@supermaze/sim";
+import { DEFAULT_TUNING, rotateMap, SeededRandom, SKILL_KINDS, type SimEvent, type SimulationState, type SkillKind } from "@supermaze/sim";
 import type { ResultsActions } from "../hud/results.js";
 import { t } from "../i18n/index.js";
 import { NIGHT_POOL } from "../maps.js";
@@ -14,6 +14,12 @@ const PLAYER_ID = "local"; // createLocalMode's id for you
 /** Ghosts still in the maze. */
 export function ghostsLeft(state: SimulationState): number {
   return Object.values(state.players).filter((p) => p.monster).length;
+}
+
+/** Seconds the ghosts the lights knocked down still lie there; 0 when none is down. */
+export function stunLeftSec(state: SimulationState, tickRate: number): number {
+  const until = Math.max(0, ...Object.values(state.players).filter((p) => p.monster && p.frozenBy === "light").map((p) => p.frozenUntilTick));
+  return Math.max(0, until - state.tick) / tickRate;
 }
 
 /**
@@ -45,7 +51,7 @@ export class NightRun {
     this.prep = new FloorPrep(
       this.root,
       this.renderer,
-      { title: t("modes.night.title"), lines: [t("modes.night.goal", n), t("modes.night.howTo")], start: t("modes.night.start") },
+      { title: t("modes.night.title"), lines: [t("modes.night.goal", n), t("modes.night.howTo", { sec: DEFAULT_TUNING.night.lightStunSec })], start: t("modes.night.start") },
       loadProfile(),
       new SeededRandom(this.seed).pick(SKILL_KINDS),
       isPremium(),
@@ -94,15 +100,21 @@ export class NightRun {
     const me = s.players[PLAYER_ID];
     const lives = me?.lives ?? 0;
     const left = ghostsLeft(s);
-    return left > 0 ? t("modes.night.caption", { n: left, lives: "❤️".repeat(lives) || "—" }) : t("modes.night.captionClear", { lives: "❤️".repeat(lives) || "—" });
+    const hearts = "❤️".repeat(lives) || "—";
+    if (left === 0) return t("modes.night.captionClear", { lives: hearts });
+    const down = Math.ceil(stunLeftSec(s, DEFAULT_TUNING.tickRate));
+    return down > 0 ? t("modes.night.captionStunned", { n: left, sec: down, lives: hearts }) : t("modes.night.caption", { n: left, lives: hearts });
   }
 
-  /** Big notices for the moments that matter: a ghost gone, dawn, the key, a life lost. */
+  /** Big notices for the moments that matter: a ghost gone, the lights, the ghosts back up, the key, a life lost. */
   private notice(prev: SimulationState, next: SimulationState, events: readonly SimEvent[]): void {
     this.current = next;
-    const banished = events.filter((e) => e.type === "ghostBanished");
-    if (banished.some((e) => e.type === "ghostBanished" && e.by === "light")) this.notices.push(t("modes.night.dawn"));
-    else if (banished.length > 0) this.notices.push(t("modes.night.banished", { n: ghostsLeft(next) }));
+    const tickRate = DEFAULT_TUNING.tickRate;
+    if (events.some((e) => e.type === "ghostsStunned")) {
+      this.notices.push(t("modes.night.dawn", { sec: DEFAULT_TUNING.night.lightStunSec }));
+    }
+    if (events.some((e) => e.type === "ghostBanished")) this.notices.push(t("modes.night.banished", { n: ghostsLeft(next) }));
+    if (stunLeftSec(prev, tickRate) > 0 && stunLeftSec(next, tickRate) === 0 && ghostsLeft(next) > 0) this.notices.push(t("modes.night.awake"));
     if (ghostsLeft(next) === 0 && ghostsLeft(prev) > 0) this.notices.push(t("modes.night.allGone"));
     const me = next.players[PLAYER_ID];
     const before = prev.players[PLAYER_ID];

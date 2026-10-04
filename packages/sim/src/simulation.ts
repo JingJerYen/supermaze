@@ -222,7 +222,7 @@ export class Simulation {
 
   /** How catches are treated (section 13). */
   protected catchRules(): CatchRules {
-    return { stealKeys: true };
+    return { stealKeys: true, heldGhostsCatch: true };
   }
 
   /** Called once every player has moved and acted this tick, before the catches; `players` is the working copy. */

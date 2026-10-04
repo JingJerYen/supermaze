@@ -10,7 +10,7 @@
   ],
   "plazaRadius": 1,
   "timeLimitSec": 480,
-  "lightSwitchCount": 2,
+  "lightSwitchCount": 4,
   "itemBoxCount": 8,
   "rows": [
     "#############################",

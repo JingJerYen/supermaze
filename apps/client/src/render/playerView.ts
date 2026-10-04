@@ -46,6 +46,7 @@ export class PlayerView {
   private readonly body = new THREE.Group();
   private ghost: THREE.Object3D | null = null;
   private ghostTime = 0;
+  private ghostDown = false;
   /** Iron cage shown while a trap holds the player; created the first time it is needed. */
   private cage: THREE.Group | null = null;
   private readonly cageDrop = new CageDrop();
@@ -108,7 +109,10 @@ export class PlayerView {
     if (this.ghost?.visible) {
       const g = CLIENT_TUNING.ghostModel;
       this.ghostTime += dtSec;
-      this.ghost.position.y = g.hover + Math.sin(this.ghostTime * g.bobHz * Math.PI * 2) * g.bobAmp;
+      // Knocked down by the lights (night parade): it tips over onto the floor and stops bobbing.
+      const k = 1 - Math.exp(-g.fallPerSec * dtSec);
+      this.ghost.rotation.z += ((this.ghostDown ? Math.PI / 2 : 0) - this.ghost.rotation.z) * k;
+      this.ghost.position.y = this.ghostDown ? g.downHeight : g.hover + Math.sin(this.ghostTime * g.bobHz * Math.PI * 2) * g.bobAmp;
     }
     if (this.cage) this.cageDrop.update(this.cage, this.caged, dtSec);
   }
@@ -135,6 +139,11 @@ export class PlayerView {
     if (!this.ghost) return;
     this.ghost.visible = on;
     this.body.visible = !on;
+  }
+
+  /** The ghost model lies on the floor (night parade: the lights knocked it down). */
+  setGhostDown(on: boolean): void {
+    this.ghostDown = on;
   }
 
   /** See-through while the pierce skill lasts. */

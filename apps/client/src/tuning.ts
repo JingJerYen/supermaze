@@ -307,11 +307,20 @@ export const CLIENT_TUNING = {
     /** How fast the offsets settle, per second. */
     easePerSec: 12,
   },
+  /** Night parade: the last seconds of the lights a switch turned on (render/flicker.ts). */
+  nightLights: {
+    flickerSec: 3,
+    /** Flickers per second. */
+    flickerHz: 5,
+  },
   ghostModel: {
     /** How high the ghost model floats above the tile, world units, plus a slow bob. */
     hover: 0.12,
     bobAmp: 0.05,
     bobHz: 0.7,
+    /** Night parade, knocked down by the lights: how fast it tips over (per second) and how high it lies. */
+    fallPerSec: 6,
+    downHeight: 0.25,
   },
   keyBeam: {
     /** World units above the key. */

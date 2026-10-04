@@ -31,8 +31,12 @@ export type SimEvent =
   | { type: "skillUsed"; tick: Tick; playerId: PlayerId; skill: SkillKind }
   | { type: "shieldBlocked"; tick: Tick; playerId: PlayerId; by: "trap" | "ghost" }
   | { type: "roundEnded"; tick: Tick; winnerTeamId: TeamId | null; reason: RoundEndReason }
-  /** Night parade: a ghost is gone for good, sprung by a trap (set by `playerId`, null for a map fixture) or the lights coming on. */
-  | { type: "ghostBanished"; tick: Tick; ghostId: PlayerId; by: "trap" | "light"; playerId: PlayerId | null };
+  /** Night parade: a ghost sprang a trap and is gone for good (set by `playerId`, null for a map fixture). */
+  | { type: "ghostBanished"; tick: Tick; ghostId: PlayerId; by: "trap"; playerId: PlayerId | null }
+  /** Night parade: the lights came on and every ghost is down until `untilTick`, when the lights go out again. */
+  | { type: "ghostsStunned"; tick: Tick; untilTick: Tick; playerId: PlayerId }
+  /** Night parade: the lights went out again by themselves. */
+  | { type: "lightsOut"; tick: Tick };
 
 export type RoundEndReason =
   /** Night parade: every ghost gone and the player climbed. */

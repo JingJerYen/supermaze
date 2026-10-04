@@ -86,7 +86,7 @@ export interface PlayerState extends Participant {
   /** Cannot move until this tick (trap or ghost catch). 0 when free. */
   frozenUntilTick: Tick;
   /** What caused the latest freeze; meaningful while `frozenUntilTick` is in the future. Clients pick the look from it. */
-  frozenBy: "trap" | "ghost" | "skill" | null;
+  frozenBy: "trap" | "ghost" | "skill" | "light" | null;
   /** Node the player just arrived on by teleport; no bounce-back until they step off it. */
   teleportImmunity: string | null;
   /** Cannot be caught by a ghost until this tick (covers the post-catch freeze and protection). */
@@ -126,6 +126,8 @@ export interface SimulationState {
   towerArrivals: PlayerId[];
   /** Map-wide lighting (CLAUDE.md section 8). Starts lit, or dark on a tower run special floor. */
   lightsOn: boolean;
+  /** Night parade: the lights go out again at this tick (section 4.4). Absent when they stay as they are. */
+  lightsOffAtTick?: Tick;
   switches: Record<string, LightSwitchState>;
   /** Unopened boxes; always participants x perParticipant while running (section 9). */
   boxes: Record<string, BoxState>;
