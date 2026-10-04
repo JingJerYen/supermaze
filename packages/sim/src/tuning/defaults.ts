@@ -104,12 +104,12 @@ export const DEFAULT_TUNING: Tuning = {
     ghostCount: 8,
     lives: 3,
     timeLimitSec: 480,
-    ghostSpeed: 0.5,
+    ghostSpeed: 0.4,
     ghostVisionTiles: 3,
     ghostMinStartSteps: 12,
     lightStunSec: 30,
-    // Traps are half of every box; no teleports.
-    boxWeights: { trap: 50, hammer: 20, obstacle: 17, oneWayDoor: 13, teleportNode: 0 },
+    // Only traps and hammers: half each.
+    boxWeights: { trap: 50, hammer: 50, obstacle: 0, oneWayDoor: 0, teleportNode: 0 },
   },
 
   towerRun: {
