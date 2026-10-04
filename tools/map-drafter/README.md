@@ -8,6 +8,8 @@
 python3 tools/map-drafter/maps/maze_05.py      # 重新產生 maze-05.json 與 out/maze-05.png
 python3 tools/map-drafter/check.py maze-03     # 檢查任何一張地圖（手繪的也可以）並輸出預覽
 python3 tools/map-drafter/check.py maze-07 --stairs --ruler
+python3 tools/map-drafter/rekey.py maze-06      # 手改地圖後把鑰匙移回難的位置
+python3 tools/map-drafter/undeadend.py night-01 # 用橋與樓梯接掉死路
 npm run validate-maps                          # 最後仍以正式驗證器為準
 ```
 
@@ -23,6 +25,8 @@ npm run validate-maps                          # 最後仍以正式驗證器為�
 | `fixtures.py` | 自動擺放單向門、障礙物、陷阱，每放一個就重新檢查整張圖 |
 | `finish.py` | 每張產生式地圖共用的收尾：樓梯、橋、手放固定物 → 自動固定物 → 候選點 → 檢查 → 寫檔 |
 | `check.py` | 對任何地圖做檢查、列出鑰匙步數、輸出預覽 |
+| `rekey.py` | 手改地圖（加了樓梯或橋）之後只重擺鑰匙候選：數量不變，改放到目前離塔最遠的格子，偏好死路；`--dry` 只看結果、`--gap` 鑰匙間距 |
+| `undeadend.py` | 用橋與樓梯接掉死路（道路與牆頂都算），接不掉的列出來；`--dry` 只看結果 |
 | `maps/maze_NN.py` | 各地圖（maze-04～17）的產生腳本；檔頭註解寫該圖的設計概念；加 `--explore` 只看地形與可放樓梯的位置 |
 
 ## `check.py` 比驗證器多檢查的事
