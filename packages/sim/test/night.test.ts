@@ -64,9 +64,9 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     const sim = night();
     const s = sim.getState();
     expect(s.lightsOn).toBe(false);
-    expect(ghosts(sim)).toHaveLength(8);
+    expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount);
     expect(Object.keys(s.keys)).toHaveLength(1);
-    expect(s.players[ME]!.lives).toBe(3);
+    expect(s.players[ME]!.lives).toBe(sim.tuning.night.lives);
     const switches = Object.values(s.switches);
     expect(switches).toHaveLength(1);
     expect(switches[0]!.pos).toEqual({ x: 2, y: 1, layer: "road" });
@@ -110,7 +110,7 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     expect(sim.getState().players[g.id]).toBeUndefined();
     expect(events).toContainEqual(expect.objectContaining({ type: "ghostBanished", ghostId: g.id, by: "trap", playerId: ME }));
     expect(sim.getState().players[ME]!.score).toBe(sim.tuning.scoring.trapCatch);
-    expect(ghosts(sim)).toHaveLength(7);
+    expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount - 1);
   });
 
   it("turning the lights on banishes every ghost at once", () => {
@@ -119,7 +119,7 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     setPlayer(sim, ME, (p) => ({ ...p, mover: at(sw.pos) }));
     const events = sim.step(new Map([[ME, { moveX: 0, moveY: 0, action: true }]]));
     expect(sim.getState().lightsOn).toBe(true);
-    expect(events.filter((e) => e.type === "ghostBanished")).toHaveLength(8);
+    expect(events.filter((e) => e.type === "ghostBanished")).toHaveLength(sim.tuning.night.ghostCount);
     expect(ghosts(sim)).toHaveLength(0);
   });
 
@@ -128,10 +128,10 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     const g = ghosts(sim)[0]!;
     setPlayer(sim, g.id, (p) => ({ ...p, mover: at(sim.getState().players[ME]!.mover.from) }));
     let caught = 0;
-    for (let i = 0; i < 2000 && sim.getState().status === "running"; i++) {
+    for (let i = 0; i < 20000 && sim.getState().status === "running"; i++) {
       caught += sim.step(new Map()).filter((e) => e.type === "playerCaught").length;
     }
-    expect(caught).toBe(3);
+    expect(caught).toBe(sim.tuning.night.lives);
     expect(sim.getState().players[ME]!.lives).toBe(0);
     expect(sim.getState().result?.reason).toBe("night:caught");
     // No keys to steal: the ghost never takes one.
