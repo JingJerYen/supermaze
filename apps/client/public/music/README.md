@@ -10,9 +10,9 @@
 
 主題曲可以只做幾首：例如只放 `game-candy.mp3`，糖果地圖就播它，其他主題照樣播 `game`。
 
-兩個主題可以共用一首：`apps/client/src/audio/music.ts` 的 `SHARED_TRACKS` 寫哪個主題播哪個主題的曲子，不必把同一個檔案複製兩份。目前花園播糖果的曲子。
+兩個主題可以共用一首：`apps/client/src/audio/music.ts` 的 `SHARED_TRACKS` 寫哪個主題播哪個主題的曲子，不必把同一個檔案複製兩份。目前每個主題都有自己的曲子，沒有共用。
 
-目前有的檔案（2026-10-01，Suno 付費方案生成）：`menu.mp3`、`game-candy.mp3`（糖果與花園）、`game-ice.mp3`。石頭、工廠、沙漠還沒有自己的曲子，也還沒有共用的 `game`，所以這三個主題播程式合成的佔位曲。
+目前有的檔案（Suno 付費方案生成）：`menu.mp3`、`game-candy.mp3`、`game-ice.mp3`（2026-10-01），`game-garden.mp3`、`game-stone.mp3`、`game-factory.mp3`、`game-desert.mp3`（2026-10-04）。六個主題都有自己的曲子；共用的 `game` 還沒有，只會在新增主題又沒做曲子時用到（播程式合成的佔位曲）。
 
 沒有檔案時播放程式合成的佔位曲（`apps/client/src/audio/placeholderMusic.ts`），不需要任何檔案。
 同一首同時有 `.m4a` 和 `.mp3` 時用 `.m4a`。

@@ -111,7 +111,7 @@ export class NightRun {
     this.current = next;
     const tickRate = DEFAULT_TUNING.tickRate;
     if (events.some((e) => e.type === "ghostsStunned")) {
-      this.notices.push(t("modes.night.dawn", { sec: DEFAULT_TUNING.night.lightStunSec }));
+      this.notices.push(t("modes.night.dawn"));
     }
     if (events.some((e) => e.type === "ghostBanished")) this.notices.push(t("modes.night.banished", { n: ghostsLeft(next) }));
     if (stunLeftSec(prev, tickRate) > 0 && stunLeftSec(next, tickRate) === 0 && ghostsLeft(next) > 0) this.notices.push(t("modes.night.awake"));
