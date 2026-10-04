@@ -165,7 +165,7 @@ export interface Tuning {
     ghostVisionTiles: number;
     /** Ghosts start at least this far (path steps) from the tower spawn, when the map allows. */
     ghostMinStartSteps: number;
-    /** Seconds every ghost lies helpless once the lights come on. */
+    /** Seconds a switch keeps the lights on; every ghost lies helpless meanwhile. */
     lightStunSec: number;
     /** Item box weights for the round (the race's own are `itemBoxes.weights`). */
     boxWeights: Record<ItemKind, number>;

@@ -2,15 +2,14 @@ import type { CatchRules } from "../catches.js";
 import type { SimEvent, RoundEndReason } from "../events.js";
 import type { GhostState } from "../ghost.js";
 import type { ItemWork } from "../items.js";
-import { createLightSwitches, type LightSwitchState } from "../lighting.js";
 import type { MapData } from "../map/types.js";
 import { createMover } from "../movement.js";
 import type { PlaceableState } from "../placeables.js";
-import { Simulation, type StepWork } from "../simulation.js";
+import { Simulation, type PlayerInput, type StepWork } from "../simulation.js";
 import type { PlayerState } from "../state.js";
 import { DEFAULT_TUNING, type Tuning } from "../tuning/index.js";
 import type { Participant, PlayerId, TeamId, Tick } from "../types.js";
-import { farthestTile, ghostStartTiles } from "./spread.js";
+import { ghostStartTiles } from "./spread.js";
 
 export interface NightOptions {
   seed: number;
@@ -36,13 +35,15 @@ export function nightTuning(base: Tuning = DEFAULT_TUNING): Tuning {
 
 /**
  * Night parade (CLAUDE.md section 4.4): one player in the dark with eight
- * ghosts hunting from the start. Traps banish a ghost for good; the single
- * light switch, the one farthest from the tower, knocks every ghost down for
- * a while, time to lay traps in their way. The key opens the door only when no ghost is left; three catches end
+ * ghosts hunting from the start. Only traps banish a ghost, for good; each of
+ * the map's light switches lights the maze for a while and knocks every ghost
+ * down meanwhile, time to lay traps in their way, then it is dark again. The key opens the door only when no ghost is left; three catches end
  * the round. The race's rules carry everything else.
  */
 export class NightSimulation extends Simulation {
   readonly playerId: PlayerId;
+  /** Set by a switch this tick: when the lights go out again. */
+  private lightsOffAtTick: Tick | null = null;
   /** Ghosts banished during this tick's moves, removed before the catches. */
   private banished = new Set<PlayerId>();
 
@@ -89,14 +90,6 @@ export class NightSimulation extends Simulation {
     return Object.values(this.state.players).filter((p) => !p.monster).length * this.tuning.keys.perParticipant;
   }
 
-  /** One switch: the candidate farthest from the tower. */
-  protected override chooseSwitches(): Record<string, LightSwitchState> {
-    const from = this.grid.spawnTiles()[0];
-    const far = from ? farthestTile(this.grid, from, this.map.spawns.lightSwitches) : null;
-    const candidates = far ? [far] : this.map.spawns.lightSwitches.slice(0, 1);
-    return createLightSwitches(this.rng, this.grid, candidates, Math.min(1, candidates.length));
-  }
-
   /** The hunt is on all round: every ghost hunts the player from the first tick. */
   protected override initialGhost(_clockStart: Tick): GhostState {
     return { phase: "active", teamId: null, huntedTeamId: this.playerId, phaseEndsAtTick: Number.MAX_SAFE_INTEGER, counts: {}, lastTeamId: null, intervalTicks: 0 };
@@ -117,14 +110,38 @@ export class NightSimulation extends Simulation {
   }
 
   /** Lights on: every ghost is gone. */
-  /** Lights on: every ghost drops where it is for `night.lightStunSec`; time to lay traps. */
+  /**
+   * A switch always lights the maze (one pressed while it is lit starts the
+   * time again): every ghost drops where it is for `night.lightStunSec`, time
+   * to lay traps, and then the lights go out again by themselves (`step`).
+   */
   protected override lightsToggled(work: StepWork, playerId: PlayerId, tick: Tick): void {
-    if (!work.lightsOn) return;
+    if (!work.lightsOn) {
+      work.lightsOn = true;
+      const last = work.events[work.events.length - 1];
+      if (last?.type === "lightsToggled") work.events[work.events.length - 1] = { ...last, lightsOn: true };
+    }
     const untilTick = tick + Math.round(this.tuning.night.lightStunSec * this.tuning.tickRate);
+    this.lightsOffAtTick = untilTick;
     for (const g of Object.values(work.players).filter((p) => p.monster)) {
       work.players[g.id] = { ...g, frozenUntilTick: Math.max(g.frozenUntilTick, untilTick), frozenBy: "light", mover: { ...g.mover, target: null, progress: 0 } };
     }
     work.events.push({ type: "ghostsStunned", tick, untilTick, playerId });
+  }
+
+  /** One tick; the lights go out again when their time is up, as the ghosts get back up. */
+  override step(inputs: ReadonlyMap<PlayerId, PlayerInput>): SimEvent[] {
+    const events = super.step(inputs);
+    let s = this.state;
+    if (this.lightsOffAtTick !== null) s = { ...s, lightsOffAtTick: this.lightsOffAtTick };
+    if (s.status === "running" && s.lightsOn && s.lightsOffAtTick !== undefined && s.tick >= s.lightsOffAtTick) {
+      const { lightsOffAtTick: _, ...rest } = s;
+      s = { ...rest, lightsOn: false };
+      events.push({ type: "lightsOut", tick: s.tick });
+    }
+    this.lightsOffAtTick = null;
+    this.state = s;
+    return events;
   }
 
   protected override afterMoves(players: Record<PlayerId, PlayerState>): void {

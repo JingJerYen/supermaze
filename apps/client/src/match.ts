@@ -19,6 +19,7 @@ import type { GameMode } from "./modes/mode.js";
 import { BoxViews } from "./render/boxes.js";
 import { FollowCamera } from "./render/camera.js";
 import { ClimbCamera } from "./render/climbCamera.js";
+import { drawDark } from "./render/flicker.js";
 import { faceDir } from "./render/climbSequence.js";
 import { platformTopY } from "./render/elevation.js";
 import { openingOf, type Opening } from "./opening.js";
@@ -151,7 +152,8 @@ export class Match {
       this.boxes.update(s.to.boxes, now / 1000);
       this.placeables.update(s.to.placeables, s.to.nodes, now / 1000);
       this.switches.update(s.to.switches, now / 1000);
-      const dark = !s.to.lightsOn;
+      // Night parade: lights a switch turned on flicker before they go out again.
+      const dark = drawDark(s.to.lightsOn, s.to.lightsOffAtTick, s.to.tick + s.alpha, this.mode.tickRate, now / 1000);
       this.lighting.setDark(dark);
       this.mapMesh.setDark(dark);
       this.scene.background = new THREE.Color(dark ? CLIENT_TUNING.dark.clearColor : themeFor(this.mode.theme).sky);

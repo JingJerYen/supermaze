@@ -67,9 +67,7 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     expect(ghosts(sim)).toHaveLength(sim.tuning.night.ghostCount);
     expect(Object.keys(s.keys)).toHaveLength(1);
     expect(s.players[ME]!.lives).toBe(sim.tuning.night.lives);
-    const switches = Object.values(s.switches);
-    expect(switches).toHaveLength(1);
-    expect(switches[0]!.pos).toEqual({ x: 2, y: 1, layer: "road" });
+    expect(Object.values(s.switches)).toHaveLength(MAP.lightSwitchCount);
     expect(farthestTile(sim.grid, sim.grid.spawnTiles()[0]!, MAP.spawns!.lightSwitches!)).toEqual({ x: 2, y: 1, layer: "road" });
     const steps = stepsFrom(sim.grid, s.players[ME]!.mover.from);
     for (const g of ghosts(sim)) {
@@ -134,9 +132,34 @@ describe("night parade (CLAUDE.md section 4.4)", () => {
     let caught = 0;
     while (sim.getState().tick < until - 1) caught += sim.step(new Map()).filter((e) => e.type === "playerCaught").length;
     expect(caught).toBe(0);
-    // Back up: the same ghost catches at once.
-    for (let i = 0; i < 3; i++) caught += sim.step(new Map()).filter((e) => e.type === "playerCaught").length;
+    // Time up: the lights go out again as the ghosts get back up, and the same ghost catches at once.
+    let out = false;
+    for (let i = 0; i < 3; i++) {
+      const ev = sim.step(new Map());
+      caught += ev.filter((e) => e.type === "playerCaught").length;
+      out ||= ev.some((e) => e.type === "lightsOut");
+    }
+    expect(out).toBe(true);
+    expect(sim.getState().lightsOn).toBe(false);
+    expect(sim.getState().lightsOffAtTick).toBeUndefined();
     expect(caught).toBe(1);
+  });
+
+  it("every switch lights the maze again, and one pressed while lit starts the time over", () => {
+    const sim = night();
+    const [a, b] = Object.values(sim.getState().switches);
+    const press = () => sim.step(new Map([[ME, { moveX: 0, moveY: 0, action: true }]]));
+    setPlayer(sim, ME, (p) => ({ ...p, mover: at(a!.pos) }));
+    press();
+    const stun = sim.tuning.night.lightStunSec * sim.tuning.tickRate;
+    for (let i = 0; i < 20; i++) sim.step(new Map());
+    setPlayer(sim, ME, (p) => ({ ...p, mover: at(b!.pos) }));
+    const events = press();
+    const s = sim.getState();
+    expect(s.lightsOn).toBe(true);
+    expect(events).toContainEqual(expect.objectContaining({ type: "lightsToggled", lightsOn: true }));
+    expect(s.lightsOffAtTick).toBe(s.tick + stun);
+    expect(Object.values(s.switches).filter((w) => w.used)).toHaveLength(2);
   });
 
   it("each catch costs a life and the last one ends the round", () => {

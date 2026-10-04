@@ -126,6 +126,8 @@ export interface SimulationState {
   towerArrivals: PlayerId[];
   /** Map-wide lighting (CLAUDE.md section 8). Starts lit, or dark on a tower run special floor. */
   lightsOn: boolean;
+  /** Night parade: the lights go out again at this tick (section 4.4). Absent when they stay as they are. */
+  lightsOffAtTick?: Tick;
   switches: Record<string, LightSwitchState>;
   /** Unopened boxes; always participants x perParticipant while running (section 9). */
   boxes: Record<string, BoxState>;

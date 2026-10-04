@@ -51,7 +51,7 @@ export class NightRun {
     this.prep = new FloorPrep(
       this.root,
       this.renderer,
-      { title: t("modes.night.title"), lines: [t("modes.night.goal", n), t("modes.night.howTo")], start: t("modes.night.start") },
+      { title: t("modes.night.title"), lines: [t("modes.night.goal", n), t("modes.night.howTo", { sec: DEFAULT_TUNING.night.lightStunSec })], start: t("modes.night.start") },
       loadProfile(),
       new SeededRandom(this.seed).pick(SKILL_KINDS),
       isPremium(),
