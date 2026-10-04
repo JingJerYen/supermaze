@@ -70,7 +70,7 @@ export const modes = {
   "modes.night.ghost": "鬼",
   "modes.night.caption": "👻 剩 {n} 隻　{lives}",
   "modes.night.captionClear": "鬼都消失了！快去登塔　{lives}",
-  "modes.night.dawn": "💡 開燈了！{sec} 秒後又會變黑，鬼都倒地了，快佈陷阱或拿鐵鎚敲",
+  "modes.night.dawn": "用鐵鎚打鬼！",
   "modes.night.captionStunned": "👻 剩 {n} 隻（倒地 {sec} 秒）　{lives}",
   "modes.night.awake": "燈又黑了，鬼醒過來了！",
   "modes.night.banished": "👻 抓到一隻鬼！剩 {n} 隻",

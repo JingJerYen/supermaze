@@ -69,7 +69,7 @@ export const modes: Record<keyof typeof zh, string> = {
   "modes.night.ghost": "Ghost",
   "modes.night.caption": "👻 {n} left  {lives}",
   "modes.night.captionClear": "All ghosts gone! Climb the tower  {lives}",
-  "modes.night.dawn": "💡 Lights on for {sec}s! The ghosts are down: trap or hammer them",
+  "modes.night.dawn": "Hammer the ghosts!",
   "modes.night.captionStunned": "👻 {n} left (down {sec}s)  {lives}",
   "modes.night.awake": "Dark again: the ghosts are back up!",
   "modes.night.banished": "👻 Ghost banished! {n} left",
