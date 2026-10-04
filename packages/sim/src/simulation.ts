@@ -38,7 +38,7 @@ export type StepWork = ItemWork & {
  *
  * This class runs the race to the tower (sections 3-13). Other kinds of round
  * extend it and override the protected hooks below (keyCount, chooseSwitches,
- * scheduleGhost, springTrap, lightsToggled, afterMoves, catchRules, afterCatches,
+ * scheduleGhost, springTrap, hammerSwung, lightsToggled, afterMoves, catchRules, afterCatches,
  * decideEnd); everything else, from movement to items, is shared.
  */
 export class Simulation {
@@ -231,6 +231,9 @@ export class Simulation {
   /** Called with the runners caught this tick, after the catches; `players` is the working copy. */
   protected afterCatches(_players: Record<PlayerId, PlayerState>, _caught: PlayerId[], _tick: Tick, _events: SimEvent[]): void {}
 
+  /** Called after `p` swung a hammer this tick (it has already broken whatever placeable was ahead). */
+  protected hammerSwung(_work: StepWork, _p: PlayerState, _tick: Tick): void {}
+
   /** Called after a light switch flipped the lights this tick; `work.lightsOn` is the new state. */
   protected lightsToggled(_work: StepWork, _playerId: PlayerId, _tick: Tick): void {}
 
@@ -408,7 +411,9 @@ export class Simulation {
           } else if (action === "pickUpNode") {
             p = pickUpNode(work, p);
           } else if (action === "useItem") {
+            const swung = p.items[0] === "hammer";
             p = useOldestItem(this.grid, this.tuning, work, p);
+            if (swung) this.hammerSwung(work, p, tick);
           }
         } else if (input.discard && canDiscard({ tick, freezeUntilTick: this.state.freezeUntilTick, ghost }, p)) {
           const item = p.items[0] as ItemKind;

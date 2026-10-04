@@ -3,7 +3,7 @@ import type { SimEvent, RoundEndReason } from "../events.js";
 import type { GhostState } from "../ghost.js";
 import type { ItemWork } from "../items.js";
 import type { MapData } from "../map/types.js";
-import { createMover } from "../movement.js";
+import { createMover, frontTile, sameTile } from "../movement.js";
 import type { PlaceableState } from "../placeables.js";
 import { Simulation, type PlayerInput, type StepWork } from "../simulation.js";
 import type { PlayerState } from "../state.js";
@@ -35,9 +35,9 @@ export function nightTuning(base: Tuning = DEFAULT_TUNING): Tuning {
 
 /**
  * Night parade (CLAUDE.md section 4.4): one player in the dark with eight
- * ghosts hunting from the start. Only traps banish a ghost, for good; each of
+ * ghosts hunting from the start. A trap, or a hammer on a ghost lying down, banishes it for good; each of
  * the map's light switches lights the maze for a while and knocks every ghost
- * down meanwhile, time to lay traps in their way, then it is dark again. The key opens the door only when no ghost is left; three catches end
+ * down meanwhile, time to lay traps in their way or hammer the fallen, then it is dark again. The key opens the door only when no ghost is left; three catches end
  * the round. The race's rules carry everything else.
  */
 export class NightSimulation extends Simulation {
@@ -109,7 +109,27 @@ export class NightSimulation extends Simulation {
     return { ...p, mover: { ...p.mover, target: null, progress: 0 } };
   }
 
-  /** Lights on: every ghost is gone. */
+  /**
+   * A hammer finishes off every ghost the lights knocked down on the tile ahead
+   * or underfoot, for good, and scores like a trap (section 4.4). A ghost on its feet shrugs it off.
+   */
+  protected override hammerSwung(work: StepWork, p: PlayerState, tick: Tick): void {
+    const ahead = frontTile(p.mover);
+    const down = Object.values(work.players).filter(
+      (g) =>
+        g.monster &&
+        !this.banished.has(g.id) &&
+        g.frozenBy === "light" &&
+        tick < g.frozenUntilTick &&
+        (sameTile(g.mover.from, ahead) || sameTile(g.mover.from, p.mover.from)),
+    );
+    for (const g of down.sort((a, b) => a.id.localeCompare(b.id))) {
+      this.banished.add(g.id);
+      this.pendingScores.push({ playerId: p.id, points: this.tuning.scoring.trapCatch });
+      work.events.push({ type: "ghostBanished", tick, ghostId: g.id, by: "hammer", playerId: p.id });
+    }
+  }
+
   /**
    * A switch always lights the maze (one pressed while it is lit starts the
    * time again): every ghost drops where it is for `night.lightStunSec`, time
